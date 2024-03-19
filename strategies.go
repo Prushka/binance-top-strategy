@@ -27,7 +27,7 @@ type QueryTopStrategy struct {
 
 type Strategies []*Strategy
 
-type StrategyRoi []Roi
+type StrategyRoi []*Roi
 
 type Roi struct {
 	RootUserID int     `json:"rootUserId"`
@@ -56,7 +56,7 @@ type BinanceBaseResponse struct {
 }
 
 type Strategy struct {
-	Rois           []Roi
+	Rois           StrategyRoi
 	Symbol         string `json:"symbol"`
 	CopyCount      int    `json:"copyCount"`
 	Roi            string `json:"roi"`

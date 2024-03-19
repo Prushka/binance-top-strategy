@@ -47,6 +47,12 @@ func fetchStrategies() (Strategies, error) {
 		if err != nil {
 			return nil, err
 		}
+		for _, r := range roi {
+			r.Time = r.Time / 1000
+		}
+		sort.Slice(roi, func(i, j int) bool {
+			return roi[i].Time > roi[j].Time
+		})
 		strategy.Rois = roi
 	}
 	sort.Slice(strategies, func(i, j int) bool {
@@ -66,8 +72,28 @@ func tick() error {
 	if err != nil {
 		return err
 	}
+	filtered := make(Strategies, 0)
 	for _, s := range m {
 		log.Infof("Strategy: %s, %s, %d", s.Roi, s.Symbol, len(s.Rois))
+		if len(s.Rois) > 1 {
+			latestTimestamp := s.Rois[0].Time
+			latestRoi := s.Rois[0].Roi
+			for _, r := range s.Rois {
+				oneDayAgo := latestTimestamp - int64(dayToSeconds(1))
+				thirtyHoursAgo := latestTimestamp - int64(hourToSeconds(30))
+				if r.Time < oneDayAgo && r.Time > thirtyHoursAgo {
+					roiChange := latestRoi - r.Roi
+					if roiChange > 0.1 {
+						filtered = append(filtered, s)
+						log.Infof("Valid RoiChange: %s, %f", s.Symbol, roiChange)
+					} else {
+						log.Infof("Invalid RoiChange: %s, %f", s.Symbol, roiChange)
+					}
+					break
+				}
+			}
+		}
+		log.Infof("----------------")
 	}
 	return nil
 }
