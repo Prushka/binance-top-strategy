@@ -105,7 +105,6 @@ func tick() error {
 		}
 		log.Infof("----------------")
 	}
-	invChunk := (usdt - 0.25*2) / 2
 	sort.Slice(filtered, func(i, j int) bool {
 		return filtered[i].Last2HrRoiChange > filtered[j].Last2HrRoiChange
 	})
@@ -139,6 +138,9 @@ func tick() error {
 
 	log.Infof("----------------")
 
+	chunks := float64(6 - len(openGrids.Data))
+	log.Infof("Opening %f chunks", chunks)
+	invChunk := (usdt - chunks) / chunks
 	for _, s := range filtered {
 		minInvestment, _ := strconv.ParseFloat(s.MinInvestment, 64)
 		runTime := time.Duration(s.RunningTime) * time.Second
@@ -195,7 +197,7 @@ func main() {
 		DiscordWebhook("Real Trading")
 	}
 	sdk()
-	_, err := scheduler.Every(10).Minutes().Do(
+	_, err := scheduler.Every(TheConfig.TickEveryMinutes).Minutes().Do(
 		func() {
 			err := tick()
 			if err != nil {
