@@ -11,6 +11,7 @@ type Config struct {
 	CSRFToken       string `env:"CSRF"`
 	COOKIE          string `env:"COOKIE"`
 	StrategiesCount int    `env:"STRATEGIES_COUNT" envDefault:"25"`
+	Paper           bool   `env:"PAPER" envDefault:"true"`
 }
 
 var TheConfig = &Config{}

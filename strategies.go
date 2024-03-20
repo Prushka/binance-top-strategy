@@ -367,6 +367,10 @@ func generateRandomNumberUUID() string {
 }
 
 func closeGrid(strategyId int) error {
+	if TheConfig.Paper {
+		log.Infof("Paper mode, not closing grid")
+		return nil
+	}
 	url := "https://www.binance.com/bapi/futures/v1/private/future/grid/close-grid"
 	payload := map[string]interface{}{
 		"strategyId": strategyId,
@@ -376,6 +380,10 @@ func closeGrid(strategyId int) error {
 }
 
 func placeGrid(strategy Strategy, initialUSDT float64) error {
+	if TheConfig.Paper {
+		log.Infof("Paper mode, not placing grid")
+		return nil
+	}
 	if _, ok := DirectionMap[strategy.Direction]; !ok {
 		return fmt.Errorf("invalid direction: %d", strategy.Direction)
 	}
