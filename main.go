@@ -119,9 +119,7 @@ func tick() error {
 
 	log.Infof("----------------")
 	expiredCopiedIds := existingIds.Difference(filteredCopiedIds)
-	expired := fmt.Sprintf("Expired Strategies: %v", expiredCopiedIds)
-	log.Infof(expired)
-	DiscordWebhook(expired)
+	DiscordWebhook(fmt.Sprintf("Expired Strategies: %v", expiredCopiedIds))
 	for _, id := range expiredCopiedIds.ToSlice() {
 		log.Infof("Closing Grid: %d", id)
 		err := closeGridConv(id, openGrids)
@@ -140,9 +138,7 @@ func tick() error {
 
 	for _, s := range filtered {
 		minInvestment, _ := strconv.ParseFloat(s.MinInvestment, 64)
-		output := fmt.Sprintf("Investing %d: %s, %f/%f, Last Day: %f, Last 3Hr: %f, Last Hr: %f, Roi: %s, Min Investment: %s", s.StrategyID, s.Symbol, invChunk, minInvestment, s.LastDayRoiChange, s.Last3HrRoiChange, s.LastHrRoiChange, s.Roi, s.MinInvestment)
-		log.Infof(output)
-		DiscordWebhook(output)
+		DiscordWebhook(fmt.Sprintf("Investing %d: %s, %f/%f, Last Day: %f, Last 3Hr: %f, Last Hr: %f, Roi: %s, Min Investment: %s", s.StrategyID, s.Symbol, invChunk, minInvestment, s.LastDayRoiChange, s.Last3HrRoiChange, s.LastHrRoiChange, s.Roi, s.MinInvestment))
 		if !existingPairs.Contains(s.Symbol) {
 			errr := placeGrid(*s, invChunk)
 			if errr != nil {
@@ -187,6 +183,11 @@ func closeGridConv(copiedId int, openGrids *OpenGridResponse) error {
 func main() {
 	configure()
 	log.Infof("Public IP: %s", getPublicIP())
+	if TheConfig.Paper {
+		DiscordWebhook("Paper Trading")
+	} else {
+		DiscordWebhook("Real Trading")
+	}
 	sdk()
 	_, err := scheduler.Every(10).Minutes().Do(
 		func() {

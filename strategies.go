@@ -343,9 +343,7 @@ func getOpenGrids() (*OpenGridResponse, mapset.Set[string], mapset.Set[int], err
 		existingPairs.Add(g.Symbol)
 		existingCopiedIds.Add(g.CopiedStrategyID)
 	}
-	output := fmt.Sprintf("Open Pairs: %v, Open Ids: %v", existingPairs, existingCopiedIds)
-	log.Infof(output)
-	DiscordWebhook(output)
+	DiscordWebhook(fmt.Sprintf("Open Pairs: %v, Open Ids: %v", existingPairs, existingCopiedIds))
 	return res, existingPairs, existingCopiedIds, err
 }
 

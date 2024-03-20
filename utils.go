@@ -18,6 +18,7 @@ func PrintAsJson(v interface{}) {
 }
 
 func DiscordWebhook(chat string) {
+	log.Info(chat)
 	if TheConfig.DiscordWebhook == "" {
 		return
 	}
