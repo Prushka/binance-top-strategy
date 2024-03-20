@@ -276,7 +276,7 @@ func getStrategyRois(strategyID int, rootUserId int) (StrategyRoi, error) {
 func getTopStrategies(strategyType int, runningTimeMin time.Duration, runningTimeMax time.Duration) (Strategies, error) {
 	query := &QueryTopStrategy{
 		Page:           1,
-		Rows:           15,
+		Rows:           TheConfig.StrategiesCount,
 		StrategyType:   strategyType,
 		RunningTimeMax: int(runningTimeMax.Seconds()),
 		RunningTimeMin: int(runningTimeMin.Seconds()),
