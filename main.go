@@ -98,7 +98,7 @@ func tick() error {
 			s.LastHrRoiChange = GetRoiChange(s.Rois, 1*time.Hour)
 			log.Infof("Last Day: %f, Last 3Hr: %f, Last 2Hr: %f, Last Hr: %f, Runtime: %s",
 				s.LastDayRoiChange, s.Last3HrRoiChange, s.Last2HrRoiChange, s.LastHrRoiChange, runTime)
-			if s.LastDayRoiChange > 0.1 && s.Last3HrRoiChange > 0.1 && s.Last2HrRoiChange > 0 && s.LastHrRoiChange > 0 {
+			if s.LastDayRoiChange > 0.1 && s.Last3HrRoiChange > 0.05 && s.Last2HrRoiChange > 0 && s.LastHrRoiChange > -0.05 {
 				filtered = append(filtered, s)
 				log.Infof("Picked")
 			}
