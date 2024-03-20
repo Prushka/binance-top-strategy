@@ -183,8 +183,17 @@ func main() {
 	configure()
 	log.Infof("Public IP: %s", getPublicIP())
 	sdk()
-	err := tick()
+	_, err := scheduler.Every(10).Minutes().Do(
+		func() {
+			err := tick()
+			if err != nil {
+				log.Errorf("Error: %v", err)
+			}
+		},
+	)
 	if err != nil {
 		log.Errorf("Error: %v", err)
+		return
 	}
+	scheduler.StartBlocking()
 }
