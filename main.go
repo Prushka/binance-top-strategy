@@ -74,7 +74,7 @@ func GetRoiChange(roi StrategyRoi, t time.Duration) float64 {
 			return latestRoi - r.Roi
 		}
 	}
-	return 0
+	return latestRoi - roi[len(roi)-1].Roi
 }
 
 func tick() error {
@@ -138,7 +138,10 @@ func tick() error {
 
 	for _, s := range filtered {
 		minInvestment, _ := strconv.ParseFloat(s.MinInvestment, 64)
-		DiscordWebhook(fmt.Sprintf("Investing %d: %s, %f/%f, Last Day: %f, Last 3Hr: %f, Last Hr: %f, Roi: %s, Min Investment: %s", s.StrategyID, s.Symbol, invChunk, minInvestment, s.LastDayRoiChange, s.Last3HrRoiChange, s.LastHrRoiChange, s.Roi, s.MinInvestment))
+		runTime := time.Duration(s.RunningTime) * time.Second
+		DiscordWebhook(fmt.Sprintf("Investing %d: %s, %f/%f, Last Day: %f, Last 3Hr: %f, Last Hr: %f, Roi: %s, Min Investment: %s, Runtime: %s",
+			s.StrategyID, s.Symbol, invChunk, minInvestment, s.LastDayRoiChange,
+			s.Last3HrRoiChange, s.LastHrRoiChange, s.Roi, s.MinInvestment, runTime))
 		if !existingPairs.Contains(s.Symbol) {
 			errr := placeGrid(*s, invChunk)
 			if errr != nil {
