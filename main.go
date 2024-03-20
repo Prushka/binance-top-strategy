@@ -68,8 +68,8 @@ func GetRoiChange(roi StrategyRoi, t time.Duration) float64 {
 	latestTimestamp := roi[0].Time
 	latestRoi := roi[0].Roi
 	for _, r := range roi {
-		oneDayAgo := latestTimestamp - int64(t.Seconds())
-		if r.Time < oneDayAgo {
+		l := latestTimestamp - int64(t.Seconds())
+		if r.Time <= l {
 			return latestRoi - r.Roi
 		}
 	}
