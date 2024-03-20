@@ -16,14 +16,6 @@ func PrintAsJson(v interface{}) {
 	log.Info(string(b))
 }
 
-func hourToSeconds(hour int) int {
-	return hour * 3600
-}
-
-func dayToSeconds(day int) int {
-	return day * 3600 * 24
-}
-
 func getPublicIP() string {
 	// The URL of the service that returns the public IP
 	url := "http://api.ipify.org"

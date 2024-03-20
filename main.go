@@ -38,7 +38,7 @@ func getFutureUSDT() (float64, error) {
 }
 
 func fetchStrategies() (Strategies, error) {
-	strategies, err := getTopStrategies(FUTURE, dayToSeconds(1), dayToSeconds(7))
+	strategies, err := getTopStrategies(FUTURE, 24*time.Hour, 24*7*time.Hour)
 	if err != nil {
 		return nil, err
 	}
@@ -64,11 +64,11 @@ func fetchStrategies() (Strategies, error) {
 	return strategies, nil
 }
 
-func GetRoiChange(roi StrategyRoi, secondsAgo int) float64 {
+func GetRoiChange(roi StrategyRoi, t time.Duration) float64 {
 	latestTimestamp := roi[0].Time
 	latestRoi := roi[0].Roi
 	for _, r := range roi {
-		oneDayAgo := latestTimestamp - int64(secondsAgo)
+		oneDayAgo := latestTimestamp - int64(t.Seconds())
 		if r.Time < oneDayAgo {
 			return latestRoi - r.Roi
 		}
@@ -90,9 +90,9 @@ func tick() error {
 	for _, s := range m {
 		log.Infof("Strategy: %s, %s, %d", s.Roi, s.Symbol, len(s.Rois))
 		if len(s.Rois) > 1 {
-			s.LastDayRoiChange = GetRoiChange(s.Rois, dayToSeconds(1))
-			s.Last3HrRoiChange = GetRoiChange(s.Rois, hourToSeconds(3))
-			s.LastHrRoiChange = GetRoiChange(s.Rois, hourToSeconds(1))
+			s.LastDayRoiChange = GetRoiChange(s.Rois, 24*time.Hour)
+			s.Last3HrRoiChange = GetRoiChange(s.Rois, 3*time.Hour)
+			s.LastHrRoiChange = GetRoiChange(s.Rois, 1*time.Hour)
 			log.Infof("Last Day: %f, Last 3Hr: %f, Last Hr: %f", s.LastDayRoiChange, s.Last3HrRoiChange, s.LastHrRoiChange)
 			if s.LastDayRoiChange > 0.1 && s.Last3HrRoiChange > 0.1 && s.LastHrRoiChange > 0 {
 				filtered = append(filtered, s)

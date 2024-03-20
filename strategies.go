@@ -9,6 +9,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"time"
 )
 
 type QueryStrategyRoi struct {
@@ -272,13 +273,13 @@ func getStrategyRois(strategyID int, rootUserId int) (StrategyRoi, error) {
 	return roi.Data, nil
 }
 
-func getTopStrategies(strategyType int, runningTimeMin int, runningTimeMax int) (Strategies, error) {
+func getTopStrategies(strategyType int, runningTimeMin time.Duration, runningTimeMax time.Duration) (Strategies, error) {
 	query := &QueryTopStrategy{
 		Page:           1,
 		Rows:           15,
 		StrategyType:   strategyType,
-		RunningTimeMax: runningTimeMax,
-		RunningTimeMin: runningTimeMin,
+		RunningTimeMax: int(runningTimeMax.Seconds()),
+		RunningTimeMin: int(runningTimeMin.Seconds()),
 		Sort:           "roi",
 	}
 	strategies, err := request(
