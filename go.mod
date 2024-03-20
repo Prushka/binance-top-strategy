@@ -5,13 +5,14 @@ go 1.22
 require (
 	github.com/adshao/go-binance/v2 v2.5.0
 	github.com/caarlos0/env v3.5.0+incompatible
+	github.com/deckarep/golang-set/v2 v2.6.0
 	github.com/go-co-op/gocron v1.37.0
+	github.com/gtuk/discordwebhook v1.2.0
 	github.com/sirupsen/logrus v1.9.3
 )
 
 require (
 	github.com/bitly/go-simplejson v0.5.0 // indirect
-	github.com/deckarep/golang-set/v2 v2.6.0 // indirect
 	github.com/google/uuid v1.4.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect

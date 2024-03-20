@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gtuk/discordwebhook"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
@@ -14,6 +15,21 @@ func PrintAsJson(v interface{}) {
 		log.Error(err)
 	}
 	log.Info(string(b))
+}
+
+func DiscordWebhook(chat string) {
+	if TheConfig.DiscordWebhook == "" {
+		return
+	}
+	name := "BTS"
+	message := discordwebhook.Message{
+		Username: &name,
+		Content:  &chat,
+	}
+	err := discordwebhook.SendMessage(TheConfig.DiscordWebhook, message)
+	if err != nil {
+		log.Errorf("error sending message to discord: %v", err)
+	}
 }
 
 func getPublicIP() string {

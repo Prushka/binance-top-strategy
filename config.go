@@ -12,6 +12,7 @@ type Config struct {
 	COOKIE          string `env:"COOKIE"`
 	StrategiesCount int    `env:"STRATEGIES_COUNT" envDefault:"25"`
 	Paper           bool   `env:"PAPER" envDefault:"true"`
+	DiscordWebhook  string `env:"DISCORD_WEBHOOK"`
 }
 
 var TheConfig = &Config{}

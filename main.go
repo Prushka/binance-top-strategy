@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/adshao/go-binance/v2"
 	"github.com/adshao/go-binance/v2/futures"
 	mapset "github.com/deckarep/golang-set/v2"
@@ -137,7 +138,9 @@ func tick() error {
 
 	for _, s := range filtered {
 		minInvestment, _ := strconv.ParseFloat(s.MinInvestment, 64)
-		log.Infof("Investing %d: %s, %f/%f, Last Day: %f, Last 3Hr: %f, Last Hr: %f, Roi: %s, Min Investment: %s", s.StrategyID, s.Symbol, invChunk, minInvestment, s.LastDayRoiChange, s.Last3HrRoiChange, s.LastHrRoiChange, s.Roi, s.MinInvestment)
+		output := fmt.Sprintf("Investing %d: %s, %f/%f, Last Day: %f, Last 3Hr: %f, Last Hr: %f, Roi: %s, Min Investment: %s", s.StrategyID, s.Symbol, invChunk, minInvestment, s.LastDayRoiChange, s.Last3HrRoiChange, s.LastHrRoiChange, s.Roi, s.MinInvestment)
+		log.Infof(output)
+		DiscordWebhook(output)
 		if !existingPairs.Contains(s.Symbol) {
 			errr := placeGrid(*s, invChunk)
 			if errr != nil {
