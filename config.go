@@ -10,8 +10,8 @@ type Config struct {
 	SecretKey       string `env:"SECRET_KEY"`
 	CSRFToken       string `env:"CSRF"`
 	COOKIE          string `env:"COOKIE"`
-	StrategiesCount int    `env:"STRATEGIES_COUNT" envDefault:"30"`
-	RuntimeMinHours int    `env:"RUNTIME_MIN_HOURS" envDefault:"12"`
+	StrategiesCount int    `env:"STRATEGIES_COUNT" envDefault:"40"`
+	RuntimeMinHours int    `env:"RUNTIME_MIN_HOURS" envDefault:"6"`
 	RuntimeMaxHours int    `env:"RUNTIME_MAX_HOURS" envDefault:"168"`
 	Paper           bool   `env:"PAPER" envDefault:"true"`
 	DiscordWebhook  string `env:"DISCORD_WEBHOOK"`
