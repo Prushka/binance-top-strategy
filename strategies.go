@@ -73,6 +73,7 @@ type Strategy struct {
 	UserID           int     `json:"userId"`
 	LastDayRoiChange float64 `json:"lastDayRoiChange"`
 	Last3HrRoiChange float64 `json:"last3HrRoiChange"`
+	Last2HrRoiChange float64 `json:"last2HrRoiChange"`
 	LastHrRoiChange  float64 `json:"lastHrRoiChange"`
 	StrategyParams   struct {
 		Type           string  `json:"type"`
