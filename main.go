@@ -165,24 +165,27 @@ func tick() error {
 		DiscordWebhook(fmt.Sprintf("Expired Strategies: %v", expiredCopiedIds))
 	}
 	for c, id := range expiredCopiedIds.ToSlice() {
+		reason := ""
+		att, ok := globalStrategies[id]
+		if ok && m.findById(id) == nil {
+			reason += "Strategy not found"
+		} else if ok && !filteredCopiedIds.Contains(id) {
+			reason += "Strategy not picked"
+		}
+
 		log.Infof("Closing Grid: %d", id)
+		tracked, ok := globalGrids[id]
+		if ok && tracked.LastRoi < -0.05 { // attempting to close loss
+			if tracked.ContinuousRoiLoss < 3 {
+				DiscordWebhook(display(att, tracked.grid, "Skip Cancel [Cancel reason: "+reason+"]", c+1, expiredCopiedIds.Cardinality()))
+				continue
+			}
+		}
 		err := closeGridConv(id, openGrids)
 		if err != nil {
 			return err
 		} else {
-			for _, grid := range openGrids.Data {
-				if grid.CopiedStrategyID == id {
-					reason := ""
-					att, ok := globalStrategies[id]
-					if ok && m.findById(id) == nil {
-						reason += "Strategy not found"
-					} else if ok && !filteredCopiedIds.Contains(id) {
-						reason += "Strategy not picked"
-					}
-					DiscordWebhook(display(att, grid, "Cancelled ["+reason+"]", c+1, expiredCopiedIds.Cardinality()))
-					break
-				}
-			}
+			DiscordWebhook(display(att, tracked.grid, "Cancelled ["+reason+"]", c+1, expiredCopiedIds.Cardinality()))
 		}
 		time.Sleep(1 * time.Second)
 	}

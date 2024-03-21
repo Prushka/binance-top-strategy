@@ -245,7 +245,7 @@ func (grid Grid) display() string {
 	extendedProfit := ""
 	tracked, ok := globalGrids[grid.CopiedStrategyID]
 	if ok {
-		extendedProfit = fmt.Sprintf("[%.2f%%, %.2ff%%][+%d, -%d]",
+		extendedProfit = fmt.Sprintf(" [%.2f%%, %.2f%%][+%d, -%d]",
 			tracked.LowestRoi*100, tracked.HighestRoi*100, tracked.ContinuousRoiGrowth, tracked.ContinuousRoiLoss)
 	}
 	return fmt.Sprintf("In: %.2f, RealizedPnL: %s, TotalPnL: %f, Profit: %f%%%s",
@@ -412,6 +412,7 @@ type TrackedRoi struct {
 	LastRoi             float64
 	ContinuousRoiGrowth int
 	ContinuousRoiLoss   int
+	grid                *Grid
 }
 
 var globalGrids = make(map[int]*TrackedRoi)
@@ -424,18 +425,22 @@ func trackRoi(g *Grid) {
 			LastRoi:    g.profit,
 		}
 	}
-	if g.profit < globalGrids[g.CopiedStrategyID].LowestRoi {
-		globalGrids[g.CopiedStrategyID].LowestRoi = g.profit
+	tracked := globalGrids[g.CopiedStrategyID]
+	tracked.LastRoi = g.profit
+	tracked.grid = g
+
+	if g.profit < tracked.LowestRoi {
+		tracked.LowestRoi = g.profit
 	}
-	if g.profit > globalGrids[g.CopiedStrategyID].HighestRoi {
-		globalGrids[g.CopiedStrategyID].HighestRoi = g.profit
+	if g.profit > tracked.HighestRoi {
+		tracked.HighestRoi = g.profit
 	}
-	if g.profit > globalGrids[g.CopiedStrategyID].LastRoi {
-		globalGrids[g.CopiedStrategyID].ContinuousRoiGrowth += 1
-		globalGrids[g.CopiedStrategyID].ContinuousRoiLoss = 0
-	} else {
-		globalGrids[g.CopiedStrategyID].ContinuousRoiLoss += 1
-		globalGrids[g.CopiedStrategyID].ContinuousRoiGrowth = 0
+	if g.profit > tracked.LastRoi {
+		tracked.ContinuousRoiGrowth += 1
+		tracked.ContinuousRoiLoss = 0
+	} else if g.profit < tracked.LastRoi {
+		tracked.ContinuousRoiLoss += 1
+		tracked.ContinuousRoiGrowth = 0
 	}
 }
 
