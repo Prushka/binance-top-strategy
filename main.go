@@ -99,6 +99,21 @@ func GetRoiChange(roi StrategyRoi, t time.Duration) float64 {
 	return latestRoi - roi[len(roi)-1].Roi
 }
 
+func IfRoiDecreasedWithin(roi StrategyRoi, t time.Duration) bool {
+	// check if any roi row within t duration has decreased compared to the previous one
+	latestTimestamp := roi[0].Time
+	for i := 0; i < len(roi)-1; i++ {
+		if roi[i].Roi-roi[i+1].Roi < 0 {
+			return true
+		}
+		l := latestTimestamp - int64(t.Seconds())
+		if roi[i+1].Time <= l {
+			return false
+		}
+	}
+	return false
+}
+
 var globalStrategies = make(map[int]*Strategy)
 
 func tick() error {
@@ -185,11 +200,23 @@ func tick() error {
 		err := closeGridConv(id, openGrids)
 		if err != nil {
 			return err
-		} else {
-			closedIds.Add(id)
-			DiscordWebhook(display(att, tracked.grid, "Cancelled "+reason, c+1, expiredCopiedIds.Cardinality()))
 		}
+		closedIds.Add(id)
+		DiscordWebhook(display(att, tracked.grid, "Cancelled "+reason, c+1, expiredCopiedIds.Cardinality()))
 		time.Sleep(1 * time.Second)
+	}
+
+	for _, grid := range openGrids.Data {
+		t, ok := globalGrids[grid.CopiedStrategyID]
+		if ok && t.ContinuousRoiNoChange > 3 {
+			err := closeGridConv(grid.CopiedStrategyID, openGrids)
+			if err != nil {
+				return err
+			}
+			closedIds.Add(grid.CopiedStrategyID)
+			DiscordWebhook(display(globalStrategies[grid.CopiedStrategyID], t.grid, "Cancelled No Change", 0, 0))
+			time.Sleep(1 * time.Second)
+		}
 	}
 
 	if closedIds.Cardinality() > 0 && !TheConfig.Paper {
