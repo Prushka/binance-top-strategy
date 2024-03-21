@@ -120,7 +120,7 @@ func tick() error {
 			s.Last2HrRoiChange = GetRoiChange(s.Rois, 2*time.Hour)
 			s.LastHrRoiChange = GetRoiChange(s.Rois, 1*time.Hour)
 			log.Info(s.display())
-			if s.LastDayRoiChange > 0.1 && s.Last3HrRoiChange > 0.05 && s.Last2HrRoiChange > 0 && s.LastHrRoiChange > -0.05 {
+			if s.LastDayRoiChange > 0.1 && s.Last3HrRoiChange > 0.04 && s.Last2HrRoiChange > 0 && s.LastHrRoiChange > -0.05 {
 				validRois = append(validRois, s)
 				log.Info("Picked")
 			}
@@ -168,7 +168,7 @@ func tick() error {
 	for c, id := range expiredCopiedIds.ToSlice() {
 		reason := ""
 		att, ok := globalStrategies[id]
-		if ok && m.findById(id) == nil {
+		if m.findById(id) == nil {
 			reason += "Strategy not found"
 		} else if ok && !filteredCopiedIds.Contains(id) {
 			reason += "Strategy not picked"
