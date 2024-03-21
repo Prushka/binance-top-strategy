@@ -222,7 +222,9 @@ func tick() error {
 		}
 		if !openGrids.existingPairs.Contains(s.Symbol) {
 			errr := placeGrid(*s, invChunk)
-			if errr != nil {
+			if TheConfig.Paper {
+
+			} else if errr != nil {
 				DiscordWebhook(fmt.Sprintf("Error placing grid: %v", errr))
 			} else {
 				DiscordWebhook(fmt.Sprintf("Placed grid"))
