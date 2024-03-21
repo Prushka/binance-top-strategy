@@ -18,7 +18,7 @@ type Config struct {
 	DiscordName                    string  `env:"DISCORD_NAME" envDefault:"BTS"`
 	TickEveryMinutes               int     `env:"TICK_EVERY_MINUTES" envDefault:"5"`
 	MaxChunks                      int     `env:"MAX_CHUNKS" envDefault:"7"`
-	MaxLongs                       int     `env:"MAX_LONGS" envDefault:"3"`
+	MaxLongs                       int     `env:"MAX_LONGS" envDefault:"4"`
 	MinShorts                      int     `env:"MIN_SHORTS" envDefault:"1"`
 	Mode                           string  `env:"MODE" envDefault:"trading"`
 	Leverage                       int     `env:"LEVERAGE" envDefault:"20"`
