@@ -33,6 +33,15 @@ type QueryTopStrategy struct {
 
 type Strategies []*Strategy
 
+func (ss Strategies) findById(id int) *Strategy {
+	for _, s := range ss {
+		if s.StrategyID == id {
+			return s
+		}
+	}
+	return nil
+}
+
 type StrategyRoi []*Roi
 
 type Roi struct {
@@ -188,51 +197,60 @@ type GridDetail struct {
 	MarginType             string `json:"marginType"`
 }
 
+type Grid struct {
+	StrategyID             int    `json:"strategyId"`
+	RootUserID             int    `json:"rootUserId"`
+	StrategyUserID         int    `json:"strategyUserId"`
+	StrategyAccountID      int    `json:"strategyAccountId"`
+	Symbol                 string `json:"symbol"`
+	StrategyStatus         string `json:"strategyStatus"`
+	BookTime               int64  `json:"bookTime"`
+	TriggerTime            int64  `json:"triggerTime"`
+	UpdateTime             int64  `json:"updateTime"`
+	GridInitialValue       string `json:"gridInitialValue"`
+	InitialLeverage        int    `json:"initialLeverage"`
+	GridProfit             string `json:"gridProfit"`
+	Direction              string `json:"direction"`
+	MatchedPnl             string `json:"matchedPnl"`
+	UnmatchedAvgPrice      string `json:"unmatchedAvgPrice"`
+	UnmatchedQty           string `json:"unmatchedQty"`
+	UnmatchedFee           string `json:"unmatchedFee"`
+	GridEntryPrice         string `json:"gridEntryPrice"`
+	GridPosition           string `json:"gridPosition"`
+	Version                int    `json:"version"`
+	CopyCount              int    `json:"copyCount"`
+	CopiedStrategyID       int    `json:"copiedStrategyId"`
+	Sharing                bool   `json:"sharing"`
+	IsSubAccount           bool   `json:"isSubAccount"`
+	StrategyAmount         string `json:"strategyAmount"`
+	TrailingUp             bool   `json:"trailingUp"`
+	TrailingDown           bool   `json:"trailingDown"`
+	TrailingStopUpperLimit bool   `json:"trailingStopUpperLimit"`
+	TrailingStopLowerLimit bool   `json:"trailingStopLowerLimit"`
+	OrderCurrency          string `json:"orderCurrency"`
+	GridUpperLimit         string `json:"gridUpperLimit"`
+	GridLowerLimit         string `json:"gridLowerLimit"`
+	MatchedCount           int    `json:"matchedCount"`
+	GridCount              int    `json:"gridCount"`
+	PerGridQuoteQty        string `json:"perGridQuoteQty"`
+	PerGridQty             string `json:"perGridQty"`
+	FundingFee             string `json:"fundingFee"`
+	MarginType             string `json:"marginType"`
+}
+
+func (grid Grid) display() string {
+	initialValue, _ := strconv.ParseFloat(grid.GridInitialValue, 64)
+	return fmt.Sprintf("Closed: %s | %d, Initial: %f, Profit: %s",
+		grid.Symbol, grid.CopiedStrategyID, initialValue/float64(grid.InitialLeverage),
+		grid.GridProfit)
+}
+
 type OpenGridResponse struct {
 	totalGridInitial float64
 	totalGridProfit  float64
 	existingIds      mapset.Set[int]
 	existingPairs    mapset.Set[string]
-	Data             []struct {
-		StrategyID             int    `json:"strategyId"`
-		RootUserID             int    `json:"rootUserId"`
-		StrategyUserID         int    `json:"strategyUserId"`
-		StrategyAccountID      int    `json:"strategyAccountId"`
-		Symbol                 string `json:"symbol"`
-		StrategyStatus         string `json:"strategyStatus"`
-		BookTime               int64  `json:"bookTime"`
-		TriggerTime            int64  `json:"triggerTime"`
-		UpdateTime             int64  `json:"updateTime"`
-		GridInitialValue       string `json:"gridInitialValue"`
-		InitialLeverage        int    `json:"initialLeverage"`
-		GridProfit             string `json:"gridProfit"`
-		Direction              string `json:"direction"`
-		MatchedPnl             string `json:"matchedPnl"`
-		UnmatchedAvgPrice      string `json:"unmatchedAvgPrice"`
-		UnmatchedQty           string `json:"unmatchedQty"`
-		UnmatchedFee           string `json:"unmatchedFee"`
-		GridEntryPrice         string `json:"gridEntryPrice"`
-		GridPosition           string `json:"gridPosition"`
-		Version                int    `json:"version"`
-		CopyCount              int    `json:"copyCount"`
-		CopiedStrategyID       int    `json:"copiedStrategyId"`
-		Sharing                bool   `json:"sharing"`
-		IsSubAccount           bool   `json:"isSubAccount"`
-		StrategyAmount         string `json:"strategyAmount"`
-		TrailingUp             bool   `json:"trailingUp"`
-		TrailingDown           bool   `json:"trailingDown"`
-		TrailingStopUpperLimit bool   `json:"trailingStopUpperLimit"`
-		TrailingStopLowerLimit bool   `json:"trailingStopLowerLimit"`
-		OrderCurrency          string `json:"orderCurrency"`
-		GridUpperLimit         string `json:"gridUpperLimit"`
-		GridLowerLimit         string `json:"gridLowerLimit"`
-		MatchedCount           int    `json:"matchedCount"`
-		GridCount              int    `json:"gridCount"`
-		PerGridQuoteQty        string `json:"perGridQuoteQty"`
-		PerGridQty             string `json:"perGridQty"`
-		FundingFee             string `json:"fundingFee"`
-		MarginType             string `json:"marginType"`
-	} `json:"data"`
+	Data             []Grid `json:"data"`
 	BinanceBaseResponse
 }
 

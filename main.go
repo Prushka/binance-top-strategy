@@ -138,18 +138,13 @@ func tick() error {
 		} else {
 			for _, grid := range openGrids.Data {
 				if grid.CopiedStrategyID == id {
-					initialValue, _ := strconv.ParseFloat(grid.GridInitialValue, 64)
-					DiscordWebhook(fmt.Sprintf("Closed: %s | %d, Initial: %f, Profit: %s",
-						grid.Symbol, grid.CopiedStrategyID, initialValue/float64(grid.InitialLeverage),
-						grid.GridProfit))
-					for _, mm := range m {
-						if mm.StrategyID == grid.CopiedStrategyID {
-							DiscordWebhook(mm.display())
-							break
-						}
-					}
+					DiscordWebhook(grid.display())
 					break
 				}
+			}
+			ss := m.findById(id)
+			if ss != nil {
+				DiscordWebhook(ss.display())
 			}
 		}
 		time.Sleep(1 * time.Second)
@@ -161,6 +156,13 @@ func tick() error {
 	}
 
 	log.Infof("----------------")
+
+	for c, grid := range openGrids.Data {
+		ss := filtered.findById(grid.CopiedStrategyID)
+		if ss != nil {
+			DiscordWebhook(fmt.Sprintf("[%d] Existing: ", c) + ss.display() + " | " + grid.display())
+		}
+	}
 
 	if TheConfig.MaxChunks-len(openGrids.Data) <= 0 && !TheConfig.Paper {
 		DiscordWebhook("Max Chunks reached, No cancel - Skip current run")
@@ -174,8 +176,10 @@ func tick() error {
 	if invChunk > idealInvChunk {
 		invChunk = idealInvChunk
 	}
-	for _, s := range filtered {
-		DiscordWebhook(s.display())
+	for c, s := range filtered {
+		if !openGrids.existingIds.Contains(s.StrategyID) {
+			DiscordWebhook(fmt.Sprintf("[%d] New: ", c) + s.display())
+		}
 		if !openGrids.existingPairs.Contains(s.Symbol) {
 			errr := placeGrid(*s, invChunk)
 			if errr != nil {
