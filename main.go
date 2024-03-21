@@ -138,7 +138,12 @@ func tick() error {
 
 	log.Infof("----------------")
 
-	chunks := float64(6 - len(openGrids.Data))
+	if TheConfig.MaxChunks-len(openGrids.Data) <= 0 {
+		DiscordWebhook("Max Chunks reached, No cancel - Skip current run")
+		return nil
+	}
+
+	chunks := float64(TheConfig.MaxChunks - len(openGrids.Data))
 	log.Infof("Opening %f chunks", chunks)
 	invChunk := (usdt - chunks) / chunks
 	for _, s := range filtered {

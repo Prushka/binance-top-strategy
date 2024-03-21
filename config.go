@@ -16,6 +16,7 @@ type Config struct {
 	Paper            bool   `env:"PAPER" envDefault:"true"`
 	DiscordWebhook   string `env:"DISCORD_WEBHOOK"`
 	TickEveryMinutes int    `env:"TICK_EVERY_MINUTES" envDefault:"5"`
+	MaxChunks        int    `env:"MAX_CHUNKS" envDefault:"6"`
 }
 
 var TheConfig = &Config{}
