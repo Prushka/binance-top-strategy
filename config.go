@@ -12,7 +12,7 @@ type Config struct {
 	COOKIE                         string `env:"COOKIE"`
 	StrategiesCount                int    `env:"STRATEGIES_COUNT" envDefault:"45"`
 	RuntimeMinHours                int    `env:"RUNTIME_MIN_HOURS" envDefault:"3"`
-	RuntimeMaxHours                int    `env:"RUNTIME_MAX_HOURS" envDefault:"168"`
+	RuntimeMaxHours                int    `env:"RUNTIME_MAX_HOURS" envDefault:"200"`
 	Paper                          bool   `env:"PAPER" envDefault:"true"`
 	DiscordWebhook                 string `env:"DISCORD_WEBHOOK"`
 	DiscordName                    string `env:"DISCORD_NAME" envDefault:"BTS"`
@@ -20,7 +20,7 @@ type Config struct {
 	MaxChunks                      int    `env:"MAX_CHUNKS" envDefault:"6"`
 	Mode                           string `env:"MODE" envDefault:"trading"`
 	Leverage                       int    `env:"LEVERAGE" envDefault:"20"`
-	KeepTopNStrategiesOfSameSymbol int    `env:"KEEP_TOP_N_STRATEGIES_OF_SAME_SYMBOL" envDefault:"3"`
+	KeepTopNStrategiesOfSameSymbol int    `env:"KEEP_TOP_N_STRATEGIES_OF_SAME_SYMBOL" envDefault:"99"`
 }
 
 var TheConfig = &Config{}

@@ -20,6 +20,28 @@ func sdk() {
 	futuresClient = binance.NewFuturesClient(TheConfig.ApiKey, TheConfig.SecretKey) // USDT-M Futures
 }
 
+func fetchMarketPrice(symbol string) (float64, error) {
+	res, err := _fetchMarketPrice(symbol)
+	if err != nil {
+		DiscordWebhook(fmt.Sprintf("Error fetching market price: %v", err))
+		return 0, err
+	}
+	return res, nil
+}
+
+func _fetchMarketPrice(symbol string) (float64, error) {
+	res, err := futuresClient.NewListPricesService().Symbol(symbol).Do(context.Background())
+	if err != nil {
+		return 0, err
+	}
+	for _, p := range res {
+		if p.Symbol == symbol {
+			return strconv.ParseFloat(p.Price, 64)
+		}
+	}
+	return 0, fmt.Errorf("symbol not found")
+}
+
 func getFutureUSDT() (float64, error) {
 	res, err := futuresClient.NewGetBalanceService().Do(context.Background())
 	if err != nil {
@@ -143,7 +165,7 @@ func tick() error {
 		} else {
 			for _, grid := range openGrids.Data {
 				if grid.CopiedStrategyID == id {
-					DiscordWebhook(display(m.findById(id), &grid, "Cancelled", c+1, expiredCopiedIds.Cardinality()))
+					DiscordWebhook(display(m.findById(id), grid, "Cancelled", c+1, expiredCopiedIds.Cardinality()))
 					break
 				}
 			}
@@ -159,7 +181,7 @@ func tick() error {
 	log.Infof("----------------")
 
 	for c, grid := range openGrids.Data {
-		DiscordWebhook(display(m.findById(grid.CopiedStrategyID), &grid, "Existing", c+1, len(openGrids.Data)))
+		DiscordWebhook(display(m.findById(grid.CopiedStrategyID), grid, "Existing", c+1, len(openGrids.Data)))
 	}
 
 	if TheConfig.MaxChunks-len(openGrids.Data) <= 0 && !TheConfig.Paper {
@@ -170,7 +192,7 @@ func tick() error {
 	chunksInt := TheConfig.MaxChunks - len(openGrids.Data)
 	chunks := float64(TheConfig.MaxChunks - len(openGrids.Data))
 	invChunk := (usdt - chunks*0.8) / chunks
-	idealInvChunk := (usdt + openGrids.totalGridProfit + openGrids.totalGridInitial) / float64(TheConfig.MaxChunks)
+	idealInvChunk := (usdt + openGrids.totalGridPnl + openGrids.totalGridInitial) / float64(TheConfig.MaxChunks)
 	log.Infof("Ideal Investment: %f, allowed Investment: %f, missing %f chunks", idealInvChunk, invChunk, chunks)
 	if invChunk > idealInvChunk {
 		invChunk = idealInvChunk
@@ -233,7 +255,6 @@ func main() {
 	DiscordService()
 	switch TheConfig.Mode {
 	case "trading":
-
 		if TheConfig.Paper {
 			DiscordWebhook("Paper Trading")
 		} else {

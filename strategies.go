@@ -198,6 +198,8 @@ type GridDetail struct {
 }
 
 type Grid struct {
+	totalPnl               float64
+	initialValue           float64
 	StrategyID             int    `json:"strategyId"`
 	RootUserID             int    `json:"rootUserId"`
 	StrategyUserID         int    `json:"strategyUserId"`
@@ -239,10 +241,9 @@ type Grid struct {
 }
 
 func (grid Grid) display() string {
-	initialValue, _ := strconv.ParseFloat(grid.GridInitialValue, 64)
-	return fmt.Sprintf("In: %.2f, Profit: %s, Matched: %s",
-		initialValue/float64(grid.InitialLeverage),
-		grid.GridProfit, grid.MatchedPnl)
+	return fmt.Sprintf("In: %.2f, Realized PnL: %s, Total Profit: %f",
+		grid.initialValue,
+		grid.GridProfit, grid.totalPnl)
 }
 
 func display(s *Strategy, grid *Grid, action string, index int, length int) string {
@@ -283,10 +284,10 @@ func display(s *Strategy, grid *Grid, action string, index int, length int) stri
 
 type OpenGridResponse struct {
 	totalGridInitial float64
-	totalGridProfit  float64
+	totalGridPnl     float64
 	existingIds      mapset.Set[int]
 	existingPairs    mapset.Set[string]
-	Data             []Grid `json:"data"`
+	Data             []*Grid `json:"data"`
 	BinanceBaseResponse
 }
 
@@ -411,11 +412,17 @@ func getOpenGrids() (*OpenGridResponse, error) {
 		res.existingIds.Add(g.CopiedStrategyID)
 		initial, _ := strconv.ParseFloat(g.GridInitialValue, 64)
 		profit, _ := strconv.ParseFloat(g.GridProfit, 64)
-		res.totalGridInitial += initial / float64(g.InitialLeverage)
-		res.totalGridProfit += profit
+		fundingFee, _ := strconv.ParseFloat(g.FundingFee, 64)
+		position, _ := strconv.ParseFloat(g.GridPosition, 64)
+		entryPrice, _ := strconv.ParseFloat(g.GridEntryPrice, 64)
+		marketPrice, _ := fetchMarketPrice(g.Symbol)
+		g.initialValue = initial / float64(g.InitialLeverage)
+		g.totalPnl = profit + fundingFee + position*(marketPrice-entryPrice)
+		res.totalGridInitial += g.initialValue
+		res.totalGridPnl += g.totalPnl
 	}
 	DiscordWebhook(fmt.Sprintf("Open Pairs: %v, Open Ids: %v, Total Initial: %f, Total Profit: %f, Total: %f",
-		res.existingPairs, res.existingIds, res.totalGridInitial, res.totalGridProfit, res.totalGridProfit+res.totalGridInitial))
+		res.existingPairs, res.existingIds, res.totalGridInitial, res.totalGridPnl, res.totalGridPnl+res.totalGridInitial))
 	if res.Code == "100002001" || res.Code == "100001005" {
 		DiscordWebhook("Error, login expired")
 		return res, fmt.Errorf("login expired")
