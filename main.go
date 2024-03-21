@@ -176,9 +176,9 @@ func tick() error {
 
 		log.Infof("Closing Grid: %d", id)
 		tracked, ok := globalGrids[id]
-		if ok && tracked.LastRoi < -0.05 { // attempting to close loss
+		if ok && tracked.LastRoi < -0.04 { // attempting to close loss
 			if tracked.ContinuousRoiLoss < 3 {
-				DiscordWebhook(display(att, tracked.grid, "Skip Cancel ["+reason+"]", c+1, expiredCopiedIds.Cardinality()))
+				DiscordWebhook(display(att, tracked.grid, "Skip Cancel "+reason, c+1, expiredCopiedIds.Cardinality()))
 				continue
 			}
 		}
@@ -187,7 +187,7 @@ func tick() error {
 			return err
 		} else {
 			closedIds.Add(id)
-			DiscordWebhook(display(att, tracked.grid, "Cancelled ["+reason+"]", c+1, expiredCopiedIds.Cardinality()))
+			DiscordWebhook(display(att, tracked.grid, "Cancelled "+reason, c+1, expiredCopiedIds.Cardinality()))
 		}
 		time.Sleep(1 * time.Second)
 	}
