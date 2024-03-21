@@ -11,13 +11,15 @@ type Config struct {
 	CSRFToken                      string  `env:"CSRF"`
 	COOKIE                         string  `env:"COOKIE"`
 	StrategiesCount                int     `env:"STRATEGIES_COUNT" envDefault:"50"`
-	RuntimeMinHours                int     `env:"RUNTIME_MIN_HOURS" envDefault:"3"`
+	RuntimeMinHours                int     `env:"RUNTIME_MIN_HOURS" envDefault:"2"`
 	RuntimeMaxHours                int     `env:"RUNTIME_MAX_HOURS" envDefault:"200"`
 	Paper                          bool    `env:"PAPER" envDefault:"true"`
 	DiscordWebhook                 string  `env:"DISCORD_WEBHOOK"`
 	DiscordName                    string  `env:"DISCORD_NAME" envDefault:"BTS"`
 	TickEveryMinutes               int     `env:"TICK_EVERY_MINUTES" envDefault:"5"`
-	MaxChunks                      int     `env:"MAX_CHUNKS" envDefault:"6"`
+	MaxChunks                      int     `env:"MAX_CHUNKS" envDefault:"7"`
+	MaxLongs                       int     `env:"MAX_LONGS" envDefault:"3"`
+	MinShorts                      int     `env:"MIN_SHORTS" envDefault:"1"`
 	Mode                           string  `env:"MODE" envDefault:"trading"`
 	Leverage                       int     `env:"LEVERAGE" envDefault:"20"`
 	KeepTopNStrategiesOfSameSymbol int     `env:"KEEP_TOP_N_STRATEGIES_OF_SAME_SYMBOL" envDefault:"99"`

@@ -292,6 +292,9 @@ func display(s *Strategy, grid *Grid, action string, index int, length int) stri
 type OpenGridResponse struct {
 	totalGridInitial float64
 	totalGridPnl     float64
+	totalShorts      int
+	totalLongs       int
+	totalNeutrals    int
 	existingIds      mapset.Set[int]
 	existingPairs    mapset.Set[string]
 	Data             []*Grid `json:"data"`
@@ -539,9 +542,17 @@ func getOpenGrids() (*OpenGridResponse, error) {
 		g.profit = g.totalPnl / g.initialValue
 		res.totalGridInitial += g.initialValue
 		res.totalGridPnl += g.totalPnl
+		if g.Direction == DirectionMap[LONG] {
+			res.totalLongs += 1
+		} else if g.Direction == DirectionMap[SHORT] {
+			res.totalShorts += 1
+		} else {
+			res.totalNeutrals += 1
+		}
 	}
-	DiscordWebhook(fmt.Sprintf("Open Pairs: %v, Open Ids: %v, Initial: %f, TotalPnL: %f, C: %f",
-		res.existingPairs, res.existingIds, res.totalGridInitial, res.totalGridPnl, res.totalGridPnl+res.totalGridInitial))
+	DiscordWebhook(fmt.Sprintf("Open Pairs: %v, Open Ids: %v, Initial: %f, TotalPnL: %f, C: %f, L/S/N: %d/%d/%d",
+		res.existingPairs, res.existingIds, res.totalGridInitial, res.totalGridPnl, res.totalGridPnl+res.totalGridInitial,
+		res.totalLongs, res.totalShorts, res.totalNeutrals))
 	if res.Code == "100002001" || res.Code == "100001005" {
 		DiscordWebhook("Error, login expired")
 		return res, fmt.Errorf("login expired")
