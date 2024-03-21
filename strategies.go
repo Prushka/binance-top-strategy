@@ -463,17 +463,16 @@ func placeGrid(strategy Strategy, initialUSDT float64) error {
 	if _, ok := DirectionMap[strategy.Direction]; !ok {
 		return fmt.Errorf("invalid direction: %d", strategy.Direction)
 	}
-	leverage := 20
 	payload := &PlaceGridRequest{
 		Symbol:                 strategy.Symbol,
 		Direction:              DirectionMap[strategy.Direction],
-		Leverage:               leverage,
+		Leverage:               TheConfig.Leverage,
 		MarginType:             "CROSSED",
 		GridType:               strategy.StrategyParams.Type,
 		GridCount:              strategy.StrategyParams.GridCount,
 		GridLowerLimit:         strategy.StrategyParams.LowerLimit,
 		GridUpperLimit:         strategy.StrategyParams.UpperLimit,
-		GridInitialValue:       fmt.Sprintf("%.2f", initialUSDT*float64(leverage)),
+		GridInitialValue:       fmt.Sprintf("%.2f", initialUSDT*float64(TheConfig.Leverage)),
 		Cos:                    true,
 		Cps:                    true,
 		TrailingUp:             strategy.StrategyParams.TrailingUp,
