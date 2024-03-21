@@ -222,6 +222,7 @@ func closeGridConv(copiedId int, openGrids *OpenGridResponse) error {
 func main() {
 	configure()
 	log.Infof("Public IP: %s", getPublicIP())
+	DiscordService()
 	switch TheConfig.Mode {
 	case "trading":
 

@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 func IntPointer(i int) *int {
@@ -21,8 +22,26 @@ func PrintAsJson(v interface{}) {
 	log.Info(string(b))
 }
 
+var discordMessageChan = make(chan string, 100)
+
 func DiscordWebhook(chat string) {
 	log.Info(chat)
+	discordMessageChan <- chat
+}
+
+func DiscordService() {
+	go func() {
+		for {
+			select {
+			case chat := <-discordMessageChan:
+				DiscordSend(chat)
+				time.Sleep(500 * time.Millisecond)
+			}
+		}
+	}()
+}
+
+func DiscordSend(chat string) {
 	if TheConfig.DiscordWebhook == "" {
 		return
 	}
