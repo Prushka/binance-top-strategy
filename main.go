@@ -136,14 +136,9 @@ func tick() error {
 		if err != nil {
 			return err
 		} else {
-			sss := ""
-			ss := m.findById(id)
-			if ss != nil {
-				sss = ss.display()
-			}
 			for _, grid := range openGrids.Data {
 				if grid.CopiedStrategyID == id {
-					DiscordWebhook(fmt.Sprintf("[%d/%d] Canceling: ", c+1, expiredCopiedIds.Cardinality()) + sss + " | " + grid.display())
+					DiscordWebhook(display(m.findById(id), &grid, "Existing", IntPointer(c+1), IntPointer(expiredCopiedIds.Cardinality())))
 					break
 				}
 			}
@@ -161,7 +156,7 @@ func tick() error {
 	for c, grid := range openGrids.Data {
 		ss := filtered.findById(grid.CopiedStrategyID)
 		if ss != nil {
-			DiscordWebhook(fmt.Sprintf("[%d/%d] Existing: ", c+1, len(openGrids.Data)) + ss.display() + " | " + grid.display())
+			DiscordWebhook(display(ss, &grid, "Existing", IntPointer(c+1), IntPointer(len(openGrids.Data))))
 		}
 	}
 
@@ -179,7 +174,7 @@ func tick() error {
 	}
 	for c, s := range filtered {
 		if !openGrids.existingIds.Contains(s.StrategyID) {
-			DiscordWebhook(fmt.Sprintf("[%d/%d] New: ", c+1, len(filtered)) + s.display())
+			DiscordWebhook(display(s, nil, "New", IntPointer(c+1), IntPointer(len(filtered))))
 		}
 		if !openGrids.existingPairs.Contains(s.Symbol) {
 			errr := placeGrid(*s, invChunk)
@@ -204,7 +199,7 @@ func tick() error {
 	for _, newId := range newOpenGrids.existingIds.Difference(openGrids.existingIds).ToSlice() {
 		ss := m.findById(newId)
 		if ss != nil {
-			DiscordWebhook(fmt.Sprintf("Placed: ") + ss.display())
+			DiscordWebhook(display(ss, nil, "Placed", nil, nil))
 		}
 	}
 	return nil

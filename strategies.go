@@ -107,9 +107,9 @@ type Strategy struct {
 
 func (s Strategy) display() string {
 	runTime := time.Duration(s.RunningTime) * time.Second
-	return fmt.Sprintf("[%s, %d] A-D-3H-2H-1H: %s%%, %.1f%%, %.1f%%, %.1f%%, %.1f%%, Runtime: %s, MinInv: %s",
-		s.Symbol, s.StrategyID, s.Roi,
-		s.LastDayRoiChange*100, s.Last3HrRoiChange*100, s.Last2HrRoiChange*100, s.LastHrRoiChange*100, runTime, s.MinInvestment)
+	return fmt.Sprintf("%s, A: %s%%, D: %.1f%%, 3H: %.1f%%, 2H: %.1f%%, 1H: %.1f%%, MinInv: %s",
+		runTime, s.Roi,
+		s.LastDayRoiChange*100, s.Last3HrRoiChange*100, s.Last2HrRoiChange*100, s.LastHrRoiChange*100, s.MinInvestment)
 }
 
 type GridDetailResponse struct {
@@ -240,9 +240,31 @@ type Grid struct {
 
 func (grid Grid) display() string {
 	initialValue, _ := strconv.ParseFloat(grid.GridInitialValue, 64)
-	return fmt.Sprintf("[%s, %d], In: %.2f, Profit: %s, Matched: %s",
-		grid.Symbol, grid.CopiedStrategyID, initialValue/float64(grid.InitialLeverage),
+	return fmt.Sprintf("In: %.2f, Profit: %s, Matched: %s",
+		initialValue/float64(grid.InitialLeverage),
 		grid.GridProfit, grid.MatchedPnl)
+}
+
+func display(s *Strategy, grid *Grid, action string, index *int, length *int) string {
+	header := ""
+	ss := ""
+	gg := ""
+	seq := ""
+	if s != nil {
+		header = fmt.Sprintf("[%s, %d]", s.Symbol, s.StrategyID)
+	} else if grid != nil {
+		header = fmt.Sprintf("[%s, %d]", grid.Symbol, grid.CopiedStrategyID)
+	}
+	if s != nil {
+		ss = s.display()
+	}
+	if grid != nil {
+		gg = ", " + grid.display()
+	}
+	if index != nil && length != nil {
+		seq = fmt.Sprintf("[%d/%d] ", *index, *length)
+	}
+	return fmt.Sprintf("%s%s: %s %s%s", seq, action, header, ss, gg)
 }
 
 type OpenGridResponse struct {

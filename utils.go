@@ -9,6 +9,10 @@ import (
 	"net/http"
 )
 
+func IntPointer(i int) *int {
+	return &i
+}
+
 func PrintAsJson(v interface{}) {
 	b, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
