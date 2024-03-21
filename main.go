@@ -90,15 +90,12 @@ func tick() error {
 	validRois := make(Strategies, 0)
 	for _, s := range m {
 		log.Infof("Strategy: %s, %s, %d", s.Roi, s.Symbol, len(s.Rois))
-		runTime := time.Duration(s.RunningTime) * time.Second
 		if len(s.Rois) > 1 {
 			s.LastDayRoiChange = GetRoiChange(s.Rois, 24*time.Hour)
 			s.Last3HrRoiChange = GetRoiChange(s.Rois, 3*time.Hour)
 			s.Last2HrRoiChange = GetRoiChange(s.Rois, 2*time.Hour)
 			s.LastHrRoiChange = GetRoiChange(s.Rois, 1*time.Hour)
-			log.Infof("[%s, %d] Last Day: %f, Last 3Hr: %f, Last 2Hr: %f, Last Hr: %f, Runtime: %s",
-				s.Symbol, s.StrategyID,
-				s.LastDayRoiChange, s.Last3HrRoiChange, s.Last2HrRoiChange, s.LastHrRoiChange, runTime)
+			log.Infof(s.display())
 			if s.LastDayRoiChange > 0.1 && s.Last3HrRoiChange > 0.05 && s.Last2HrRoiChange > 0 && s.LastHrRoiChange > -0.05 {
 				validRois = append(validRois, s)
 				log.Infof("Picked")
@@ -145,6 +142,12 @@ func tick() error {
 					DiscordWebhook(fmt.Sprintf("Closed: %s | %d, Initial: %f, Profit: %s",
 						grid.Symbol, grid.CopiedStrategyID, initialValue/float64(grid.InitialLeverage),
 						grid.GridProfit))
+					for _, mm := range m {
+						if mm.StrategyID == grid.CopiedStrategyID {
+							DiscordWebhook(mm.display())
+							break
+						}
+					}
 					break
 				}
 			}
@@ -172,11 +175,7 @@ func tick() error {
 		invChunk = idealInvChunk
 	}
 	for _, s := range filtered {
-		minInvestment, _ := strconv.ParseFloat(s.MinInvestment, 64)
-		runTime := time.Duration(s.RunningTime) * time.Second
-		DiscordWebhook(fmt.Sprintf("Investing %d: %s, %f, Last Day: %f, Last 3Hr: %f, Last 2Hr: %f, Last Hr: %f, Roi: %s, Min Investment: %s, Runtime: %s",
-			s.StrategyID, s.Symbol, minInvestment, s.LastDayRoiChange,
-			s.Last3HrRoiChange, s.Last2HrRoiChange, s.LastHrRoiChange, s.Roi, s.MinInvestment, runTime))
+		DiscordWebhook(s.display())
 		if !openGrids.existingPairs.Contains(s.Symbol) {
 			errr := placeGrid(*s, invChunk)
 			if errr != nil {

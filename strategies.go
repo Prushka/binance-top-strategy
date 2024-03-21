@@ -22,7 +22,7 @@ type QueryStrategyRoi struct {
 type QueryTopStrategy struct {
 	Page           int    `json:"page"`
 	Rows           int    `json:"rows"`
-	Direction      any    `json:"direction"`
+	Direction      *int   `json:"direction"`
 	StrategyType   int    `json:"strategyType"`
 	Symbol         string `json:"symbol"`
 	Zone           string `json:"zone"`
@@ -94,6 +94,13 @@ type Strategy struct {
 	LatestMatchedCount int    `json:"latestMatchedCount"`
 	MatchedCount       int    `json:"matchedCount"`
 	MinInvestment      string `json:"minInvestment"`
+}
+
+func (s Strategy) display() string {
+	runTime := time.Duration(s.RunningTime) * time.Second
+	return fmt.Sprintf("[%s, %d] Roi: %s, Last Day: %f, Last 3Hr: %f, Last 2Hr: %f, Last Hr: %f, Runtime: %s, MinInvestment: %s",
+		s.Symbol, s.StrategyID, s.Roi,
+		s.LastDayRoiChange, s.Last3HrRoiChange, s.Last2HrRoiChange, s.LastHrRoiChange, runTime, s.MinInvestment)
 }
 
 type GridDetailResponse struct {
