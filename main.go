@@ -165,13 +165,17 @@ func tick() error {
 	}
 
 	chunks := float64(TheConfig.MaxChunks - len(openGrids.Data))
-	log.Infof("Opening %f chunks", chunks)
-	invChunk := (usdt - chunks) / chunks
+	invChunk := (usdt - chunks*0.8) / chunks
+	idealInvChunk := (usdt + openGrids.totalGridProfit + openGrids.totalGridInitial) / float64(TheConfig.MaxChunks)
+	log.Infof("Ideal Investment: %f, allowed Investment: %f, missing %f chunks", idealInvChunk, invChunk, chunks)
+	if invChunk > idealInvChunk {
+		invChunk = idealInvChunk
+	}
 	for _, s := range filtered {
 		minInvestment, _ := strconv.ParseFloat(s.MinInvestment, 64)
 		runTime := time.Duration(s.RunningTime) * time.Second
-		DiscordWebhook(fmt.Sprintf("Investing %d: %s, %f/%f, Last Day: %f, Last 3Hr: %f, Last 2Hr: %f, Last Hr: %f, Roi: %s, Min Investment: %s, Runtime: %s",
-			s.StrategyID, s.Symbol, invChunk, minInvestment, s.LastDayRoiChange,
+		DiscordWebhook(fmt.Sprintf("Investing %d: %s, %f, Last Day: %f, Last 3Hr: %f, Last 2Hr: %f, Last Hr: %f, Roi: %s, Min Investment: %s, Runtime: %s",
+			s.StrategyID, s.Symbol, minInvestment, s.LastDayRoiChange,
 			s.Last3HrRoiChange, s.Last2HrRoiChange, s.LastHrRoiChange, s.Roi, s.MinInvestment, runTime))
 		if !openGrids.existingPairs.Contains(s.Symbol) {
 			errr := placeGrid(*s, invChunk)
