@@ -9,6 +9,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -181,7 +182,11 @@ type GridDetail struct {
 }
 
 type OpenGridResponse struct {
-	Data []struct {
+	totalGridInitial float64
+	totalGridProfit  float64
+	existingIds      mapset.Set[int]
+	existingPairs    mapset.Set[string]
+	Data             []struct {
 		StrategyID             int    `json:"strategyId"`
 		RootUserID             int    `json:"rootUserId"`
 		StrategyUserID         int    `json:"strategyUserId"`
@@ -332,23 +337,29 @@ func privateRequest[T any](url, method string, payload any, response T) (T, erro
 	return response, err
 }
 
-func getOpenGrids() (*OpenGridResponse, mapset.Set[string], mapset.Set[int], error) {
-	existingPairs := mapset.NewSet[string]()
-	existingCopiedIds := mapset.NewSet[int]()
+func getOpenGrids() (*OpenGridResponse, error) {
 	url := "https://www.binance.com/bapi/futures/v2/private/future/grid/query-open-grids"
 	res, err := privateRequest(url, "POST", nil, &OpenGridResponse{})
 	if err != nil {
-		return res, existingPairs, existingCopiedIds, err
+		return res, err
 	}
+	res.existingPairs = mapset.NewSet[string]()
+	res.existingIds = mapset.NewSet[int]()
 	for _, g := range res.Data {
-		existingPairs.Add(g.Symbol)
-		existingCopiedIds.Add(g.CopiedStrategyID)
+		res.existingPairs.Add(g.Symbol)
+		res.existingIds.Add(g.CopiedStrategyID)
+		initial, _ := strconv.ParseFloat(g.GridInitialValue, 64)
+		profit, _ := strconv.ParseFloat(g.GridProfit, 64)
+		res.totalGridInitial += initial / float64(g.InitialLeverage)
+		res.totalGridProfit += profit
 	}
-	DiscordWebhook(fmt.Sprintf("Open Pairs: %v, Open Ids: %v", existingPairs, existingCopiedIds))
+	DiscordWebhook(fmt.Sprintf("Open Pairs: %v, Open Ids: %v, Total Initial: %f, Total Profit: %f, Total: %f",
+		res.existingPairs, res.existingIds, res.totalGridInitial, res.totalGridProfit, res.totalGridProfit+res.totalGridInitial))
 	if res.Code == "100002001" || res.Code == "100001005" {
 		DiscordWebhook("Error, login expired")
+		return res, fmt.Errorf("login expired")
 	}
-	return res, existingPairs, existingCopiedIds, err
+	return res, err
 }
 
 func getGridDetail(strategyId string) (GridDetail, error) {

@@ -120,7 +120,7 @@ func tick() error {
 		}
 	}
 
-	openGrids, existingPairs, existingIds, err := getOpenGrids()
+	openGrids, err := getOpenGrids()
 	if err != nil {
 		return err
 	}
@@ -131,7 +131,7 @@ func tick() error {
 	}
 
 	log.Infof("----------------")
-	expiredCopiedIds := existingIds.Difference(filteredCopiedIds)
+	expiredCopiedIds := openGrids.existingIds.Difference(filteredCopiedIds)
 	DiscordWebhook(fmt.Sprintf("Expired Strategies: %v", expiredCopiedIds))
 	for _, id := range expiredCopiedIds.ToSlice() {
 		log.Infof("Closing Grid: %d", id)
@@ -173,7 +173,7 @@ func tick() error {
 		DiscordWebhook(fmt.Sprintf("Investing %d: %s, %f/%f, Last Day: %f, Last 3Hr: %f, Last 2Hr: %f, Last Hr: %f, Roi: %s, Min Investment: %s, Runtime: %s",
 			s.StrategyID, s.Symbol, invChunk, minInvestment, s.LastDayRoiChange,
 			s.Last3HrRoiChange, s.Last2HrRoiChange, s.LastHrRoiChange, s.Roi, s.MinInvestment, runTime))
-		if !existingPairs.Contains(s.Symbol) {
+		if !openGrids.existingPairs.Contains(s.Symbol) {
 			errr := placeGrid(*s, invChunk)
 			if errr != nil {
 				log.Errorf("Error placing grid: %v", errr)
@@ -189,7 +189,7 @@ func tick() error {
 
 	log.Infof("----------------")
 
-	openGrids, existingPairs, existingIds, err = getOpenGrids()
+	openGrids, err = getOpenGrids()
 	if err != nil {
 		return err
 	}
