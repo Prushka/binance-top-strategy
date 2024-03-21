@@ -495,7 +495,8 @@ type TrackedRoi struct {
 var globalGrids = make(map[int]*TrackedRoi)
 
 func trackRoi(g *Grid) {
-	if _, ok := globalGrids[g.CopiedStrategyID]; !ok {
+	_, ok := globalGrids[g.CopiedStrategyID]
+	if !ok {
 		globalGrids[g.CopiedStrategyID] = &TrackedRoi{
 			LowestRoi:  g.profit,
 			HighestRoi: g.profit,
@@ -511,18 +512,20 @@ func trackRoi(g *Grid) {
 	if g.profit > tracked.HighestRoi {
 		tracked.HighestRoi = g.profit
 	}
-	if g.profit > tracked.LastRoi {
-		tracked.ContinuousRoiGrowth += 1
-		tracked.ContinuousRoiLoss = 0
-		tracked.ContinuousRoiNoChange = 0
-	} else if g.profit < tracked.LastRoi {
-		tracked.ContinuousRoiLoss += 1
-		tracked.ContinuousRoiGrowth = 0
-		tracked.ContinuousRoiNoChange = 0
-	} else {
-		tracked.ContinuousRoiNoChange += 1
-		tracked.ContinuousRoiGrowth = 0
-		tracked.ContinuousRoiLoss = 0
+	if ok {
+		if g.profit > tracked.LastRoi {
+			tracked.ContinuousRoiGrowth += 1
+			tracked.ContinuousRoiLoss = 0
+			tracked.ContinuousRoiNoChange = 0
+		} else if g.profit < tracked.LastRoi {
+			tracked.ContinuousRoiLoss += 1
+			tracked.ContinuousRoiGrowth = 0
+			tracked.ContinuousRoiNoChange = 0
+		} else {
+			tracked.ContinuousRoiNoChange += 1
+			tracked.ContinuousRoiGrowth = 0
+			tracked.ContinuousRoiLoss = 0
+		}
 	}
 
 	tracked.LastRoi = g.profit
