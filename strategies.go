@@ -107,8 +107,8 @@ type Strategy struct {
 
 func (s Strategy) display() string {
 	runTime := time.Duration(s.RunningTime) * time.Second
-	return fmt.Sprintf("%s, Copy: %d, A: %s%%, D: %.1f%%, 3H: %.1f%%, 2H: %.1f%%, 1H: %.1f%%, MinInv: %s",
-		runTime, s.CopyCount, s.Roi,
+	return fmt.Sprintf("%s, Copy: %d, Matched: [%d, %d], A: %s%%, D: %.1f%%, 3H: %.1f%%, 2H: %.1f%%, 1H: %.1f%%, MinInv: %s",
+		runTime, s.CopyCount, s.MatchedCount, s.LatestMatchedCount, s.Roi,
 		s.LastDayRoiChange*100, s.Last3HrRoiChange*100, s.Last2HrRoiChange*100, s.LastHrRoiChange*100, s.MinInvestment)
 }
 
