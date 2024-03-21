@@ -127,6 +127,16 @@ func tick() error {
 		err := closeGridConv(id, openGrids)
 		if err != nil {
 			return err
+		} else {
+			for _, grid := range openGrids.Data {
+				if grid.CopiedStrategyID == id {
+					initialValue, _ := strconv.ParseFloat(grid.GridInitialValue, 64)
+					DiscordWebhook(fmt.Sprintf("Closed: %s | %d, Initial: %f, Profit: %s",
+						grid.Symbol, grid.CopiedStrategyID, initialValue/float64(grid.InitialLeverage),
+						grid.GridProfit))
+					break
+				}
+			}
 		}
 		time.Sleep(1 * time.Second)
 	}
@@ -196,23 +206,30 @@ func closeGridConv(copiedId int, openGrids *OpenGridResponse) error {
 func main() {
 	configure()
 	log.Infof("Public IP: %s", getPublicIP())
-	if TheConfig.Paper {
-		DiscordWebhook("Paper Trading")
-	} else {
-		DiscordWebhook("Real Trading")
+	switch TheConfig.Mode {
+	case "trading":
+
+		if TheConfig.Paper {
+			DiscordWebhook("Paper Trading")
+		} else {
+			DiscordWebhook("Real Trading")
+		}
+		sdk()
+		_, err := scheduler.Every(TheConfig.TickEveryMinutes).Minutes().Do(
+			func() {
+				err := tick()
+				if err != nil {
+					log.Errorf("Error: %v", err)
+				}
+			},
+		)
+		if err != nil {
+			log.Errorf("Error: %v", err)
+			return
+		}
+		scheduler.StartBlocking()
+
+	case "extract-cookies":
+
 	}
-	sdk()
-	_, err := scheduler.Every(TheConfig.TickEveryMinutes).Minutes().Do(
-		func() {
-			err := tick()
-			if err != nil {
-				log.Errorf("Error: %v", err)
-			}
-		},
-	)
-	if err != nil {
-		log.Errorf("Error: %v", err)
-		return
-	}
-	scheduler.StartBlocking()
 }

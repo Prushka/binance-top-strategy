@@ -17,6 +17,7 @@ type Config struct {
 	DiscordWebhook   string `env:"DISCORD_WEBHOOK"`
 	TickEveryMinutes int    `env:"TICK_EVERY_MINUTES" envDefault:"5"`
 	MaxChunks        int    `env:"MAX_CHUNKS" envDefault:"6"`
+	Mode             string `env:"MODE" envDefault:"trading"`
 }
 
 var TheConfig = &Config{}

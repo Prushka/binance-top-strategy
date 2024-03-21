@@ -345,7 +345,7 @@ func getOpenGrids() (*OpenGridResponse, mapset.Set[string], mapset.Set[int], err
 		existingCopiedIds.Add(g.CopiedStrategyID)
 	}
 	DiscordWebhook(fmt.Sprintf("Open Pairs: %v, Open Ids: %v", existingPairs, existingCopiedIds))
-	if res.Code == "100002001" {
+	if res.Code == "100002001" || res.Code == "100001005" {
 		DiscordWebhook("Error, login expired")
 	}
 	return res, existingPairs, existingCopiedIds, err
