@@ -350,8 +350,24 @@ func getStrategyRois(strategyID int, rootUserId int) (StrategyRoi, error) {
 
 const (
 	SortByRoi       = "roi"
+	SortByPnl       = "pnl"
 	SortByCopyCount = "copyCount"
+	SortByMatched   = "latestMatchedCount"
 )
+
+func mergeStrategies(sss ...Strategies) Strategies {
+	merged := make(Strategies, 0)
+	addedIds := mapset.NewSet[int]()
+	for _, ss := range sss {
+		for _, s := range ss {
+			if !addedIds.Contains(s.StrategyID) {
+				merged = append(merged, s)
+				addedIds.Add(s.StrategyID)
+			}
+		}
+	}
+	return merged
+}
 
 func getTopStrategies(strategyType int, runningTimeMin time.Duration, runningTimeMax time.Duration) (Strategies, error) {
 	byRoi, err := _getTopStrategies(SortByRoi, strategyType, runningTimeMin, runningTimeMax)
@@ -363,22 +379,23 @@ func getTopStrategies(strategyType int, runningTimeMin time.Duration, runningTim
 	if err != nil {
 		return nil, err
 	}
-	combined := make(Strategies, 0)
-	addedIds := mapset.NewSet[int]()
+	time.Sleep(1 * time.Second)
+	byMatched, err := _getTopStrategies(SortByMatched, strategyType, runningTimeMin, runningTimeMax)
+	if err != nil {
+		return nil, err
+	}
+	time.Sleep(1 * time.Second)
+	byPnl, err := _getTopStrategies(SortByPnl, strategyType, runningTimeMin, runningTimeMax)
+	if err != nil {
+		return nil, err
+	}
+	merged := mergeStrategies(byRoi, byCopyCount, byMatched, byPnl)
 	highestCopyCount := 0
 	lowestCopyCount := 9999999999
 	highestRoi := 0.0
 	lowestRoi := 9999999999.0
-	for _, s := range byRoi {
-		combined = append(combined, s)
-		addedIds.Add(s.StrategyID)
-	}
-	for _, s := range byCopyCount {
-		if !addedIds.Contains(s.StrategyID) {
-			combined = append(combined, s)
-		}
-	}
-	for _, s := range combined {
+
+	for _, s := range merged {
 		if s.CopyCount > highestCopyCount {
 			highestCopyCount = s.CopyCount
 		}
@@ -394,8 +411,8 @@ func getTopStrategies(strategyType int, runningTimeMin time.Duration, runningTim
 		}
 	}
 	DiscordWebhook(fmt.Sprintf("Found: %d, Copy Count: [%d, %d], Roi: [%.2f%%, %.2f%%]",
-		len(combined), highestCopyCount, lowestCopyCount, highestRoi, lowestRoi))
-	return combined, nil
+		len(merged), highestCopyCount, lowestCopyCount, highestRoi, lowestRoi))
+	return merged, nil
 }
 
 func _getTopStrategies(sort string, strategyType int, runningTimeMin time.Duration, runningTimeMax time.Duration) (Strategies, error) {
