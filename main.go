@@ -221,6 +221,19 @@ func tick() error {
 			DiscordWebhook(display(s, nil, "New", c+1, len(filtered)))
 		}
 		if !openGrids.existingPairs.Contains(s.Symbol) {
+			switch s.Direction {
+			case LONG:
+				if openGrids.totalLongs >= TheConfig.MaxLongs {
+					DiscordWebhook("Max Longs reached, Skip")
+					continue
+				}
+			case NEUTRAL:
+				if openGrids.totalShorts < TheConfig.MinShorts {
+					DiscordWebhook("Min Shorts not reached, Skip")
+					continue
+				}
+			}
+
 			errr := placeGrid(*s, invChunk)
 			if TheConfig.Paper {
 
