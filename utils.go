@@ -35,10 +35,15 @@ func DiscordService() {
 			select {
 			case chat := <-discordMessageChan:
 				DiscordSend(chat)
-				time.Sleep(500 * time.Millisecond)
 			}
 		}
 	}()
+}
+
+type DiscordError struct {
+	Message    string  `json:"message"`
+	RetryAfter float64 `json:"retry_after"`
+	Global     bool    `json:"global"`
 }
 
 func DiscordSend(chat string) {
@@ -51,8 +56,18 @@ func DiscordSend(chat string) {
 		Content:  &chat,
 	}
 	err := discordwebhook.SendMessage(TheConfig.DiscordWebhook, message)
+
 	if err != nil {
-		log.Errorf("error sending message to discord: %v", err)
+		de := &DiscordError{}
+		jsonErr := json.Unmarshal([]byte(err.Error()), de)
+		if jsonErr != nil {
+			log.Errorf("error sending message to discord: %v", err)
+			return
+		}
+		if de.RetryAfter > 0 {
+			time.Sleep(time.Duration(de.RetryAfter) * time.Second)
+			DiscordSend(chat)
+		}
 	}
 }
 
