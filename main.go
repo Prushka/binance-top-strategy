@@ -143,7 +143,7 @@ func tick() error {
 			}
 			for _, grid := range openGrids.Data {
 				if grid.CopiedStrategyID == id {
-					DiscordWebhook(fmt.Sprintf("[%d] Canceling: ", c) + sss + " | " + grid.display())
+					DiscordWebhook(fmt.Sprintf("[%d/%d] Canceling: ", c+1, expiredCopiedIds.Cardinality()) + sss + " | " + grid.display())
 					break
 				}
 			}
@@ -161,7 +161,7 @@ func tick() error {
 	for c, grid := range openGrids.Data {
 		ss := filtered.findById(grid.CopiedStrategyID)
 		if ss != nil {
-			DiscordWebhook(fmt.Sprintf("[%d] Existing: ", c) + ss.display() + " | " + grid.display())
+			DiscordWebhook(fmt.Sprintf("[%d/%d] Existing: ", c+1, len(openGrids.Data)) + ss.display() + " | " + grid.display())
 		}
 	}
 
@@ -179,7 +179,7 @@ func tick() error {
 	}
 	for c, s := range filtered {
 		if !openGrids.existingIds.Contains(s.StrategyID) {
-			DiscordWebhook(fmt.Sprintf("[%d] New: ", c) + s.display())
+			DiscordWebhook(fmt.Sprintf("[%d/%d] New: ", c+1, len(filtered)) + s.display())
 		}
 		if !openGrids.existingPairs.Contains(s.Symbol) {
 			errr := placeGrid(*s, invChunk)

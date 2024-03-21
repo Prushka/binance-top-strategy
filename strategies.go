@@ -107,9 +107,9 @@ type Strategy struct {
 
 func (s Strategy) display() string {
 	runTime := time.Duration(s.RunningTime) * time.Second
-	return fmt.Sprintf("[%s, %d] A-D-3H-2H-1H: %s, %f, %f, %f, %f, Runtime: %s, MinInv: %s",
+	return fmt.Sprintf("[%s, %d] A-D-3H-2H-1H: %s%%, %.1f%%, %.1f%%, %.1f%%, %.1f%%, Runtime: %s, MinInv: %s",
 		s.Symbol, s.StrategyID, s.Roi,
-		s.LastDayRoiChange, s.Last3HrRoiChange, s.Last2HrRoiChange, s.LastHrRoiChange, runTime, s.MinInvestment)
+		s.LastDayRoiChange*100, s.Last3HrRoiChange*100, s.Last2HrRoiChange*100, s.LastHrRoiChange*100, runTime, s.MinInvestment)
 }
 
 type GridDetailResponse struct {
@@ -240,7 +240,7 @@ type Grid struct {
 
 func (grid Grid) display() string {
 	initialValue, _ := strconv.ParseFloat(grid.GridInitialValue, 64)
-	return fmt.Sprintf("[%s, %d], In: %f, Profit: %s, Matched: %s",
+	return fmt.Sprintf("[%s, %d], In: %.2f, Profit: %s, Matched: %s",
 		grid.Symbol, grid.CopiedStrategyID, initialValue/float64(grid.InitialLeverage),
 		grid.GridProfit, grid.MatchedPnl)
 }

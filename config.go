@@ -18,7 +18,7 @@ type Config struct {
 	TickEveryMinutes               int    `env:"TICK_EVERY_MINUTES" envDefault:"5"`
 	MaxChunks                      int    `env:"MAX_CHUNKS" envDefault:"6"`
 	Mode                           string `env:"MODE" envDefault:"trading"`
-	KeepTopNStrategiesOfSameSymbol int    `env:"KEEP_TOP_N_STRATEGIES_OF_SAME_SYMBOL" envDefault:"4"`
+	KeepTopNStrategiesOfSameSymbol int    `env:"KEEP_TOP_N_STRATEGIES_OF_SAME_SYMBOL" envDefault:"3"`
 }
 
 var TheConfig = &Config{}
