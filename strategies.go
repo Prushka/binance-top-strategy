@@ -355,7 +355,21 @@ const (
 	SortByMatched   = "latestMatchedCount"
 )
 
-func mergeStrategies(sss ...Strategies) Strategies {
+type SortPair struct {
+	Sort      string
+	Direction *int
+}
+
+func mergeStrategies(strategyType int, runningTimeMin time.Duration, runningTimeMax time.Duration, sps ...SortPair) (Strategies, error) {
+	sss := make([]Strategies, 0)
+	for _, sp := range sps {
+		by, err := _getTopStrategies(sp.Sort, sp.Direction, strategyType, runningTimeMin, runningTimeMax)
+		if err != nil {
+			return nil, err
+		}
+		sss = append(sss, by)
+		time.Sleep(1 * time.Second)
+	}
 	merged := make(Strategies, 0)
 	addedIds := mapset.NewSet[int]()
 	for _, ss := range sss {
@@ -366,30 +380,21 @@ func mergeStrategies(sss ...Strategies) Strategies {
 			}
 		}
 	}
-	return merged
+	return merged, nil
 }
 
 func getTopStrategies(strategyType int, runningTimeMin time.Duration, runningTimeMax time.Duration) (Strategies, error) {
-	byRoi, err := _getTopStrategies(SortByRoi, strategyType, runningTimeMin, runningTimeMax)
+	merged, err := mergeStrategies(strategyType, runningTimeMin, runningTimeMax,
+		SortPair{Sort: SortByRoi, Direction: IntPointer(NEUTRAL)},
+		SortPair{Sort: SortByRoi, Direction: IntPointer(SHORT)},
+		SortPair{Sort: SortByRoi, Direction: IntPointer(LONG)},
+		SortPair{Sort: SortByMatched},
+		SortPair{Sort: SortByPnl},
+		SortPair{Sort: SortByCopyCount},
+	)
 	if err != nil {
 		return nil, err
 	}
-	time.Sleep(1 * time.Second)
-	byCopyCount, err := _getTopStrategies(SortByCopyCount, strategyType, runningTimeMin, runningTimeMax)
-	if err != nil {
-		return nil, err
-	}
-	time.Sleep(1 * time.Second)
-	byMatched, err := _getTopStrategies(SortByMatched, strategyType, runningTimeMin, runningTimeMax)
-	if err != nil {
-		return nil, err
-	}
-	time.Sleep(1 * time.Second)
-	byPnl, err := _getTopStrategies(SortByPnl, strategyType, runningTimeMin, runningTimeMax)
-	if err != nil {
-		return nil, err
-	}
-	merged := mergeStrategies(byRoi, byCopyCount, byMatched, byPnl)
 	highestCopyCount := 0
 	lowestCopyCount := 9999999999
 	highestRoi := 0.0
@@ -415,7 +420,7 @@ func getTopStrategies(strategyType int, runningTimeMin time.Duration, runningTim
 	return merged, nil
 }
 
-func _getTopStrategies(sort string, strategyType int, runningTimeMin time.Duration, runningTimeMax time.Duration) (Strategies, error) {
+func _getTopStrategies(sort string, direction *int, strategyType int, runningTimeMin time.Duration, runningTimeMax time.Duration) (Strategies, error) {
 	query := &QueryTopStrategy{
 		Page:           1,
 		Rows:           TheConfig.StrategiesCount,
@@ -423,6 +428,7 @@ func _getTopStrategies(sort string, strategyType int, runningTimeMin time.Durati
 		RunningTimeMax: int(runningTimeMax.Seconds()),
 		RunningTimeMin: int(runningTimeMin.Seconds()),
 		Sort:           sort,
+		Direction:      direction,
 	}
 	strategies, err := request(
 		"https://www.binance.com/bapi/futures/v1/public/future/common/strategy/landing-page/queryTopStrategy",
