@@ -208,7 +208,7 @@ func tick() error {
 
 	for _, grid := range openGrids.Data {
 		t, ok := globalGrids[grid.CopiedStrategyID]
-		if ok && t.ContinuousRoiNoChange > 3 {
+		if ok && t.ContinuousRoiNoChange > 3 && grid.profit >= 0 {
 			err := closeGridConv(grid.CopiedStrategyID, openGrids)
 			if err != nil {
 				return err
