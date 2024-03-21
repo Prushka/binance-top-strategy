@@ -200,6 +200,7 @@ type GridDetail struct {
 type Grid struct {
 	totalPnl               float64
 	initialValue           float64
+	profit                 float64
 	StrategyID             int    `json:"strategyId"`
 	RootUserID             int    `json:"rootUserId"`
 	StrategyUserID         int    `json:"strategyUserId"`
@@ -241,9 +242,9 @@ type Grid struct {
 }
 
 func (grid Grid) display() string {
-	return fmt.Sprintf("In: %.2f, Realized PnL: %s, Total Profit: %f",
+	return fmt.Sprintf("In: %.2f, RealizedPnL: %s, TotalPnL: %f, Profit: %f%%",
 		grid.initialValue,
-		grid.GridProfit, grid.totalPnl)
+		grid.GridProfit, grid.totalPnl, grid.profit*100)
 }
 
 func display(s *Strategy, grid *Grid, action string, index int, length int) string {
@@ -418,10 +419,11 @@ func getOpenGrids() (*OpenGridResponse, error) {
 		marketPrice, _ := fetchMarketPrice(g.Symbol)
 		g.initialValue = initial / float64(g.InitialLeverage)
 		g.totalPnl = profit + fundingFee + position*(marketPrice-entryPrice) // position is negative for short
+		g.profit = g.totalPnl / g.initialValue
 		res.totalGridInitial += g.initialValue
 		res.totalGridPnl += g.totalPnl
 	}
-	DiscordWebhook(fmt.Sprintf("Open Pairs: %v, Open Ids: %v, Total Initial: %f, Total Profit: %f, Total: %f",
+	DiscordWebhook(fmt.Sprintf("Open Pairs: %v, Open Ids: %v, Initial: %f, TotalPnL: %f, C: %f",
 		res.existingPairs, res.existingIds, res.totalGridInitial, res.totalGridPnl, res.totalGridPnl+res.totalGridInitial))
 	if res.Code == "100002001" || res.Code == "100001005" {
 		DiscordWebhook("Error, login expired")
