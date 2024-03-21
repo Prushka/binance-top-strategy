@@ -245,7 +245,7 @@ func (grid Grid) display() string {
 		grid.GridProfit, grid.MatchedPnl)
 }
 
-func display(s *Strategy, grid *Grid, action string, index *int, length *int) string {
+func display(s *Strategy, grid *Grid, action string, index int, length int) string {
 	header := ""
 	ss := ""
 	gg := ""
@@ -261,8 +261,8 @@ func display(s *Strategy, grid *Grid, action string, index *int, length *int) st
 	if grid != nil {
 		gg = ", " + grid.display()
 	}
-	if index != nil && length != nil {
-		seq = fmt.Sprintf("[%d/%d] ", *index, *length)
+	if length != 0 {
+		seq = fmt.Sprintf("[%d/%d] ", index, length)
 	}
 	return fmt.Sprintf("%s%s: %s %s%s", seq, action, header, ss, gg)
 }
