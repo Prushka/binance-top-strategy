@@ -250,10 +250,20 @@ func display(s *Strategy, grid *Grid, action string, index int, length int) stri
 	ss := ""
 	gg := ""
 	seq := ""
+	direction := ""
+	if s == nil {
+		direction = grid.Direction
+	} else if grid == nil {
+		direction = DirectionMap[s.Direction]
+	} else if DirectionMap[s.Direction] == grid.Direction {
+		direction = grid.Direction
+	} else {
+		direction = fmt.Sprintf("S: %s, Grid %s", DirectionMap[s.Direction], grid.Direction)
+	}
 	if s != nil {
-		header = fmt.Sprintf("[%s, %d]", s.Symbol, s.StrategyID)
+		header = fmt.Sprintf("[%s, %d, %s]", s.Symbol, s.StrategyID, direction)
 	} else if grid != nil {
-		header = fmt.Sprintf("[%s, %d]", grid.Symbol, grid.CopiedStrategyID)
+		header = fmt.Sprintf("[%s, %d, %s]", grid.Symbol, grid.CopiedStrategyID, direction)
 	}
 	if s != nil {
 		ss = s.display()
@@ -264,6 +274,7 @@ func display(s *Strategy, grid *Grid, action string, index int, length int) stri
 	if length != 0 {
 		seq = fmt.Sprintf("[%d/%d] ", index, length)
 	}
+
 	return fmt.Sprintf("%s%s: %s %s%s", seq, action, header, ss, gg)
 }
 

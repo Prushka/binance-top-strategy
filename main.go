@@ -129,7 +129,9 @@ func tick() error {
 
 	log.Infof("----------------")
 	expiredCopiedIds := openGrids.existingIds.Difference(filteredCopiedIds)
-	DiscordWebhook(fmt.Sprintf("Expired Strategies: %v", expiredCopiedIds))
+	if expiredCopiedIds.Cardinality() > 0 {
+		DiscordWebhook(fmt.Sprintf("Expired Strategies: %v", expiredCopiedIds))
+	}
 	for c, id := range expiredCopiedIds.ToSlice() {
 		log.Infof("Closing Grid: %d", id)
 		err := closeGridConv(id, openGrids)
