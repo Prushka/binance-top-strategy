@@ -169,7 +169,14 @@ func tick() error {
 		} else {
 			for _, grid := range openGrids.Data {
 				if grid.CopiedStrategyID == id {
-					DiscordWebhook(display(m.findById(id), grid, "Cancelled", c+1, expiredCopiedIds.Cardinality()))
+					reason := ""
+					att, ok := globalStrategies[id]
+					if ok && m.findById(id) == nil {
+						reason += "Strategy not found"
+					} else if ok && !filteredCopiedIds.Contains(id) {
+						reason += "Strategy not picked"
+					}
+					DiscordWebhook(display(att, grid, "Cancelled ["+reason+"]", c+1, expiredCopiedIds.Cardinality()))
 					break
 				}
 			}
