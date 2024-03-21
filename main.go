@@ -164,6 +164,7 @@ func tick() error {
 	if expiredCopiedIds.Cardinality() > 0 {
 		DiscordWebhook(fmt.Sprintf("Expired Strategies: %v", expiredCopiedIds))
 	}
+	closedIds := mapset.NewSet[int]()
 	for c, id := range expiredCopiedIds.ToSlice() {
 		reason := ""
 		att, ok := globalStrategies[id]
@@ -177,7 +178,7 @@ func tick() error {
 		tracked, ok := globalGrids[id]
 		if ok && tracked.LastRoi < -0.05 { // attempting to close loss
 			if tracked.ContinuousRoiLoss < 3 {
-				DiscordWebhook(display(att, tracked.grid, "Skip Cancel [Cancel reason: "+reason+"]", c+1, expiredCopiedIds.Cardinality()))
+				DiscordWebhook(display(att, tracked.grid, "Skip Cancel ["+reason+"]", c+1, expiredCopiedIds.Cardinality()))
 				continue
 			}
 		}
@@ -185,12 +186,13 @@ func tick() error {
 		if err != nil {
 			return err
 		} else {
+			closedIds.Add(id)
 			DiscordWebhook(display(att, tracked.grid, "Cancelled ["+reason+"]", c+1, expiredCopiedIds.Cardinality()))
 		}
 		time.Sleep(1 * time.Second)
 	}
 
-	if expiredCopiedIds.Cardinality() > 0 && !TheConfig.Paper {
+	if closedIds.Cardinality() > 0 && !TheConfig.Paper {
 		DiscordWebhook("Cleared expired grids - Skip current run")
 		return nil
 	}
