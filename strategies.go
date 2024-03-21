@@ -107,7 +107,7 @@ type Strategy struct {
 
 func (s Strategy) display() string {
 	runTime := time.Duration(s.RunningTime) * time.Second
-	return fmt.Sprintf("[%s, %d] Roi: %s, Last Day: %f, Last 3Hr: %f, Last 2Hr: %f, Last Hr: %f, Runtime: %s, MinInvestment: %s",
+	return fmt.Sprintf("[%s, %d] A-D-3H-2H-1H: %s, %f, %f, %f, %f, Runtime: %s, MinInv: %s",
 		s.Symbol, s.StrategyID, s.Roi,
 		s.LastDayRoiChange, s.Last3HrRoiChange, s.Last2HrRoiChange, s.LastHrRoiChange, runTime, s.MinInvestment)
 }
@@ -240,9 +240,9 @@ type Grid struct {
 
 func (grid Grid) display() string {
 	initialValue, _ := strconv.ParseFloat(grid.GridInitialValue, 64)
-	return fmt.Sprintf("Closed: %s | %d, Initial: %f, Profit: %s",
+	return fmt.Sprintf("[%s, %d], In: %f, Profit: %s, Matched: %s",
 		grid.Symbol, grid.CopiedStrategyID, initialValue/float64(grid.InitialLeverage),
-		grid.GridProfit)
+		grid.GridProfit, grid.MatchedPnl)
 }
 
 type OpenGridResponse struct {

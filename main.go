@@ -130,21 +130,22 @@ func tick() error {
 	log.Infof("----------------")
 	expiredCopiedIds := openGrids.existingIds.Difference(filteredCopiedIds)
 	DiscordWebhook(fmt.Sprintf("Expired Strategies: %v", expiredCopiedIds))
-	for _, id := range expiredCopiedIds.ToSlice() {
+	for c, id := range expiredCopiedIds.ToSlice() {
 		log.Infof("Closing Grid: %d", id)
 		err := closeGridConv(id, openGrids)
 		if err != nil {
 			return err
 		} else {
-			for _, grid := range openGrids.Data {
-				if grid.CopiedStrategyID == id {
-					DiscordWebhook(grid.display())
-					break
-				}
-			}
+			sss := ""
 			ss := m.findById(id)
 			if ss != nil {
-				DiscordWebhook(ss.display())
+				sss = ss.display()
+			}
+			for _, grid := range openGrids.Data {
+				if grid.CopiedStrategyID == id {
+					DiscordWebhook(fmt.Sprintf("[%d] Canceling: ", c) + sss + " | " + grid.display())
+					break
+				}
 			}
 		}
 		time.Sleep(1 * time.Second)
