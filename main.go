@@ -140,7 +140,7 @@ func tick() error {
 		} else {
 			for _, grid := range openGrids.Data {
 				if grid.CopiedStrategyID == id {
-					DiscordWebhook(display(m.findById(id), &grid, "Existing", c+1, expiredCopiedIds.Cardinality()))
+					DiscordWebhook(display(m.findById(id), &grid, "Cancelled", c+1, expiredCopiedIds.Cardinality()))
 					break
 				}
 			}
