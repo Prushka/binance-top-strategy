@@ -417,7 +417,7 @@ func getOpenGrids() (*OpenGridResponse, error) {
 		entryPrice, _ := strconv.ParseFloat(g.GridEntryPrice, 64)
 		marketPrice, _ := fetchMarketPrice(g.Symbol)
 		g.initialValue = initial / float64(g.InitialLeverage)
-		g.totalPnl = profit + fundingFee + position*(marketPrice-entryPrice)
+		g.totalPnl = profit + fundingFee + position*(marketPrice-entryPrice) // position is negative for short
 		res.totalGridInitial += g.initialValue
 		res.totalGridPnl += g.totalPnl
 	}
