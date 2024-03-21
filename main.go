@@ -87,7 +87,7 @@ func tick() error {
 	if err != nil {
 		return err
 	}
-	filtered := make(Strategies, 0)
+	validRois := make(Strategies, 0)
 	for _, s := range m {
 		log.Infof("Strategy: %s, %s, %d", s.Roi, s.Symbol, len(s.Rois))
 		runTime := time.Duration(s.RunningTime) * time.Second
@@ -96,18 +96,29 @@ func tick() error {
 			s.Last3HrRoiChange = GetRoiChange(s.Rois, 3*time.Hour)
 			s.Last2HrRoiChange = GetRoiChange(s.Rois, 2*time.Hour)
 			s.LastHrRoiChange = GetRoiChange(s.Rois, 1*time.Hour)
-			log.Infof("Last Day: %f, Last 3Hr: %f, Last 2Hr: %f, Last Hr: %f, Runtime: %s",
+			log.Infof("[%s, %d] Last Day: %f, Last 3Hr: %f, Last 2Hr: %f, Last Hr: %f, Runtime: %s",
+				s.Symbol, s.StrategyID,
 				s.LastDayRoiChange, s.Last3HrRoiChange, s.Last2HrRoiChange, s.LastHrRoiChange, runTime)
 			if s.LastDayRoiChange > 0.1 && s.Last3HrRoiChange > 0.05 && s.Last2HrRoiChange > 0 && s.LastHrRoiChange > -0.05 {
-				filtered = append(filtered, s)
+				validRois = append(validRois, s)
 				log.Infof("Picked")
 			}
 		}
 		log.Infof("----------------")
 	}
-	sort.Slice(filtered, func(i, j int) bool {
-		return filtered[i].Last2HrRoiChange > filtered[j].Last2HrRoiChange
+	sort.Slice(validRois, func(i, j int) bool {
+		return validRois[i].Last2HrRoiChange > validRois[j].Last2HrRoiChange
 	})
+
+	symbolCount := make(map[string]int)
+
+	filtered := make(Strategies, 0)
+	for _, s := range validRois {
+		if symbolCount[s.Symbol] < TheConfig.KeepTopNStrategiesOfSameSymbol {
+			filtered = append(filtered, s)
+			symbolCount[s.Symbol]++
+		}
+	}
 
 	openGrids, existingPairs, existingIds, err := getOpenGrids()
 	if err != nil {
@@ -141,14 +152,14 @@ func tick() error {
 		time.Sleep(1 * time.Second)
 	}
 
-	if expiredCopiedIds.Cardinality() > 0 {
+	if expiredCopiedIds.Cardinality() > 0 && !TheConfig.Paper {
 		DiscordWebhook("Cleared expired grids - Skip current run")
 		return nil
 	}
 
 	log.Infof("----------------")
 
-	if TheConfig.MaxChunks-len(openGrids.Data) <= 0 {
+	if TheConfig.MaxChunks-len(openGrids.Data) <= 0 && !TheConfig.Paper {
 		DiscordWebhook("Max Chunks reached, No cancel - Skip current run")
 		return nil
 	}
