@@ -15,6 +15,7 @@ type Config struct {
 	RuntimeMaxHours                int    `env:"RUNTIME_MAX_HOURS" envDefault:"168"`
 	Paper                          bool   `env:"PAPER" envDefault:"true"`
 	DiscordWebhook                 string `env:"DISCORD_WEBHOOK"`
+	DiscordName                    string `env:"DISCORD_NAME" envDefault:"BTS"`
 	TickEveryMinutes               int    `env:"TICK_EVERY_MINUTES" envDefault:"5"`
 	MaxChunks                      int    `env:"MAX_CHUNKS" envDefault:"6"`
 	Mode                           string `env:"MODE" envDefault:"trading"`

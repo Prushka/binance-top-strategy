@@ -197,9 +197,15 @@ func tick() error {
 
 	log.Infof("----------------")
 
-	openGrids, err = getOpenGrids()
+	newOpenGrids, err := getOpenGrids()
 	if err != nil {
 		return err
+	}
+	for _, newId := range newOpenGrids.existingIds.Difference(openGrids.existingIds).ToSlice() {
+		ss := m.findById(newId)
+		if ss != nil {
+			DiscordWebhook(fmt.Sprintf("Placed: ") + ss.display())
+		}
 	}
 	return nil
 }

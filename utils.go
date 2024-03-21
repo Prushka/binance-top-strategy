@@ -22,7 +22,7 @@ func DiscordWebhook(chat string) {
 	if TheConfig.DiscordWebhook == "" {
 		return
 	}
-	name := "BTS"
+	name := TheConfig.DiscordName
 	message := discordwebhook.Message{
 		Username: &name,
 		Content:  &chat,
