@@ -348,14 +348,64 @@ func getStrategyRois(strategyID int, rootUserId int) (StrategyRoi, error) {
 	return roi.Data, nil
 }
 
+const (
+	SortByRoi       = "roi"
+	SortByCopyCount = "copyCount"
+)
+
 func getTopStrategies(strategyType int, runningTimeMin time.Duration, runningTimeMax time.Duration) (Strategies, error) {
+	byRoi, err := _getTopStrategies(SortByRoi, strategyType, runningTimeMin, runningTimeMax)
+	if err != nil {
+		return nil, err
+	}
+	time.Sleep(1 * time.Second)
+	byCopyCount, err := _getTopStrategies(SortByCopyCount, strategyType, runningTimeMin, runningTimeMax)
+	if err != nil {
+		return nil, err
+	}
+	combined := make(Strategies, 0)
+	addedIds := mapset.NewSet[int]()
+	highestCopyCount := 0
+	lowestCopyCount := 9999999999
+	highestRoi := 0.0
+	lowestRoi := 9999999999.0
+	for _, s := range byRoi {
+		combined = append(combined, s)
+		addedIds.Add(s.StrategyID)
+	}
+	for _, s := range byCopyCount {
+		if !addedIds.Contains(s.StrategyID) {
+			combined = append(combined, s)
+		}
+	}
+	for _, s := range combined {
+		if s.CopyCount > highestCopyCount {
+			highestCopyCount = s.CopyCount
+		}
+		if s.CopyCount < lowestCopyCount {
+			lowestCopyCount = s.CopyCount
+		}
+		roi, _ := strconv.ParseFloat(s.Roi, 64)
+		if roi > highestRoi {
+			highestRoi = roi
+		}
+		if roi < lowestRoi {
+			lowestRoi = roi
+		}
+	}
+	DiscordWebhook(fmt.Sprintf("Found: %d, Copy Count: [%d, %d], Roi: [%.2f%%, %.2f%%]",
+		len(combined), highestCopyCount, lowestCopyCount, highestRoi, lowestRoi))
+	return combined, nil
+}
+
+func _getTopStrategies(sort string, strategyType int, runningTimeMin time.Duration, runningTimeMax time.Duration) (Strategies, error) {
 	query := &QueryTopStrategy{
 		Page:           1,
 		Rows:           TheConfig.StrategiesCount,
 		StrategyType:   strategyType,
 		RunningTimeMax: int(runningTimeMax.Seconds()),
 		RunningTimeMin: int(runningTimeMin.Seconds()),
-		Sort:           "roi",
+		Sort:           sort,
 	}
 	strategies, err := request(
 		"https://www.binance.com/bapi/futures/v1/public/future/common/strategy/landing-page/queryTopStrategy",
