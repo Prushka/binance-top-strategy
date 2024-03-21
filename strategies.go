@@ -502,7 +502,6 @@ func trackRoi(g *Grid) {
 		}
 	}
 	tracked := globalGrids[g.CopiedStrategyID]
-	tracked.LastRoi = g.profit
 	tracked.grid = g
 
 	if g.profit < tracked.LowestRoi {
@@ -518,6 +517,8 @@ func trackRoi(g *Grid) {
 		tracked.ContinuousRoiLoss += 1
 		tracked.ContinuousRoiGrowth = 0
 	}
+
+	tracked.LastRoi = g.profit
 }
 
 func getOpenGrids() (*OpenGridResponse, error) {
