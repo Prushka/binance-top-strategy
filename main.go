@@ -164,6 +164,7 @@ func tick() error {
 		return nil
 	}
 
+	chunksInt := TheConfig.MaxChunks - len(openGrids.Data)
 	chunks := float64(TheConfig.MaxChunks - len(openGrids.Data))
 	invChunk := (usdt - chunks*0.8) / chunks
 	idealInvChunk := (usdt + openGrids.totalGridProfit + openGrids.totalGridInitial) / float64(TheConfig.MaxChunks)
@@ -178,10 +179,14 @@ func tick() error {
 		if !openGrids.existingPairs.Contains(s.Symbol) {
 			errr := placeGrid(*s, invChunk)
 			if errr != nil {
-				log.Errorf("Error placing grid: %v", errr)
+				DiscordWebhook(fmt.Sprintf("Error placing grid: %v", errr))
 			} else {
-				log.Infof("Placed Grid")
+				DiscordWebhook(fmt.Sprintf("Placed grid"))
+				chunksInt -= 1
 				time.Sleep(1 * time.Second)
+				if chunksInt <= 0 {
+					break
+				}
 			}
 		} else {
 			log.Infof("Already placed symbol")

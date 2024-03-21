@@ -494,5 +494,8 @@ func placeGrid(strategy Strategy, initialUSDT float64) error {
 	PrintAsJson(payload)
 	res, err := privateRequest("https://www.binance.com/bapi/futures/v2/private/future/grid/place-grid", "POST", payload, &PlaceGridResponse{})
 	PrintAsJson(res)
+	if !res.Success {
+		return fmt.Errorf(res.Message)
+	}
 	return err
 }
