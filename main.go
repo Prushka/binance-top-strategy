@@ -131,9 +131,9 @@ func tick() error {
 		time.Sleep(1 * time.Second)
 	}
 
-	openGrids, existingPairs, existingIds, err = getOpenGrids()
-	if err != nil {
-		return err
+	if expiredCopiedIds.Cardinality() > 0 {
+		DiscordWebhook("Cleared expired grids - Skip current run")
+		return nil
 	}
 
 	log.Infof("----------------")
