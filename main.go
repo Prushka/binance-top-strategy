@@ -150,6 +150,9 @@ func tick() error {
 	if err != nil {
 		return err
 	}
+	for _, grid := range openGrids.Data {
+		trackRoi(grid)
+	}
 
 	filteredCopiedIds := mapset.NewSet[int]()
 	for _, s := range filtered {
