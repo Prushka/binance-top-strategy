@@ -129,7 +129,11 @@ func tick() error {
 		log.Infof("----------------")
 	}
 	sort.Slice(validRois, func(i, j int) bool {
-		return validRois[i].LastHrRoiChange > validRois[j].LastHrRoiChange
+		I := validRois[i]
+		J := validRois[j]
+		iWeight := I.Last3HrRoiChange*TheConfig.Last3HrWeight + I.Last2HrRoiChange*TheConfig.Last2HrWeight + I.LastHrRoiChange*TheConfig.Last1HrWeight
+		jWeight := J.Last3HrRoiChange*TheConfig.Last3HrWeight + J.Last2HrRoiChange*TheConfig.Last2HrWeight + J.LastHrRoiChange*TheConfig.Last1HrWeight
+		return iWeight > jWeight
 	})
 
 	symbolCount := make(map[string]int)
@@ -208,6 +212,7 @@ func tick() error {
 			} else {
 				DiscordWebhook(fmt.Sprintf("Placed grid"))
 				chunksInt -= 1
+				openGrids.existingPairs.Add(s.Symbol)
 				time.Sleep(1 * time.Second)
 				if chunksInt <= 0 {
 					break
