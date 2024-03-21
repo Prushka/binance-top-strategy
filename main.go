@@ -119,14 +119,14 @@ func tick() error {
 			s.Last3HrRoiChange = GetRoiChange(s.Rois, 3*time.Hour)
 			s.Last2HrRoiChange = GetRoiChange(s.Rois, 2*time.Hour)
 			s.LastHrRoiChange = GetRoiChange(s.Rois, 1*time.Hour)
-			log.Infof(s.display())
+			log.Info(s.display())
 			if s.LastDayRoiChange > 0.1 && s.Last3HrRoiChange > 0.05 && s.Last2HrRoiChange > 0 && s.LastHrRoiChange > -0.05 {
 				validRois = append(validRois, s)
-				log.Infof("Picked")
+				log.Info("Picked")
 			}
 		}
 		globalStrategies[s.StrategyID] = s
-		log.Infof("----------------")
+		log.Info("----------------")
 	}
 	sort.Slice(validRois, func(i, j int) bool {
 		I := validRois[i]
