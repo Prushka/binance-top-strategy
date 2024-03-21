@@ -77,6 +77,8 @@ func GetRoiChange(roi StrategyRoi, t time.Duration) float64 {
 	return latestRoi - roi[len(roi)-1].Roi
 }
 
+var globalStrategies = make(map[int]*Strategy)
+
 func tick() error {
 	usdt, err := getFutureUSDT()
 	if err != nil {
@@ -101,10 +103,11 @@ func tick() error {
 				log.Infof("Picked")
 			}
 		}
+		globalStrategies[s.StrategyID] = s
 		log.Infof("----------------")
 	}
 	sort.Slice(validRois, func(i, j int) bool {
-		return validRois[i].Last2HrRoiChange > validRois[j].Last2HrRoiChange
+		return validRois[i].LastHrRoiChange > validRois[j].LastHrRoiChange
 	})
 
 	symbolCount := make(map[string]int)
