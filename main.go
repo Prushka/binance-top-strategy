@@ -156,10 +156,7 @@ func tick() error {
 	log.Infof("----------------")
 
 	for c, grid := range openGrids.Data {
-		ss := filtered.findById(grid.CopiedStrategyID)
-		if ss != nil {
-			DiscordWebhook(display(ss, &grid, "Existing", c+1, len(openGrids.Data)))
-		}
+		DiscordWebhook(display(m.findById(grid.CopiedStrategyID), &grid, "Existing", c+1, len(openGrids.Data)))
 	}
 
 	if TheConfig.MaxChunks-len(openGrids.Data) <= 0 && !TheConfig.Paper {
@@ -199,10 +196,7 @@ func tick() error {
 		return err
 	}
 	for _, newId := range newOpenGrids.existingIds.Difference(openGrids.existingIds).ToSlice() {
-		ss := m.findById(newId)
-		if ss != nil {
-			DiscordWebhook(display(ss, nil, "Placed", 0, 0))
-		}
+		DiscordWebhook(display(m.findById(newId), nil, "Placed", 0, 0))
 	}
 	return nil
 }

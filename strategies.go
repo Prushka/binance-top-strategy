@@ -246,6 +246,9 @@ func (grid Grid) display() string {
 }
 
 func display(s *Strategy, grid *Grid, action string, index int, length int) string {
+	if grid == nil && s == nil {
+		return "Strategy and Grid are both nil"
+	}
 	header := ""
 	ss := ""
 	gg := ""
