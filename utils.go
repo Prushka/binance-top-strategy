@@ -22,11 +22,16 @@ func PrintAsJson(v interface{}) {
 	log.Info(string(b))
 }
 
-var discordMessageChan = make(chan string, 100)
+type DiscordMessagePayload struct {
+	Content     string `json:"content"`
+	WebhookType int    `json:"webhookType"`
+}
+
+var discordMessageChan = make(chan DiscordMessagePayload, 100)
 
 func DiscordWebhook(chat string) {
 	log.Info(chat)
-	discordMessageChan <- chat
+	discordMessageChan <- DiscordMessagePayload{Content: chat, WebhookType: DefaultWebhook}
 }
 
 func DiscordService() {
@@ -46,16 +51,30 @@ type DiscordError struct {
 	Global     bool    `json:"global"`
 }
 
-func DiscordSend(chat string) {
+const (
+	DefaultWebhook int = iota
+	ActionWebhook
+	OrderWebhook
+)
+
+func DiscordSend(payload DiscordMessagePayload) {
 	if TheConfig.DiscordWebhook == "" {
 		return
 	}
 	name := TheConfig.DiscordName
 	message := discordwebhook.Message{
 		Username: &name,
-		Content:  &chat,
+		Content:  &payload.Content,
 	}
-	err := discordwebhook.SendMessage(TheConfig.DiscordWebhook, message)
+	var err error
+	switch payload.WebhookType {
+	case ActionWebhook:
+		err = discordwebhook.SendMessage(TheConfig.DiscordWebhookAction, message)
+	case OrderWebhook:
+		err = discordwebhook.SendMessage(TheConfig.DiscordWebhookOrder, message)
+	default:
+		err = discordwebhook.SendMessage(TheConfig.DiscordWebhook, message)
+	}
 
 	if err != nil {
 		de := &DiscordError{}
@@ -66,7 +85,7 @@ func DiscordSend(chat string) {
 		}
 		if de.RetryAfter > 0 {
 			time.Sleep(time.Duration(de.RetryAfter) * time.Second)
-			DiscordSend(chat)
+			DiscordSend(payload)
 		}
 	}
 }
