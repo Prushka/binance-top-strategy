@@ -33,6 +33,15 @@ type QueryTopStrategy struct {
 
 type Strategies []*Strategy
 
+func (ss Strategies) getUserRankings() map[int]int {
+	rankings := map[int]int{}
+	for _, s := range ss {
+		rankings[s.UserID] += 1
+	}
+	DiscordWebhook(fmt.Sprintf("User Rankings: %v", rankings))
+	return rankings
+}
+
 func (ss Strategies) findById(id int) *Strategy {
 	for _, s := range ss {
 		if s.StrategyID == id {
@@ -207,24 +216,28 @@ func display(s *Strategy, grid *Grid, action string, index int, length int) stri
 	if grid == nil && s == nil {
 		return "Strategy and Grid are both nil"
 	}
-	header := ""
 	ss := ""
 	gg := ""
 	seq := ""
 	direction := ""
+	userId := ""
+	strategyId := ""
+	symbol := ""
 	if s == nil {
 		direction = grid.Direction
-	} else if grid == nil {
+		userId = fmt.Sprintf("%d", grid.RootUserID)
+		symbol = grid.Symbol
+		strategyId = fmt.Sprintf("%d", grid.CopiedStrategyID)
+	} else if grid == nil || DirectionMap[s.Direction] == grid.Direction {
 		direction = DirectionMap[s.Direction]
-	} else if DirectionMap[s.Direction] == grid.Direction {
-		direction = grid.Direction
+		userId = fmt.Sprintf("%d", s.UserID)
+		symbol = s.Symbol
+		strategyId = fmt.Sprintf("%d", s.StrategyID)
 	} else {
-		direction = fmt.Sprintf("S: %s, Grid %s", DirectionMap[s.Direction], grid.Direction)
-	}
-	if s != nil {
-		header = fmt.Sprintf("[%s, %d, %s]", s.Symbol, s.StrategyID, direction)
-	} else if grid != nil {
-		header = fmt.Sprintf("[%s, %d, %s]", grid.Symbol, grid.CopiedStrategyID, direction)
+		direction = fmt.Sprintf("S: %s, G: %s", DirectionMap[s.Direction], grid.Direction)
+		userId = fmt.Sprintf("S: %d, G: %d", s.UserID, grid.RootUserID)
+		symbol = fmt.Sprintf("S: %s, G: %s", s.Symbol, grid.Symbol)
+		strategyId = fmt.Sprintf("S: %d, G: %d", s.StrategyID, grid.CopiedStrategyID)
 	}
 	if s != nil {
 		ss = s.display()
@@ -236,7 +249,7 @@ func display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		seq = fmt.Sprintf("[%d/%d] ", index, length)
 	}
 
-	return fmt.Sprintf("%s%s: %s %s%s", seq, action, header, ss, gg)
+	return fmt.Sprintf("[%s, %s, %s, %s] %s: %s %s%s", symbol, strategyId, direction, userId, seq, action, ss, gg)
 }
 
 type OpenGridResponse struct {
@@ -311,12 +324,16 @@ const (
 type SortPair struct {
 	Sort      string
 	Direction *int
+	Count     int
 }
 
 func mergeStrategies(strategyType int, runningTimeMin time.Duration, runningTimeMax time.Duration, sps ...SortPair) (Strategies, error) {
 	sss := make([]Strategies, 0)
 	for _, sp := range sps {
-		by, err := _getTopStrategies(sp.Sort, sp.Direction, strategyType, runningTimeMin, runningTimeMax)
+		if sp.Count == 0 {
+			sp.Count = TheConfig.StrategiesCount
+		}
+		by, err := _getTopStrategies(sp.Sort, sp.Direction, strategyType, runningTimeMin, runningTimeMax, sp.Count)
 		if err != nil {
 			return nil, err
 		}
@@ -373,10 +390,10 @@ func getTopStrategies(strategyType int, runningTimeMin time.Duration, runningTim
 	return merged, nil
 }
 
-func _getTopStrategies(sort string, direction *int, strategyType int, runningTimeMin time.Duration, runningTimeMax time.Duration) (Strategies, error) {
+func _getTopStrategies(sort string, direction *int, strategyType int, runningTimeMin time.Duration, runningTimeMax time.Duration, strategyCount int) (Strategies, error) {
 	query := &QueryTopStrategy{
 		Page:           1,
-		Rows:           TheConfig.StrategiesCount,
+		Rows:           strategyCount,
 		StrategyType:   strategyType,
 		RunningTimeMax: int(runningTimeMax.Seconds()),
 		RunningTimeMin: int(runningTimeMin.Seconds()),

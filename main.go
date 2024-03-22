@@ -126,7 +126,8 @@ func tick() error {
 	if err != nil {
 		return err
 	}
-	validRois := make(Strategies, 0)
+	m.getUserRankings()
+	filtered := make(Strategies, 0)
 	for c, s := range m {
 		log.Infof("Strategy: %s, %s, %d", s.Roi, s.Symbol, len(s.Rois))
 		if len(s.Rois) > 1 {
@@ -136,31 +137,22 @@ func tick() error {
 			s.LastHrRoiChange = GetRoiChange(s.Rois, 1*time.Hour)
 			log.Info(display(s, nil, "Found", c+1, len(m)))
 			if s.LastDayRoiChange > 0.1 && s.Last3HrRoiChange > 0.05 && s.Last2HrRoiChange > 0 && s.LastHrRoiChange > -0.05 {
-				validRois = append(validRois, s)
+				filtered = append(filtered, s)
 				log.Info("Picked")
 			}
 		}
 		globalStrategies[s.StrategyID] = s
 		log.Info("----------------")
 	}
-	sort.Slice(validRois, func(i, j int) bool {
-		I := validRois[i]
-		J := validRois[j]
+	sort.Slice(filtered, func(i, j int) bool {
+		I := filtered[i]
+		J := filtered[j]
 		iWeight := I.Last3HrRoiChange*TheConfig.Last3HrWeight + I.Last2HrRoiChange*TheConfig.Last2HrWeight + I.LastHrRoiChange*TheConfig.LastHrWeight
 		jWeight := J.Last3HrRoiChange*TheConfig.Last3HrWeight + J.Last2HrRoiChange*TheConfig.Last2HrWeight + J.LastHrRoiChange*TheConfig.LastHrWeight
 		return iWeight > jWeight
 	})
-	DiscordWebhook(fmt.Sprintf("Found %d valid strategies", len(validRois)))
-
-	symbolCount := make(map[string]int)
-
-	filtered := make(Strategies, 0)
-	for _, s := range validRois {
-		if symbolCount[s.Symbol] < TheConfig.KeepTopNStrategiesOfSameSymbol {
-			filtered = append(filtered, s)
-			symbolCount[s.Symbol]++
-		}
-	}
+	DiscordWebhook(fmt.Sprintf("Found %d valid strategies", len(filtered)))
+	filtered.getUserRankings()
 
 	openGrids, err := getOpenGrids()
 	if err != nil {
@@ -194,10 +186,8 @@ func tick() error {
 		tracked, ok := globalGrids[id]
 		if ok && tracked.LastRoi < -0.03 { // attempting to close loss
 			reason += "Too much loss"
-			//if tracked.ContinuousRoiLoss < 3 {
 			DiscordWebhook(display(att, tracked.grid, "Skip Cancel "+reason, c+1, expiredCopiedIds.Cardinality()))
 			continue
-			//}
 		}
 		err := closeGridConv(id, openGrids)
 		if err != nil {
@@ -255,6 +245,7 @@ func tick() error {
 		}
 	}
 	DiscordWebhook(fmt.Sprintf("Found %d strategies with increasing Roi over 3 hrs", len(canPlace)))
+	canPlace.getUserRankings()
 	for c, s := range canPlace {
 		if !openGrids.existingIds.Contains(s.StrategyID) {
 			DiscordWebhook(display(s, nil, "New", c+1, len(canPlace)))
