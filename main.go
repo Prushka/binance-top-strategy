@@ -60,7 +60,13 @@ func getFutureUSDT() (float64, error) {
 	return 0, nil
 }
 
-func getTopStrategiesWithRoi() (*TrackedStrategies, error) {
+type StrategiesBundle struct {
+	Raw       *TrackedStrategies
+	AllowOpen *TrackedStrategies
+	AllowKeep *TrackedStrategies
+}
+
+func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 	strategies, err := getTopStrategies(FUTURE, time.Duration(TheConfig.RuntimeMinHours)*time.Hour, time.Duration(TheConfig.RuntimeMaxHours)*time.Hour)
 	if err != nil {
 		return nil, err
@@ -104,9 +110,7 @@ func getTopStrategiesWithRoi() (*TrackedStrategies, error) {
 		jWeight := J.Last3HrRoiChange*TheConfig.Last3HrWeight + J.Last2HrRoiChange*TheConfig.Last2HrWeight + J.LastHrRoiChange*TheConfig.LastHrWeight
 		return iWeight > jWeight
 	})
-	allowKeep.toTrackedStrategies()
-	allowOpen.toTrackedStrategies()
-	return strategies, nil
+	return &StrategiesBundle{Raw: strategies, AllowOpen: allowOpen.toTrackedStrategies(), AllowKeep: allowKeep.toTrackedStrategies()}, nil
 }
 
 func GetRoiChange(roi StrategyRoi, t time.Duration) float64 {
@@ -121,21 +125,6 @@ func GetRoiChange(roi StrategyRoi, t time.Duration) float64 {
 	return latestRoi - roi[len(roi)-1].Roi
 }
 
-func IfRoiDecreasedWithin(roi StrategyRoi, t time.Duration) bool {
-	// check if any roi row within t duration has decreased compared to the previous one
-	latestTimestamp := roi[0].Time
-	for i := 0; i < len(roi)-1; i++ {
-		if roi[i].Roi-roi[i+1].Roi < 0 {
-			return true
-		}
-		l := latestTimestamp - int64(t.Seconds())
-		if roi[i+1].Time <= l {
-			return false
-		}
-	}
-	return false
-}
-
 var globalStrategies = make(map[int]*Strategy)
 
 func tick() error {
@@ -144,7 +133,7 @@ func tick() error {
 		return err
 	}
 	log.Infof("USDT: %f", usdt)
-	m, err := getTopStrategiesWithRoi()
+	bundle, err := getTopStrategiesWithRoi()
 	if err != nil {
 		return err
 	}
@@ -156,14 +145,7 @@ func tick() error {
 	for _, grid := range openGrids.Data {
 		trackRoi(grid)
 	}
-
-	filteredCopiedIds := mapset.NewSet[int]()
-	for _, s := range filtered {
-		filteredCopiedIds.Add(s.StrategyID)
-	}
-
-	log.Infof("----------------")
-	expiredCopiedIds := openGrids.existingIds.Difference(filteredCopiedIds)
+	expiredCopiedIds := openGrids.existingIds.Difference(bundle.AllowKeep.ids)
 	if expiredCopiedIds.Cardinality() > 0 {
 		DiscordWebhook(fmt.Sprintf("Expired Strategies: %v", expiredCopiedIds))
 	}
@@ -171,12 +153,11 @@ func tick() error {
 	for c, id := range expiredCopiedIds.ToSlice() {
 		reason := ""
 		att, ok := globalStrategies[id]
-		if m.findById(id) == nil {
+		if !bundle.Raw.exists(id) {
 			reason += "Strategy not found"
-		} else if ok && !filteredCopiedIds.Contains(id) {
+		} else if ok && !bundle.AllowKeep.exists(id) {
 			reason += "Strategy not picked"
 		}
-
 		log.Infof("Closing Grid: %d", id)
 		tracked, ok := globalGrids[id]
 		if ok && tracked.LastRoi < -0.03 { // attempting to close loss
@@ -217,7 +198,7 @@ func tick() error {
 	log.Infof("----------------")
 
 	for c, grid := range openGrids.Data {
-		DiscordWebhook(display(m.findById(grid.CopiedStrategyID), grid, "Existing", c+1, len(openGrids.Data)))
+		DiscordWebhook(display(globalStrategies[grid.CopiedStrategyID], grid, "Existing", c+1, len(openGrids.Data)))
 	}
 
 	if TheConfig.MaxChunks-len(openGrids.Data) <= 0 && !TheConfig.Paper {
@@ -273,14 +254,12 @@ func tick() error {
 		log.Infof("----------------")
 	}
 
-	log.Infof("----------------")
-
 	newOpenGrids, err := getOpenGrids()
 	if err != nil {
 		return err
 	}
 	for _, newId := range newOpenGrids.existingIds.Difference(openGrids.existingIds).ToSlice() {
-		DiscordWebhook(display(m.findById(newId), nil, "Opened", 0, 0))
+		DiscordWebhook(display(globalStrategies[newId], nil, "Opened", 0, 0))
 	}
 	return nil
 }

@@ -89,6 +89,7 @@ func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 	for _, s := range sss.strategiesById {
 		sss.strategies = append(sss.strategies, s)
 	}
+	sss.ids = mapset.NewSetFromMapKeys(sss.strategiesById)
 	return sss
 }
 
@@ -100,6 +101,11 @@ type TrackedStrategies struct {
 	symbolCount        map[string]int
 	highest            StrategyMetrics
 	lowest             StrategyMetrics
+	ids                mapset.Set[int]
+}
+
+func (t *TrackedStrategies) exists(id int) bool {
+	return t.ids.Contains(id)
 }
 
 type StrategyMetrics struct {
