@@ -125,7 +125,7 @@ type TrackedStrategies struct {
 }
 
 func (t *TrackedStrategies) String() string {
-	return fmt.Sprintf("%d, H: %v, L: %v", len(t.strategiesById), asJson(t.highest), asJson(t.lowest))
+	return fmt.Sprintf("%d, %v, H: %v, L: %v", len(t.strategiesById), asJson(t.usersWithMoreThan1Strategy), asJson(t.highest), asJson(t.lowest))
 }
 
 func (t *TrackedStrategies) exists(id int) bool {
