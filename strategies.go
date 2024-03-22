@@ -124,6 +124,15 @@ type TrackedStrategies struct {
 	ids                        mapset.Set[int]
 }
 
+func (t *TrackedStrategies) findStrategyRanking(id int) int {
+	for i, s := range t.strategies {
+		if s.StrategyID == id {
+			return i
+		}
+	}
+	return -1
+}
+
 func (t *TrackedStrategies) String() string {
 	return fmt.Sprintf("%d, %v, H: %v, L: %v", len(t.strategiesById), asJson(t.usersWithMoreThan1Strategy), asJson(t.highest), asJson(t.lowest))
 }

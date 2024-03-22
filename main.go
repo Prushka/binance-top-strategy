@@ -105,7 +105,10 @@ func tick() error {
 		grid.track()
 	}
 	for c, grid := range openGrids.Data {
-		DiscordWebhook(display(globalStrategies[grid.CopiedStrategyID], grid, "Existing", c+1, len(openGrids.Data)))
+		id := grid.CopiedStrategyID
+		DiscordWebhook(display(globalStrategies[id], grid,
+			fmt.Sprintf("%d, %d, %d", bundle.Raw.findStrategyRanking(id), bundle.AllowKeep.findStrategyRanking(id), bundle.AllowOpen.findStrategyRanking(id)),
+			c+1, len(openGrids.Data)))
 	}
 	expiredCopiedIds := openGrids.existingIds.Difference(bundle.AllowKeep.ids)
 	if expiredCopiedIds.Cardinality() > 0 {
