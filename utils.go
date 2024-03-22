@@ -13,6 +13,10 @@ func IntPointer(i int) *int {
 	return &i
 }
 
+func StringPointer(s string) *string {
+	return &s
+}
+
 func generateRandomNumberUUID() string {
 	const charset = "0123456789"
 	b := make([]byte, 19)

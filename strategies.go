@@ -87,8 +87,12 @@ func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 		}
 		globalStrategies[s.StrategyID] = s
 	}
-	sss.highest.RunningTime = time.Duration(*sss.highest.runningTime) * time.Second
-	sss.lowest.RunningTime = time.Duration(*sss.lowest.runningTime) * time.Second
+	if sss.highest.runningTime != nil {
+		sss.highest.RunningTime = StringPointer(fmt.Sprintf("%s", time.Duration(*sss.highest.runningTime)*time.Second))
+	}
+	if sss.lowest.runningTime != nil {
+		sss.lowest.RunningTime = StringPointer(fmt.Sprintf("%s", time.Duration(*sss.lowest.runningTime)*time.Second))
+	}
 	for _, s := range sss.strategiesById {
 		sss.strategies = append(sss.strategies, s)
 	}
@@ -120,9 +124,9 @@ type StrategyMetrics struct {
 	Roi                *float64 `json:"roi"`
 	Pnl                *float64 `json:"pnl"`
 	runningTime        *int
-	RunningTime        time.Duration `json:"runningTime"`
-	LatestMatchedCount *int          `json:"latestMatchedCount"`
-	MatchedCount       *int          `json:"matchedCount"`
+	RunningTime        *string `json:"runningTime"`
+	LatestMatchedCount *int    `json:"latestMatchedCount"`
+	MatchedCount       *int    `json:"matchedCount"`
 }
 
 type StrategyRoi []*Roi
