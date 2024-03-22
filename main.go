@@ -60,14 +60,16 @@ func getFutureUSDT() (float64, error) {
 	return 0, nil
 }
 
-func fetchStrategies() (Strategies, error) {
+func getTopStrategiesWithRoi() (*TrackedStrategies, error) {
 	strategies, err := getTopStrategies(FUTURE, time.Duration(TheConfig.RuntimeMinHours)*time.Hour, time.Duration(TheConfig.RuntimeMaxHours)*time.Hour)
 	if err != nil {
 		return nil, err
 	}
-	for _, strategy := range strategies {
-		id := strategy.StrategyID
-		roi, err := getStrategyRois(id, strategy.UserID)
+	allowKeep := make(Strategies, 0)
+	allowOpen := make(Strategies, 0)
+	for c, s := range strategies.strategiesById {
+		id := s.StrategyID
+		roi, err := getStrategyRois(id, s.UserID)
 		if err != nil {
 			return nil, err
 		}
@@ -77,13 +79,33 @@ func fetchStrategies() (Strategies, error) {
 		sort.Slice(roi, func(i, j int) bool {
 			return roi[i].Time > roi[j].Time
 		})
-		strategy.Rois = roi
+		s.Rois = roi
+
+		if len(s.Rois) > 1 {
+			s.LastDayRoiChange = GetRoiChange(s.Rois, 24*time.Hour)
+			s.Last3HrRoiChange = GetRoiChange(s.Rois, 3*time.Hour)
+			s.Last2HrRoiChange = GetRoiChange(s.Rois, 2*time.Hour)
+			s.LastHrRoiChange = GetRoiChange(s.Rois, 1*time.Hour)
+			log.Info(display(s, nil, "Found", c+1, len(strategies.strategiesById)))
+			if s.LastDayRoiChange > 0.1 && s.Last3HrRoiChange > 0.05 && s.Last2HrRoiChange > 0 && s.LastHrRoiChange > -0.05 {
+				allowKeep = append(allowKeep, s)
+				log.Info("Allow Keep")
+				if s.Last2HrRoiChange > s.LastHrRoiChange && s.LastHrRoiChange > 0 {
+					allowOpen = append(allowOpen, s)
+					log.Info("Allow Open")
+				}
+			}
+		}
 	}
-	sort.Slice(strategies, func(i, j int) bool {
-		ri, _ := strconv.ParseFloat(strategies[i].Roi, 64)
-		rj, _ := strconv.ParseFloat(strategies[j].Roi, 64)
-		return ri > rj
+	sort.Slice(allowOpen, func(i, j int) bool {
+		I := allowOpen[i]
+		J := allowOpen[j]
+		iWeight := I.Last3HrRoiChange*TheConfig.Last3HrWeight + I.Last2HrRoiChange*TheConfig.Last2HrWeight + I.LastHrRoiChange*TheConfig.LastHrWeight
+		jWeight := J.Last3HrRoiChange*TheConfig.Last3HrWeight + J.Last2HrRoiChange*TheConfig.Last2HrWeight + J.LastHrRoiChange*TheConfig.LastHrWeight
+		return iWeight > jWeight
 	})
+	allowKeep.toTrackedStrategies()
+	allowOpen.toTrackedStrategies()
 	return strategies, nil
 }
 
@@ -122,37 +144,10 @@ func tick() error {
 		return err
 	}
 	log.Infof("USDT: %f", usdt)
-	m, err := fetchStrategies()
+	m, err := getTopStrategiesWithRoi()
 	if err != nil {
 		return err
 	}
-	m.getUserRankings()
-	filtered := make(Strategies, 0)
-	for c, s := range m {
-		log.Infof("Strategy: %s, %s, %d", s.Roi, s.Symbol, len(s.Rois))
-		if len(s.Rois) > 1 {
-			s.LastDayRoiChange = GetRoiChange(s.Rois, 24*time.Hour)
-			s.Last3HrRoiChange = GetRoiChange(s.Rois, 3*time.Hour)
-			s.Last2HrRoiChange = GetRoiChange(s.Rois, 2*time.Hour)
-			s.LastHrRoiChange = GetRoiChange(s.Rois, 1*time.Hour)
-			log.Info(display(s, nil, "Found", c+1, len(m)))
-			if s.LastDayRoiChange > 0.1 && s.Last3HrRoiChange > 0.05 && s.Last2HrRoiChange > 0 && s.LastHrRoiChange > -0.05 {
-				filtered = append(filtered, s)
-				log.Info("Picked")
-			}
-		}
-		globalStrategies[s.StrategyID] = s
-		log.Info("----------------")
-	}
-	sort.Slice(filtered, func(i, j int) bool {
-		I := filtered[i]
-		J := filtered[j]
-		iWeight := I.Last3HrRoiChange*TheConfig.Last3HrWeight + I.Last2HrRoiChange*TheConfig.Last2HrWeight + I.LastHrRoiChange*TheConfig.LastHrWeight
-		jWeight := J.Last3HrRoiChange*TheConfig.Last3HrWeight + J.Last2HrRoiChange*TheConfig.Last2HrWeight + J.LastHrRoiChange*TheConfig.LastHrWeight
-		return iWeight > jWeight
-	})
-	DiscordWebhook(fmt.Sprintf("Found %d valid strategies", len(filtered)))
-	filtered.getUserRankings()
 
 	openGrids, err := getOpenGrids()
 	if err != nil {
@@ -239,13 +234,7 @@ func tick() error {
 		invChunk = idealInvChunk
 	}
 	canPlace := make(Strategies, 0)
-	for _, s := range filtered {
-		if s.Last2HrRoiChange > s.LastHrRoiChange && s.LastHrRoiChange > 0 {
-			canPlace = append(canPlace, s)
-		}
-	}
 	DiscordWebhook(fmt.Sprintf("Found %d strategies with increasing Roi over 3 hrs", len(canPlace)))
-	canPlace.getUserRankings()
 	for c, s := range canPlace {
 		if !openGrids.existingIds.Contains(s.StrategyID) {
 			DiscordWebhook(display(s, nil, "New", c+1, len(canPlace)))

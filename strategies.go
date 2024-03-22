@@ -33,22 +33,82 @@ type QueryTopStrategy struct {
 
 type Strategies []*Strategy
 
-func (ss Strategies) getUserRankings() map[int]int {
-	rankings := map[int]int{}
-	for _, s := range ss {
-		rankings[s.UserID] += 1
+func (by Strategies) toTrackedStrategies() *TrackedStrategies {
+	sss := &TrackedStrategies{
+		strategiesById:     make(map[int]*Strategy),
+		strategiesByUserId: make(map[int]Strategies),
+		userRankings:       make(map[int]int),
+		symbolCount:        make(map[string]int),
 	}
-	DiscordWebhook(fmt.Sprintf("User Rankings: %v", rankings))
-	return rankings
+	for _, s := range by {
+		_, ok := sss.strategiesById[s.StrategyID]
+		if ok {
+			continue
+		}
+		sss.strategiesById[s.StrategyID] = s
+		if _, ok := sss.strategiesByUserId[s.UserID]; !ok {
+			sss.strategiesByUserId[s.UserID] = make(Strategies, 0)
+		}
+		sss.strategiesByUserId[s.UserID] = append(sss.strategiesByUserId[s.UserID], s)
+		sss.userRankings[s.UserID] += 1
+		sss.symbolCount[s.Symbol] += 1
+		roi, _ := strconv.ParseFloat(s.Roi, 64)
+		pnl, _ := strconv.ParseFloat(s.Pnl, 64)
+		if sss.highest.CopyCount == nil || s.CopyCount > *sss.highest.CopyCount {
+			sss.highest.CopyCount = &s.CopyCount
+		}
+		if sss.lowest.CopyCount == nil || s.CopyCount < *sss.lowest.CopyCount {
+			sss.lowest.CopyCount = &s.CopyCount
+		}
+		if sss.highest.Roi == nil || roi > *sss.highest.Roi {
+			sss.highest.Roi = &roi
+		}
+		if sss.lowest.Roi == nil || roi < *sss.lowest.Roi {
+			sss.lowest.Roi = &roi
+		}
+		if sss.highest.Pnl == nil || pnl > *sss.highest.Pnl {
+			sss.highest.Pnl = &pnl
+		}
+		if sss.lowest.Pnl == nil || pnl < *sss.lowest.Pnl {
+			sss.lowest.Pnl = &pnl
+		}
+		if sss.highest.MatchedCount == nil || s.MatchedCount > *sss.highest.MatchedCount {
+			sss.highest.MatchedCount = &s.MatchedCount
+		}
+		if sss.lowest.MatchedCount == nil || s.MatchedCount < *sss.lowest.MatchedCount {
+			sss.lowest.MatchedCount = &s.MatchedCount
+		}
+		if sss.highest.LatestMatchedCount == nil || s.LatestMatchedCount > *sss.highest.LatestMatchedCount {
+			sss.highest.LatestMatchedCount = &s.LatestMatchedCount
+		}
+		if sss.lowest.LatestMatchedCount == nil || s.LatestMatchedCount < *sss.lowest.LatestMatchedCount {
+			sss.lowest.LatestMatchedCount = &s.LatestMatchedCount
+		}
+		globalStrategies[s.StrategyID] = s
+	}
+	for _, s := range sss.strategiesById {
+		sss.strategies = append(sss.strategies, s)
+	}
+	return sss
 }
 
-func (ss Strategies) findById(id int) *Strategy {
-	for _, s := range ss {
-		if s.StrategyID == id {
-			return s
-		}
-	}
-	return nil
+type TrackedStrategies struct {
+	strategiesById     map[int]*Strategy
+	strategiesByUserId map[int]Strategies
+	strategies         Strategies
+	userRankings       map[int]int
+	symbolCount        map[string]int
+	highest            StrategyMetrics
+	lowest             StrategyMetrics
+}
+
+type StrategyMetrics struct {
+	CopyCount          *int     `json:"copyCount"`
+	Roi                *float64 `json:"roi"`
+	Pnl                *float64 `json:"pnl"`
+	RunningTime        *int     `json:"runningTime"`
+	LatestMatchedCount *int     `json:"latestMatchedCount"`
+	MatchedCount       *int     `json:"matchedCount"`
 }
 
 type StrategyRoi []*Roi
@@ -327,8 +387,8 @@ type SortPair struct {
 	Count     int
 }
 
-func mergeStrategies(strategyType int, runningTimeMin time.Duration, runningTimeMax time.Duration, sps ...SortPair) (Strategies, error) {
-	sss := make([]Strategies, 0)
+func mergeStrategies(strategyType int, runningTimeMin time.Duration, runningTimeMax time.Duration, sps ...SortPair) (*TrackedStrategies, error) {
+	sss := make(Strategies, 0)
 	for _, sp := range sps {
 		if sp.Count == 0 {
 			sp.Count = TheConfig.StrategiesCount
@@ -337,23 +397,13 @@ func mergeStrategies(strategyType int, runningTimeMin time.Duration, runningTime
 		if err != nil {
 			return nil, err
 		}
-		sss = append(sss, by)
+		sss = append(sss, by...)
 		time.Sleep(1 * time.Second)
 	}
-	merged := make(Strategies, 0)
-	addedIds := mapset.NewSet[int]()
-	for _, ss := range sss {
-		for _, s := range ss {
-			if !addedIds.Contains(s.StrategyID) {
-				merged = append(merged, s)
-				addedIds.Add(s.StrategyID)
-			}
-		}
-	}
-	return merged, nil
+	return sss.toTrackedStrategies(), nil
 }
 
-func getTopStrategies(strategyType int, runningTimeMin time.Duration, runningTimeMax time.Duration) (Strategies, error) {
+func getTopStrategies(strategyType int, runningTimeMin time.Duration, runningTimeMax time.Duration) (*TrackedStrategies, error) {
 	merged, err := mergeStrategies(strategyType, runningTimeMin, runningTimeMax,
 		SortPair{Sort: SortByRoi},
 		//SortPair{Sort: SortByRoi, Direction: IntPointer(SHORT)},
@@ -365,28 +415,8 @@ func getTopStrategies(strategyType int, runningTimeMin time.Duration, runningTim
 	if err != nil {
 		return nil, err
 	}
-	highestCopyCount := 0
-	lowestCopyCount := 9999999999
-	highestRoi := 0.0
-	lowestRoi := 9999999999.0
-
-	for _, s := range merged {
-		if s.CopyCount > highestCopyCount {
-			highestCopyCount = s.CopyCount
-		}
-		if s.CopyCount < lowestCopyCount {
-			lowestCopyCount = s.CopyCount
-		}
-		roi, _ := strconv.ParseFloat(s.Roi, 64)
-		if roi > highestRoi {
-			highestRoi = roi
-		}
-		if roi < lowestRoi {
-			lowestRoi = roi
-		}
-	}
-	DiscordWebhook(fmt.Sprintf("Found: %d, Copy Count: [%d, %d], Roi: [%.2f%%, %.2f%%]",
-		len(merged), highestCopyCount, lowestCopyCount, highestRoi, lowestRoi))
+	DiscordWebhook(fmt.Sprintf("Found: %d, H: %+v, L: %+v",
+		len(merged.strategiesById), merged.highest, merged.lowest))
 	return merged, nil
 }
 
