@@ -196,7 +196,7 @@ func tick() error {
 			reason += "Too much loss"
 			//if tracked.ContinuousRoiLoss < 3 {
 			DiscordWebhook(display(att, tracked.grid, "Skip Cancel "+reason, c+1, expiredCopiedIds.Cardinality()))
-			//	continue
+			continue
 			//}
 		}
 		err := closeGridConv(id, openGrids)
