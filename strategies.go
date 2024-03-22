@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
+	"sort"
 	"strconv"
 	"time"
 )
@@ -94,19 +95,33 @@ func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 	if sss.lowest.runningTime != nil {
 		sss.lowest.RunningTime = StringPointer(fmt.Sprintf("%s", time.Duration(*sss.lowest.runningTime)*time.Second))
 	}
+	for userId, count := range sss.userRankings {
+		if count > 1 {
+			sss.usersWithMoreThan1Strategy = append(sss.usersWithMoreThan1Strategy, UserPair{Id: userId, Count: count})
+		}
+	}
+	sort.Slice(sss.usersWithMoreThan1Strategy, func(i, j int) bool {
+		return sss.usersWithMoreThan1Strategy[i].Count > sss.usersWithMoreThan1Strategy[j].Count
+	})
 	sss.ids = mapset.NewSetFromMapKeys(sss.strategiesById)
 	return sss
 }
 
+type UserPair struct {
+	Id    int
+	Count int
+}
+
 type TrackedStrategies struct {
-	strategiesById     map[int]*Strategy
-	strategiesByUserId map[int]Strategies
-	strategies         Strategies
-	userRankings       map[int]int
-	symbolCount        map[string]int
-	highest            StrategyMetrics
-	lowest             StrategyMetrics
-	ids                mapset.Set[int]
+	strategiesById             map[int]*Strategy
+	strategiesByUserId         map[int]Strategies
+	strategies                 Strategies
+	userRankings               map[int]int
+	usersWithMoreThan1Strategy []UserPair
+	symbolCount                map[string]int
+	highest                    StrategyMetrics
+	lowest                     StrategyMetrics
+	ids                        mapset.Set[int]
 }
 
 func (t *TrackedStrategies) String() string {
