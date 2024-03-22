@@ -10,9 +10,9 @@ type Config struct {
 	SecretKey                      string  `env:"SECRET_KEY"`
 	CSRFToken                      string  `env:"CSRF"`
 	COOKIE                         string  `env:"COOKIE"`
-	StrategiesCount                int     `env:"STRATEGIES_COUNT" envDefault:"50"`
-	RuntimeMinHours                int     `env:"RUNTIME_MIN_HOURS" envDefault:"2"`
-	RuntimeMaxHours                int     `env:"RUNTIME_MAX_HOURS" envDefault:"200"`
+	StrategiesCount                int     `env:"STRATEGIES_COUNT" envDefault:"40"`
+	RuntimeMinHours                int     `env:"RUNTIME_MIN_HOURS" envDefault:"3"`
+	RuntimeMaxHours                int     `env:"RUNTIME_MAX_HOURS" envDefault:"168"`
 	Paper                          bool    `env:"PAPER" envDefault:"true"`
 	DiscordWebhook                 string  `env:"DISCORD_WEBHOOK"`
 	DiscordName                    string  `env:"DISCORD_NAME" envDefault:"BTS"`
