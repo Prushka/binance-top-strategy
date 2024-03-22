@@ -264,24 +264,6 @@ func tick() error {
 	return nil
 }
 
-func closeGridConv(copiedId int, openGrids *OpenGridResponse) error {
-	gridToClose := copiedId
-	gridCurrId := 0
-	for _, g := range openGrids.Data {
-		if g.CopiedStrategyID == gridToClose {
-			gridCurrId = g.StrategyID
-			break
-		}
-	}
-	if gridCurrId != 0 {
-		err := closeGrid(gridCurrId)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func main() {
 	configure()
 	log.Infof("Public IP: %s", getPublicIP())

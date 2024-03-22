@@ -6,6 +6,7 @@ import (
 	"github.com/gtuk/discordwebhook"
 	log "github.com/sirupsen/logrus"
 	"io"
+	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -13,6 +14,15 @@ import (
 
 func IntPointer(i int) *int {
 	return &i
+}
+
+func generateRandomNumberUUID() string {
+	const charset = "0123456789"
+	b := make([]byte, 19)
+	for i := range b {
+		b[i] = charset[rand.Intn(len(charset))]
+	}
+	return string(b)
 }
 
 func PrintAsJson(v interface{}) {
