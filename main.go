@@ -222,6 +222,9 @@ func tick() error {
 
 	if closedIds.Cardinality() > 0 && !TheConfig.Paper {
 		DiscordWebhook("Cleared expired grids - Skip current run")
+		for _, id := range closedIds.ToSlice() {
+			delete(globalGrids, id)
+		}
 		return nil
 	}
 
@@ -315,7 +318,6 @@ func closeGridConv(copiedId int, openGrids *OpenGridResponse) error {
 		if err != nil {
 			return err
 		}
-		delete(globalGrids, copiedId)
 	}
 	return nil
 }
