@@ -169,41 +169,41 @@ func tick() error {
 		invChunk = idealInvChunk
 	}
 	for c, s := range bundle.AllowOpen.strategies {
-		if !openGrids.existingIds.Contains(s.StrategyID) {
-			DiscordWebhook(display(s, nil, "New", c+1, len(bundle.AllowOpen.strategies)))
+		DiscordWebhook(display(s, nil, "New", c+1, len(bundle.AllowOpen.strategies)))
+		if openGrids.existingIds.Contains(s.StrategyID) {
+			DiscordWebhook("Strategy exists in open grids, Skip")
+			continue
 		}
-		if !openGrids.existingPairs.Contains(s.Symbol) {
-			switch s.Direction {
-			case LONG:
-				if openGrids.totalLongs >= TheConfig.MaxLongs {
-					DiscordWebhook("Max Longs reached, Skip")
-					continue
-				}
-			case NEUTRAL:
-				if openGrids.totalNeutrals >= TheConfig.MaxNeutrals {
-					DiscordWebhook("Max Neutrals not reached, Skip")
-					continue
-				}
+		if openGrids.existingPairs.Contains(s.Symbol) {
+			DiscordWebhook("Symbol exists in open grids, Skip")
+			continue
+		}
+		switch s.Direction {
+		case LONG:
+			if openGrids.totalLongs >= TheConfig.MaxLongs {
+				DiscordWebhook("Max Longs reached, Skip")
+				continue
 			}
-
-			errr := placeGrid(*s, invChunk)
-			if TheConfig.Paper {
-
-			} else if errr != nil {
-				DiscordWebhook(fmt.Sprintf("Error placing grid: %v", errr))
-			} else {
-				DiscordWebhook(fmt.Sprintf("Placed grid"))
-				chunksInt -= 1
-				openGrids.existingPairs.Add(s.Symbol)
-				time.Sleep(1 * time.Second)
-				if chunksInt <= 0 {
-					break
-				}
+		case NEUTRAL:
+			if openGrids.totalNeutrals >= TheConfig.MaxNeutrals {
+				DiscordWebhook("Max Neutrals not reached, Skip")
+				continue
 			}
+		}
+		errr := placeGrid(*s, invChunk)
+		if TheConfig.Paper {
+
+		} else if errr != nil {
+			DiscordWebhook(fmt.Sprintf("Error placing grid: %v", errr))
 		} else {
-			log.Infof("Already placed symbol")
+			DiscordWebhook(fmt.Sprintf("Placed grid"))
+			chunksInt -= 1
+			openGrids.existingPairs.Add(s.Symbol)
+			time.Sleep(1 * time.Second)
+			if chunksInt <= 0 {
+				break
+			}
 		}
-		log.Infof("----------------")
 	}
 
 	newOpenGrids, err := getOpenGrids()
