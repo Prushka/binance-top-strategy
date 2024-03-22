@@ -134,7 +134,7 @@ func tick() error {
 			s.Last3HrRoiChange = GetRoiChange(s.Rois, 3*time.Hour)
 			s.Last2HrRoiChange = GetRoiChange(s.Rois, 2*time.Hour)
 			s.LastHrRoiChange = GetRoiChange(s.Rois, 1*time.Hour)
-			DiscordWebhook(display(s, nil, "Found", c+1, len(m)))
+			log.Info(display(s, nil, "Found", c+1, len(m)))
 			if s.LastDayRoiChange > 0.1 && s.Last3HrRoiChange > 0.05 && s.Last2HrRoiChange > 0 && s.LastHrRoiChange > -0.05 {
 				validRois = append(validRois, s)
 				log.Info("Picked")
