@@ -317,23 +317,23 @@ var DirectionMap = map[int]string{
 	SHORT:   "SHORT",
 }
 
-func request[T any](url string, payload any, response T) (T, error) {
+func request[T any](url string, payload any, response T) (T, []byte, error) {
 	queryJson, _ := json.Marshal(payload)
 	resp, err := http.Post(url, "application/json",
 		bytes.NewBuffer(queryJson))
 	if err != nil {
-		return response, err
+		return response, nil, err
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return response, err
+		return response, nil, err
 	}
 	err = json.Unmarshal(body, response)
 	if err != nil {
-		return response, err
+		return response, nil, err
 	}
-	return response, nil
+	return response, body, nil
 }
 
 func getStrategyRois(strategyID int, rootUserId int) (StrategyRoi, error) {
@@ -342,7 +342,7 @@ func getStrategyRois(strategyID int, rootUserId int) (StrategyRoi, error) {
 		StrategyID:           strategyID,
 		StreamerStrategyType: "UM_GRID",
 	}
-	roi, err := request(
+	roi, _, err := request(
 		"https://www.binance.com/bapi/futures/v1/public/future/common/strategy/landing-page/queryRoiChart",
 		query, &StrategyRoiResponse{})
 	if err != nil || !roi.Success {
@@ -433,11 +433,26 @@ func _getTopStrategies(sort string, direction *int, strategyType int, runningTim
 		Sort:           sort,
 		Direction:      direction,
 	}
-	strategies, err := request(
+	strategies, res, err := request(
 		"https://www.binance.com/bapi/futures/v1/public/future/common/strategy/landing-page/queryTopStrategy",
 		query, &StrategiesResponse{})
 	if err != nil || !strategies.Success {
 		return nil, err
+	}
+	generic := map[string]interface{}{}
+	err = json.Unmarshal(res, &generic)
+	if err != nil {
+		return nil, err
+	}
+	if len(generic) != 6 {
+		DiscordWebhook(fmt.Sprintf("Error, strategies root response has length %d: %+v", len(generic),
+			generic))
+	}
+	for _, v := range generic["data"].([]interface{}) {
+		if len(v.(map[string]interface{})) != 14 {
+			DiscordWebhook(fmt.Sprintf("Error, strategy response has length %d: %+v", len(v.(map[string]interface{})),
+				v))
+		}
 	}
 	return strategies.Data, nil
 }
