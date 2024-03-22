@@ -67,6 +67,12 @@ func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 		if sss.lowest.Pnl == nil || pnl < *sss.lowest.Pnl {
 			sss.lowest.Pnl = &pnl
 		}
+		if sss.highest.RunningTime == nil || s.RunningTime > *sss.highest.RunningTime {
+			sss.highest.RunningTime = &s.RunningTime
+		}
+		if sss.lowest.RunningTime == nil || s.RunningTime < *sss.lowest.RunningTime {
+			sss.lowest.RunningTime = &s.RunningTime
+		}
 		if sss.highest.MatchedCount == nil || s.MatchedCount > *sss.highest.MatchedCount {
 			sss.highest.MatchedCount = &s.MatchedCount
 		}
