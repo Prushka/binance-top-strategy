@@ -127,14 +127,14 @@ func tick() error {
 		return err
 	}
 	validRois := make(Strategies, 0)
-	for _, s := range m {
+	for c, s := range m {
 		log.Infof("Strategy: %s, %s, %d", s.Roi, s.Symbol, len(s.Rois))
 		if len(s.Rois) > 1 {
 			s.LastDayRoiChange = GetRoiChange(s.Rois, 24*time.Hour)
 			s.Last3HrRoiChange = GetRoiChange(s.Rois, 3*time.Hour)
 			s.Last2HrRoiChange = GetRoiChange(s.Rois, 2*time.Hour)
 			s.LastHrRoiChange = GetRoiChange(s.Rois, 1*time.Hour)
-			log.Info(s.display())
+			DiscordWebhook(display(s, nil, "Found", c+1, len(m)))
 			if s.LastDayRoiChange > 0.1 && s.Last3HrRoiChange > 0.05 && s.Last2HrRoiChange > 0 && s.LastHrRoiChange > -0.05 {
 				validRois = append(validRois, s)
 				log.Info("Picked")
