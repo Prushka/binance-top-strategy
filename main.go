@@ -263,8 +263,8 @@ func tick() error {
 					continue
 				}
 			case NEUTRAL:
-				if openGrids.totalShorts < TheConfig.MinShorts {
-					DiscordWebhook("Min Shorts not reached, Skip")
+				if openGrids.totalNeutrals >= TheConfig.MaxNeutrals {
+					DiscordWebhook("Max Neutrals not reached, Skip")
 					continue
 				}
 			}

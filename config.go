@@ -19,7 +19,7 @@ type Config struct {
 	TickEveryMinutes               int     `env:"TICK_EVERY_MINUTES" envDefault:"5"`
 	MaxChunks                      int     `env:"MAX_CHUNKS" envDefault:"7"`
 	MaxLongs                       int     `env:"MAX_LONGS" envDefault:"4"`
-	MinShorts                      int     `env:"MIN_SHORTS" envDefault:"1"`
+	MaxNeutrals                    int     `env:"MAX_NEUTRALS" envDefault:"2"`
 	Mode                           string  `env:"MODE" envDefault:"trading"`
 	Leverage                       int     `env:"LEVERAGE" envDefault:"20"`
 	KeepTopNStrategiesOfSameSymbol int     `env:"KEEP_TOP_N_STRATEGIES_OF_SAME_SYMBOL" envDefault:"99"`
