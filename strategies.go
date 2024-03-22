@@ -112,11 +112,6 @@ func (s Strategy) display() string {
 		s.LastDayRoiChange*100, s.Last3HrRoiChange*100, s.Last2HrRoiChange*100, s.LastHrRoiChange*100, s.MinInvestment)
 }
 
-type GridDetailResponse struct {
-	Data GridDetail `json:"data"`
-	BinanceBaseResponse
-}
-
 type PlaceGridRequest struct {
 	Symbol                 string `json:"symbol"`
 	Direction              string `json:"direction"`
@@ -150,51 +145,6 @@ type PlaceGridResponse struct {
 		UpdateTime       int64  `json:"updateTime"`
 	} `json:"data"`
 	BinanceBaseResponse
-}
-
-type GridDetail struct {
-	StrategyID             int    `json:"strategyId"`
-	Symbol                 string `json:"symbol"`
-	Direction              string `json:"direction"`
-	Isolated               bool   `json:"isolated"`
-	GridInitialValue       string `json:"gridInitialValue"`
-	InitialLeverage        int    `json:"initialLeverage"`
-	GridType               string `json:"gridType"`
-	GridCount              int    `json:"gridCount"`
-	GridUpperLimit         string `json:"gridUpperLimit"`
-	GridLowerLimit         string `json:"gridLowerLimit"`
-	InitialUpperLimit      string `json:"initialUpperLimit"`
-	InitialLowerLimit      string `json:"initialLowerLimit"`
-	TriggerType            any    `json:"triggerType"`
-	TriggerLever           any    `json:"triggerLever"`
-	TriggerPrice           string `json:"triggerPrice"`
-	StopTriggerType        string `json:"stopTriggerType"`
-	StopUpperLimit         string `json:"stopUpperLimit"`
-	StopLowerLimit         string `json:"stopLowerLimit"`
-	Cos                    bool   `json:"cos"`
-	Cps                    bool   `json:"cps"`
-	BookTime               int64  `json:"bookTime"`
-	TriggerTime            int64  `json:"triggerTime"`
-	EndTime                int    `json:"endTime"`
-	PerGridQty             string `json:"perGridQty"`
-	PerGridQuoteQty        string `json:"perGridQuoteQty"`
-	TrailingUp             bool   `json:"trailingUp"`
-	TrailingDown           bool   `json:"trailingDown"`
-	TrailingStopUpperLimit bool   `json:"trailingStopUpperLimit"`
-	TrailingStopLowerLimit bool   `json:"trailingStopLowerLimit"`
-	TrailingUpLimitPrice   any    `json:"trailingUpLimitPrice"`
-	TrailingDownLimitPrice any    `json:"trailingDownLimitPrice"`
-	OrderCurrency          string `json:"orderCurrency"`
-	OpCode                 int    `json:"opCode"`
-	OpCodeMsg              string `json:"opCodeMsg"`
-	StrategyStatus         string `json:"strategyStatus"`
-	IsSubAccount           bool   `json:"isSubAccount"`
-	StrategyUserID         int    `json:"strategyUserId"`
-	StrategyFuturesUID     int    `json:"strategyFuturesUid"`
-	StrategyAmount         string `json:"strategyAmount"`
-	Sharing                bool   `json:"sharing"`
-	FundingFee             string `json:"fundingFee"`
-	MarginType             string `json:"marginType"`
 }
 
 type Grid struct {
@@ -584,16 +534,6 @@ func getOpenGrids() (*OpenGridResponse, error) {
 		return res, fmt.Errorf("login expired")
 	}
 	return res, err
-}
-
-func getGridDetail(strategyId string) (GridDetail, error) {
-	url := "https://www.binance.com/bapi/futures/v1/private/future/grid/query-grid-detail?strategyId=390204468"
-	res, err := privateRequest(url, "GET", nil, &GridDetailResponse{})
-	if err != nil {
-		return GridDetail{}, err
-	}
-	log.Infof("Grid: %+v", res)
-	return res.Data, err
 }
 
 func generateRandomNumberUUID() string {
