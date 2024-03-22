@@ -99,6 +99,10 @@ type TrackedStrategies struct {
 	ids                mapset.Set[int]
 }
 
+func (t *TrackedStrategies) String() string {
+	return fmt.Sprintf("Found: %d, H: %v, L: %v", len(t.strategiesById), asJson(t.highest), asJson(t.lowest))
+}
+
 func (t *TrackedStrategies) exists(id int) bool {
 	return t.ids.Contains(id)
 }
@@ -168,7 +172,7 @@ type Strategy struct {
 	MinInvestment      string `json:"minInvestment"`
 }
 
-func (s Strategy) display() string {
+func (s Strategy) String() string {
 	runTime := time.Duration(s.RunningTime) * time.Second
 	return fmt.Sprintf("%s, Copy: %d, Matched: [%d, %d], A: %s%%, D: %.1f%%, 3H: %.1f%%, 2H: %.1f%%, 1H: %.1f%%, MinInv: %s",
 		runTime, s.CopyCount, s.MatchedCount, s.LatestMatchedCount, s.Roi,
@@ -203,13 +207,13 @@ func display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		strategyId = fmt.Sprintf("S: %d, G: %d", s.StrategyID, grid.CopiedStrategyID)
 	}
 	if s != nil {
-		ss = s.display()
+		ss = s.String()
 	}
 	if grid != nil {
-		gg = ", " + grid.display()
+		gg = ", " + grid.String()
 	}
 	if length != 0 {
-		seq = fmt.Sprintf("[%d/%d] ", index, length)
+		seq = fmt.Sprintf("[%d/%d]", index, length)
 	}
 
 	return fmt.Sprintf("[%s, %s, %s, %s] %s: %s %s%s", symbol, strategyId, direction, userId, seq, action, ss, gg)
@@ -285,8 +289,6 @@ func getTopStrategies(strategyType int, runningTimeMin time.Duration, runningTim
 	if err != nil {
 		return nil, err
 	}
-	DiscordWebhook(fmt.Sprintf("Found: %d, H: %+v, L: %+v",
-		len(merged.strategiesById), merged.highest, merged.lowest))
 	return merged, nil
 }
 
@@ -322,55 +324,6 @@ func _getTopStrategies(sort string, direction *int, strategyType int, runningTim
 		}
 	}
 	return strategies.Data, nil
-}
-
-type TrackedRoi struct {
-	LowestRoi             float64
-	HighestRoi            float64
-	LastRoi               float64
-	ContinuousRoiGrowth   int
-	ContinuousRoiLoss     int
-	ContinuousRoiNoChange int
-	grid                  *Grid
-}
-
-var globalGrids = make(map[int]*TrackedRoi)
-
-func trackRoi(g *Grid) {
-	_, ok := globalGrids[g.CopiedStrategyID]
-	if !ok {
-		globalGrids[g.CopiedStrategyID] = &TrackedRoi{
-			LowestRoi:  g.profit,
-			HighestRoi: g.profit,
-			LastRoi:    g.profit,
-		}
-	}
-	tracked := globalGrids[g.CopiedStrategyID]
-	tracked.grid = g
-
-	if g.profit < tracked.LowestRoi {
-		tracked.LowestRoi = g.profit
-	}
-	if g.profit > tracked.HighestRoi {
-		tracked.HighestRoi = g.profit
-	}
-	if ok {
-		if g.profit > tracked.LastRoi {
-			tracked.ContinuousRoiGrowth += 1
-			tracked.ContinuousRoiLoss = 0
-			tracked.ContinuousRoiNoChange = 0
-		} else if g.profit < tracked.LastRoi {
-			tracked.ContinuousRoiLoss += 1
-			tracked.ContinuousRoiGrowth = 0
-			tracked.ContinuousRoiNoChange = 0
-		} else {
-			tracked.ContinuousRoiNoChange += 1
-			tracked.ContinuousRoiGrowth = 0
-			tracked.ContinuousRoiLoss = 0
-		}
-	}
-
-	tracked.LastRoi = g.profit
 }
 
 func getOpenGrids() (*OpenGridResponse, error) {

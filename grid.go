@@ -98,7 +98,17 @@ type OpenGridResponse struct {
 	BinanceBaseResponse
 }
 
-func (grid Grid) display() string {
+type TrackedGrid struct {
+	LowestRoi             float64
+	HighestRoi            float64
+	LastRoi               float64
+	ContinuousRoiGrowth   int
+	ContinuousRoiLoss     int
+	ContinuousRoiNoChange int
+	grid                  *Grid
+}
+
+func (grid *Grid) String() string {
 	extendedProfit := ""
 	tracked, ok := globalGrids[grid.CopiedStrategyID]
 	if ok {
@@ -108,6 +118,43 @@ func (grid Grid) display() string {
 	return fmt.Sprintf("In: %.2f, RealizedPnL: %s, TotalPnL: %f, Profit: %f%%%s",
 		grid.initialValue,
 		grid.GridProfit, grid.totalPnl, grid.profit*100, extendedProfit)
+}
+
+func (grid *Grid) track() *TrackedGrid {
+	_, ok := globalGrids[grid.CopiedStrategyID]
+	if !ok {
+		globalGrids[grid.CopiedStrategyID] = &TrackedGrid{
+			LowestRoi:  grid.profit,
+			HighestRoi: grid.profit,
+			LastRoi:    grid.profit,
+		}
+	}
+	tracked := globalGrids[grid.CopiedStrategyID]
+	tracked.grid = grid
+
+	if grid.profit < tracked.LowestRoi {
+		tracked.LowestRoi = grid.profit
+	}
+	if grid.profit > tracked.HighestRoi {
+		tracked.HighestRoi = grid.profit
+	}
+	if ok {
+		if grid.profit > tracked.LastRoi {
+			tracked.ContinuousRoiGrowth += 1
+			tracked.ContinuousRoiLoss = 0
+			tracked.ContinuousRoiNoChange = 0
+		} else if grid.profit < tracked.LastRoi {
+			tracked.ContinuousRoiLoss += 1
+			tracked.ContinuousRoiGrowth = 0
+			tracked.ContinuousRoiNoChange = 0
+		} else {
+			tracked.ContinuousRoiNoChange += 1
+			tracked.ContinuousRoiGrowth = 0
+			tracked.ContinuousRoiLoss = 0
+		}
+	}
+	tracked.LastRoi = grid.profit
+	return tracked
 }
 
 func closeGrid(strategyId int) error {

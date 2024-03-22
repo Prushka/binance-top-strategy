@@ -22,12 +22,12 @@ func generateRandomNumberUUID() string {
 	return string(b)
 }
 
-func PrintAsJson(v interface{}) {
-	b, err := json.MarshalIndent(v, "", "  ")
+func asJson(v interface{}) string {
+	b, err := json.Marshal(v)
 	if err != nil {
 		log.Error(err)
 	}
-	log.Info(string(b))
+	return string(b)
 }
 
 func getPublicIP() string {

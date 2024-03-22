@@ -1,64 +1,18 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"github.com/adshao/go-binance/v2"
-	"github.com/adshao/go-binance/v2/futures"
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/go-co-op/gocron"
 	log "github.com/sirupsen/logrus"
 	"sort"
-	"strconv"
 	"time"
 )
 
 var scheduler = gocron.NewScheduler(time.Now().Location())
-var futuresClient *futures.Client
 
-func sdk() {
-	futuresClient = binance.NewFuturesClient(TheConfig.ApiKey, TheConfig.SecretKey) // USDT-M Futures
-}
-
-func fetchMarketPrice(symbol string) (float64, error) {
-	res, err := _fetchMarketPrice(symbol)
-	if err != nil {
-		DiscordWebhook(fmt.Sprintf("Error fetching market price: %v", err))
-		return 0, err
-	}
-	return res, nil
-}
-
-func _fetchMarketPrice(symbol string) (float64, error) {
-	res, err := futuresClient.NewListPricesService().Symbol(symbol).Do(context.Background())
-	if err != nil {
-		return 0, err
-	}
-	for _, p := range res {
-		if p.Symbol == symbol {
-			return strconv.ParseFloat(p.Price, 64)
-		}
-	}
-	return 0, fmt.Errorf("symbol not found")
-}
-
-func getFutureUSDT() (float64, error) {
-	res, err := futuresClient.NewGetBalanceService().Do(context.Background())
-	if err != nil {
-		return 0, err
-	}
-	for _, b := range res {
-		log.Infof("Asset: %s, Balance: %s", b.Asset, b.Balance)
-		if b.Asset == "USDT" {
-			i, err := strconv.ParseFloat(b.Balance, 64)
-			if err != nil {
-				return 0, err
-			}
-			return i, nil
-		}
-	}
-	return 0, nil
-}
+var globalStrategies = make(map[int]*Strategy)
+var globalGrids = make(map[int]*TrackedGrid)
 
 type StrategiesBundle struct {
 	Raw       *TrackedStrategies
@@ -73,7 +27,7 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 	}
 	allowKeep := make(Strategies, 0)
 	allowOpen := make(Strategies, 0)
-	for c, s := range strategies.strategiesById {
+	for c, s := range strategies.strategies {
 		id := s.StrategyID
 		roi, err := getStrategyRois(id, s.UserID)
 		if err != nil {
@@ -92,15 +46,16 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 			s.Last3HrRoiChange = GetRoiChange(s.Rois, 3*time.Hour)
 			s.Last2HrRoiChange = GetRoiChange(s.Rois, 2*time.Hour)
 			s.LastHrRoiChange = GetRoiChange(s.Rois, 1*time.Hour)
-			log.Info(display(s, nil, "Found", c+1, len(strategies.strategiesById)))
+			prefix := ""
 			if s.LastDayRoiChange > 0.1 && s.Last3HrRoiChange > 0.05 && s.Last2HrRoiChange > 0 && s.LastHrRoiChange > -0.05 {
 				allowKeep = append(allowKeep, s)
-				log.Info("Allow Keep")
+				prefix += "Keep "
 				if s.Last2HrRoiChange > s.LastHrRoiChange && s.LastHrRoiChange > 0 {
 					allowOpen = append(allowOpen, s)
-					log.Info("Allow Open")
+					prefix += " Open "
 				}
 			}
+			log.Info(prefix + display(s, nil, "Found", c+1, len(strategies.strategiesById)))
 		}
 	}
 	sort.Slice(allowOpen, func(i, j int) bool {
@@ -110,7 +65,11 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 		jWeight := J.Last3HrRoiChange*TheConfig.Last3HrWeight + J.Last2HrRoiChange*TheConfig.Last2HrWeight + J.LastHrRoiChange*TheConfig.LastHrWeight
 		return iWeight > jWeight
 	})
-	return &StrategiesBundle{Raw: strategies, AllowOpen: allowOpen.toTrackedStrategies(), AllowKeep: allowKeep.toTrackedStrategies()}, nil
+	bundle := &StrategiesBundle{Raw: strategies, AllowOpen: allowOpen.toTrackedStrategies(), AllowKeep: allowKeep.toTrackedStrategies()}
+	DiscordWebhook("Raw: " + bundle.Raw.String())
+	DiscordWebhook("Keep: " + bundle.AllowKeep.String())
+	DiscordWebhook("Open: " + bundle.AllowOpen.String())
+	return bundle, nil
 }
 
 func GetRoiChange(roi StrategyRoi, t time.Duration) float64 {
@@ -125,8 +84,6 @@ func GetRoiChange(roi StrategyRoi, t time.Duration) float64 {
 	return latestRoi - roi[len(roi)-1].Roi
 }
 
-var globalStrategies = make(map[int]*Strategy)
-
 func tick() error {
 	usdt, err := getFutureUSDT()
 	if err != nil {
@@ -137,13 +94,12 @@ func tick() error {
 	if err != nil {
 		return err
 	}
-
 	openGrids, err := getOpenGrids()
 	if err != nil {
 		return err
 	}
 	for _, grid := range openGrids.Data {
-		trackRoi(grid)
+		grid.track()
 	}
 	expiredCopiedIds := openGrids.existingIds.Difference(bundle.AllowKeep.ids)
 	if expiredCopiedIds.Cardinality() > 0 {
@@ -195,8 +151,6 @@ func tick() error {
 		return nil
 	}
 
-	log.Infof("----------------")
-
 	for c, grid := range openGrids.Data {
 		DiscordWebhook(display(globalStrategies[grid.CopiedStrategyID], grid, "Existing", c+1, len(openGrids.Data)))
 	}
@@ -214,11 +168,9 @@ func tick() error {
 	if invChunk > idealInvChunk {
 		invChunk = idealInvChunk
 	}
-	canPlace := make(Strategies, 0)
-	DiscordWebhook(fmt.Sprintf("Found %d strategies with increasing Roi over 3 hrs", len(canPlace)))
-	for c, s := range canPlace {
+	for c, s := range bundle.AllowOpen.strategies {
 		if !openGrids.existingIds.Contains(s.StrategyID) {
-			DiscordWebhook(display(s, nil, "New", c+1, len(canPlace)))
+			DiscordWebhook(display(s, nil, "New", c+1, len(bundle.AllowOpen.strategies)))
 		}
 		if !openGrids.existingPairs.Contains(s.Symbol) {
 			switch s.Direction {
