@@ -20,8 +20,8 @@ type Config struct {
 	DiscordName                    string  `env:"DISCORD_NAME" envDefault:"BTS"`
 	TickEveryMinutes               int     `env:"TICK_EVERY_MINUTES" envDefault:"5"`
 	MaxChunks                      int     `env:"MAX_CHUNKS" envDefault:"5"`
-	MaxLongs                       int     `env:"MAX_LONGS" envDefault:"5"`
-	MaxNeutrals                    int     `env:"MAX_NEUTRALS" envDefault:"5"`
+	MaxLongs                       int     `env:"MAX_LONGS" envDefault:"-1"`
+	MaxNeutrals                    int     `env:"MAX_NEUTRALS" envDefault:"-1"`
 	Mode                           string  `env:"MODE" envDefault:"trading"`
 	Leverage                       int     `env:"LEVERAGE" envDefault:"20"`
 	KeepTopNStrategiesOfSameSymbol int     `env:"KEEP_TOP_N_STRATEGIES_OF_SAME_SYMBOL" envDefault:"99"`

@@ -185,12 +185,12 @@ func tick() error {
 		}
 		switch s.Direction {
 		case LONG:
-			if openGrids.totalLongs >= TheConfig.MaxLongs {
+			if TheConfig.MaxLongs >= 0 && openGrids.totalLongs >= TheConfig.MaxLongs {
 				DiscordWebhook("Max Longs reached, Skip")
 				continue
 			}
 		case NEUTRAL:
-			if openGrids.totalNeutrals >= TheConfig.MaxNeutrals {
+			if TheConfig.MaxNeutrals >= 0 && openGrids.totalNeutrals >= TheConfig.MaxNeutrals {
 				DiscordWebhook("Max Neutrals not reached, Skip")
 				continue
 			}
