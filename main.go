@@ -246,7 +246,7 @@ func tick() error {
 	}
 	canPlace := make(Strategies, 0)
 	for _, s := range filtered {
-		if s.Last3HrRoiChange > s.Last2HrRoiChange && s.Last2HrRoiChange > s.LastHrRoiChange {
+		if s.Last2HrRoiChange > s.LastHrRoiChange {
 			canPlace = append(canPlace, s)
 		}
 	}
