@@ -19,9 +19,9 @@ type Config struct {
 	DiscordWebhookOrder            string  `env:"DISCORD_WEBHOOK_ORDER"`
 	DiscordName                    string  `env:"DISCORD_NAME" envDefault:"BTS"`
 	TickEveryMinutes               int     `env:"TICK_EVERY_MINUTES" envDefault:"5"`
-	MaxChunks                      int     `env:"MAX_CHUNKS" envDefault:"6"`
+	MaxChunks                      int     `env:"MAX_CHUNKS" envDefault:"5"`
 	MaxLongs                       int     `env:"MAX_LONGS" envDefault:"5"`
-	MaxNeutrals                    int     `env:"MAX_NEUTRALS" envDefault:"3"`
+	MaxNeutrals                    int     `env:"MAX_NEUTRALS" envDefault:"5"`
 	Mode                           string  `env:"MODE" envDefault:"trading"`
 	Leverage                       int     `env:"LEVERAGE" envDefault:"20"`
 	KeepTopNStrategiesOfSameSymbol int     `env:"KEEP_TOP_N_STRATEGIES_OF_SAME_SYMBOL" envDefault:"99"`
