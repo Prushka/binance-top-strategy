@@ -134,7 +134,7 @@ func (t *TrackedStrategies) findStrategyRanking(id int) int {
 }
 
 func (t *TrackedStrategies) String() string {
-	return fmt.Sprintf("%d, %v, H: %v, L: %v", len(t.strategiesById), asJson(t.usersWithMoreThan1Strategy), asJson(t.highest), asJson(t.lowest))
+	return fmt.Sprintf("%d, Symbols: %d, %v, H: %v, L: %v", len(t.strategiesById), len(t.symbolCount), asJson(t.usersWithMoreThan1Strategy), asJson(t.highest), asJson(t.lowest))
 }
 
 func (t *TrackedStrategies) exists(id int) bool {
@@ -248,10 +248,10 @@ func display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		gg = ", " + grid.String()
 	}
 	if length != 0 {
-		seq = fmt.Sprintf("[%d/%d]", index, length)
+		seq = fmt.Sprintf("%d/%d - ", index, length)
 	}
 
-	return fmt.Sprintf("[%s, %s, %s, %s] %s: %s %s%s", symbol, strategyId, direction, userId, seq, action, ss, gg)
+	return fmt.Sprintf("[%s%s, %s, %s, %s] %s: %s%s", seq, symbol, strategyId, direction, userId, action, ss, gg)
 }
 
 const (
