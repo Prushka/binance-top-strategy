@@ -15,6 +15,10 @@ type DiscordMessagePayload struct {
 
 var discordMessageChan = make(chan DiscordMessagePayload, 100)
 
+func DiscordJson(chat string) string {
+	return "```json\n" + chat + "\n```"
+}
+
 func DiscordWebhook(chat string) {
 	if strings.Contains(chat, "Opened") || strings.Contains(chat, "Cancelled") {
 		DiscordWebhookS(chat, ActionWebhook)

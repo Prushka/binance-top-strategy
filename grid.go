@@ -229,7 +229,7 @@ func placeGrid(strategy Strategy, initialUSDT float64) error {
 		payload.TrailingStopLowerLimit = true
 	}
 	s, _ := json.Marshal(payload)
-	DiscordWebhookS(string(s), OrderWebhook)
+	DiscordWebhookS(DiscordJson(string(s)), OrderWebhook)
 	res, err := privateRequest("https://www.binance.com/bapi/futures/v2/private/future/grid/place-grid", "POST", payload, &PlaceGridResponse{})
 	if !res.Success {
 		return fmt.Errorf(res.Message)
