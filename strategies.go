@@ -67,11 +67,11 @@ func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 		if sss.lowest.Pnl == nil || pnl < *sss.lowest.Pnl {
 			sss.lowest.Pnl = &pnl
 		}
-		if sss.highest.RunningTime == nil || s.RunningTime > *sss.highest.RunningTime {
-			sss.highest.RunningTime = &s.RunningTime
+		if sss.highest.runningTime == nil || s.RunningTime > *sss.highest.runningTime {
+			sss.highest.runningTime = &s.RunningTime
 		}
-		if sss.lowest.RunningTime == nil || s.RunningTime < *sss.lowest.RunningTime {
-			sss.lowest.RunningTime = &s.RunningTime
+		if sss.lowest.runningTime == nil || s.RunningTime < *sss.lowest.runningTime {
+			sss.lowest.runningTime = &s.RunningTime
 		}
 		if sss.highest.MatchedCount == nil || s.MatchedCount > *sss.highest.MatchedCount {
 			sss.highest.MatchedCount = &s.MatchedCount
@@ -87,6 +87,8 @@ func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 		}
 		globalStrategies[s.StrategyID] = s
 	}
+	sss.highest.RunningTime = time.Duration(*sss.highest.runningTime) * time.Second
+	sss.lowest.RunningTime = time.Duration(*sss.lowest.runningTime) * time.Second
 	for _, s := range sss.strategiesById {
 		sss.strategies = append(sss.strategies, s)
 	}
@@ -117,9 +119,10 @@ type StrategyMetrics struct {
 	CopyCount          *int     `json:"copyCount"`
 	Roi                *float64 `json:"roi"`
 	Pnl                *float64 `json:"pnl"`
-	RunningTime        *int     `json:"runningTime"`
-	LatestMatchedCount *int     `json:"latestMatchedCount"`
-	MatchedCount       *int     `json:"matchedCount"`
+	runningTime        *int
+	RunningTime        time.Duration `json:"runningTime"`
+	LatestMatchedCount *int          `json:"latestMatchedCount"`
+	MatchedCount       *int          `json:"matchedCount"`
 }
 
 type StrategyRoi []*Roi
