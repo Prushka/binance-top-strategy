@@ -136,7 +136,6 @@ func tick() error {
 		}
 		closedIds.Add(id)
 		DiscordWebhook(display(att, tracked.grid, "Cancelled "+reason, c+1, expiredCopiedIds.Cardinality()))
-		time.Sleep(1 * time.Second)
 	}
 
 	for _, grid := range openGrids.Data {
@@ -148,7 +147,6 @@ func tick() error {
 			}
 			closedIds.Add(grid.CopiedStrategyID)
 			DiscordWebhook(display(globalStrategies[grid.CopiedStrategyID], t.grid, "Cancelled No Change", 0, 0))
-			time.Sleep(1 * time.Second)
 		}
 	}
 
@@ -204,7 +202,6 @@ func tick() error {
 			DiscordWebhook(fmt.Sprintf("**Placed grid**"))
 			chunksInt -= 1
 			openGrids.existingPairs.Add(s.Symbol)
-			time.Sleep(1 * time.Second)
 			if chunksInt <= 0 {
 				break
 			}

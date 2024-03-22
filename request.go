@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io"
 	"net/http"
+	"time"
 )
 
 type BinanceBaseResponse struct {
@@ -79,6 +80,7 @@ func privateRequest[T BinanceResponse](url, method string, payload any, response
 		return response, err
 	}
 	log.Infof("Response: %s", body)
+	time.Sleep(1 * time.Second)
 	err = json.Unmarshal(body, response)
 	if err == nil {
 		if response.getCode() == "100002001" || response.getCode() == "100001005" {
