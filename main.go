@@ -50,7 +50,7 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 			if s.LastDayRoiChange > 0.1 && s.Last3HrRoiChange > 0.05 && s.Last2HrRoiChange > 0 && s.LastHrRoiChange > -0.05 {
 				allowKeep = append(allowKeep, s)
 				prefix += "Keep "
-				if s.Last2HrRoiChange > s.LastHrRoiChange && s.LastHrRoiChange > 0 {
+				if s.Last2HrRoiChange > s.LastHrRoiChange && s.LastHrRoiChange > 0.01 {
 					allowOpen = append(allowOpen, s)
 					prefix += " Open "
 				}
