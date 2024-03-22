@@ -640,7 +640,6 @@ func placeGrid(strategy Strategy, initialUSDT float64) error {
 		Cps:                    true,
 		TrailingUp:             strategy.StrategyParams.TrailingUp,
 		TrailingDown:           strategy.StrategyParams.TrailingDown,
-		StopTriggerType:        "MARK_PRICE",
 		OrderCurrency:          "BASE",
 		ClientStrategyID:       "ctrc_web_" + generateRandomNumberUUID(),
 		CopiedStrategyID:       strategy.StrategyID,
@@ -652,9 +651,11 @@ func placeGrid(strategy Strategy, initialUSDT float64) error {
 	}
 	if strategy.StrategyParams.StopUpperLimit != nil {
 		payload.StopUpperLimit = *strategy.StrategyParams.StopUpperLimit
+		payload.StopTriggerType = "MARK_PRICE"
 	}
 	if strategy.StrategyParams.StopLowerLimit != nil {
 		payload.StopLowerLimit = *strategy.StrategyParams.StopLowerLimit
+		payload.StopTriggerType = "MARK_PRICE"
 	}
 	PrintAsJson(payload)
 	res, err := privateRequest("https://www.binance.com/bapi/futures/v2/private/future/grid/place-grid", "POST", payload, &PlaceGridResponse{})
