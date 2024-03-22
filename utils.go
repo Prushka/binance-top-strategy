@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"github.com/gtuk/discordwebhook"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -30,8 +31,15 @@ type DiscordMessagePayload struct {
 var discordMessageChan = make(chan DiscordMessagePayload, 100)
 
 func DiscordWebhook(chat string) {
+	if strings.Contains(chat, "Opened") || strings.Contains(chat, "Cancelled") {
+		DiscordWebhookS(chat, ActionWebhook)
+	}
+	DiscordWebhookS(chat, DefaultWebhook)
+}
+
+func DiscordWebhookS(chat string, webhookType int) {
 	log.Info(chat)
-	discordMessageChan <- DiscordMessagePayload{Content: chat, WebhookType: DefaultWebhook}
+	discordMessageChan <- DiscordMessagePayload{Content: chat, WebhookType: webhookType}
 }
 
 func DiscordService() {
@@ -69,8 +77,14 @@ func DiscordSend(payload DiscordMessagePayload) {
 	var err error
 	switch payload.WebhookType {
 	case ActionWebhook:
+		if TheConfig.DiscordWebhookAction == "" {
+			return
+		}
 		err = discordwebhook.SendMessage(TheConfig.DiscordWebhookAction, message)
 	case OrderWebhook:
+		if TheConfig.DiscordWebhookOrder == "" {
+			return
+		}
 		err = discordwebhook.SendMessage(TheConfig.DiscordWebhookOrder, message)
 	default:
 		err = discordwebhook.SendMessage(TheConfig.DiscordWebhook, message)
@@ -91,19 +105,14 @@ func DiscordSend(payload DiscordMessagePayload) {
 }
 
 func getPublicIP() string {
-	// The URL of the service that returns the public IP
 	url := "http://api.ipify.org"
-
-	// Making a GET request to the URL
 	resp, err := http.Get(url)
 	if err != nil {
 		fmt.Println("Error fetching IP address:", err)
 		return ""
 	}
 	defer resp.Body.Close()
-
-	// Reading the response body
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("Error reading response body:", err)
 		return ""

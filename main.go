@@ -299,7 +299,7 @@ func tick() error {
 		return err
 	}
 	for _, newId := range newOpenGrids.existingIds.Difference(openGrids.existingIds).ToSlice() {
-		DiscordWebhook(display(m.findById(newId), nil, "Placed", 0, 0))
+		DiscordWebhook(display(m.findById(newId), nil, "Opened", 0, 0))
 	}
 	return nil
 }

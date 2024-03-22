@@ -598,7 +598,8 @@ func placeGrid(strategy Strategy, initialUSDT float64) error {
 		payload.StopTriggerType = "MARK_PRICE"
 		payload.TrailingStopLowerLimit = true
 	}
-	PrintAsJson(payload)
+	s, _ := json.Marshal(payload)
+	DiscordWebhookS(string(s), OrderWebhook)
 	res, err := privateRequest("https://www.binance.com/bapi/futures/v2/private/future/grid/place-grid", "POST", payload, &PlaceGridResponse{})
 	if !res.Success {
 		return fmt.Errorf(res.Message)
