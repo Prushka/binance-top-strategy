@@ -150,6 +150,7 @@ func tick() error {
 		jWeight := J.Last3HrRoiChange*TheConfig.Last3HrWeight + J.Last2HrRoiChange*TheConfig.Last2HrWeight + J.LastHrRoiChange*TheConfig.LastHrWeight
 		return iWeight > jWeight
 	})
+	DiscordWebhook(fmt.Sprintf("Found %d valid strategies", len(validRois)))
 
 	symbolCount := make(map[string]int)
 
@@ -243,9 +244,16 @@ func tick() error {
 	if invChunk > idealInvChunk {
 		invChunk = idealInvChunk
 	}
-	for c, s := range filtered {
+	canPlace := make(Strategies, 0)
+	for _, s := range filtered {
+		if s.Last3HrRoiChange > s.Last2HrRoiChange && s.Last2HrRoiChange > s.LastHrRoiChange {
+			canPlace = append(canPlace, s)
+		}
+	}
+	DiscordWebhook(fmt.Sprintf("Found %d strategies with increasing Roi over 3 hrs", len(canPlace)))
+	for c, s := range canPlace {
 		if !openGrids.existingIds.Contains(s.StrategyID) {
-			DiscordWebhook(display(s, nil, "New", c+1, len(filtered)))
+			DiscordWebhook(display(s, nil, "New", c+1, len(canPlace)))
 		}
 		if !openGrids.existingPairs.Contains(s.Symbol) {
 			switch s.Direction {
