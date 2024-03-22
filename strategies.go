@@ -86,15 +86,13 @@ func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 			sss.lowest.LatestMatchedCount = &s.LatestMatchedCount
 		}
 		globalStrategies[s.StrategyID] = s
+		sss.strategies = append(sss.strategies, s)
 	}
 	if sss.highest.runningTime != nil {
 		sss.highest.RunningTime = StringPointer(fmt.Sprintf("%s", time.Duration(*sss.highest.runningTime)*time.Second))
 	}
 	if sss.lowest.runningTime != nil {
 		sss.lowest.RunningTime = StringPointer(fmt.Sprintf("%s", time.Duration(*sss.lowest.runningTime)*time.Second))
-	}
-	for _, s := range sss.strategiesById {
-		sss.strategies = append(sss.strategies, s)
 	}
 	sss.ids = mapset.NewSetFromMapKeys(sss.strategiesById)
 	return sss
@@ -112,7 +110,7 @@ type TrackedStrategies struct {
 }
 
 func (t *TrackedStrategies) String() string {
-	return fmt.Sprintf("Found: %d, H: %v, L: %v", len(t.strategiesById), asJson(t.highest), asJson(t.lowest))
+	return fmt.Sprintf("%d, H: %v, L: %v", len(t.strategiesById), asJson(t.highest), asJson(t.lowest))
 }
 
 func (t *TrackedStrategies) exists(id int) bool {
