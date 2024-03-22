@@ -26,8 +26,8 @@ type Config struct {
 	Leverage                       int     `env:"LEVERAGE" envDefault:"20"`
 	KeepTopNStrategiesOfSameSymbol int     `env:"KEEP_TOP_N_STRATEGIES_OF_SAME_SYMBOL" envDefault:"99"`
 	Last3HrWeight                  float64 `env:"LAST_3_HR_WEIGHT" envDefault:"0"`
-	Last2HrWeight                  float64 `env:"LAST_2_HR_WEIGHT" envDefault:"0"`
-	LastHrWeight                   float64 `env:"LAST_1_HR_WEIGHT" envDefault:"0.6"`
+	Last2HrWeight                  float64 `env:"LAST_2_HR_WEIGHT" envDefault:"1"`
+	LastHrWeight                   float64 `env:"LAST_1_HR_WEIGHT" envDefault:"0"`
 }
 
 var TheConfig = &Config{}
