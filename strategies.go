@@ -626,11 +626,14 @@ func placeGrid(strategy Strategy, initialUSDT float64) error {
 		TrailingUp:             strategy.StrategyParams.TrailingUp,
 		TrailingDown:           strategy.StrategyParams.TrailingDown,
 		StopTriggerType:        "MARK_PRICE",
-		OrderCurrency:          "QUOTE", // not sure
+		OrderCurrency:          "BASE",
 		ClientStrategyID:       "ctrc_web_" + generateRandomNumberUUID(),
 		CopiedStrategyID:       strategy.StrategyID,
 		TrailingStopLowerLimit: false, // not sure
 		TrailingStopUpperLimit: false, // not sure
+	}
+	if payload.TrailingUp || payload.TrailingDown {
+		payload.OrderCurrency = "QUOTE"
 	}
 	if strategy.StrategyParams.StopUpperLimit != nil {
 		payload.StopUpperLimit = *strategy.StrategyParams.StopUpperLimit
