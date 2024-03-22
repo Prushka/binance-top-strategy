@@ -1,3 +1,4 @@
 .idea
 *.js
 *.json
+docker-compose.yml
