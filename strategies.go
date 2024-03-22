@@ -338,12 +338,12 @@ func mergeStrategies(strategyType int, runningTimeMin time.Duration, runningTime
 
 func getTopStrategies(strategyType int, runningTimeMin time.Duration, runningTimeMax time.Duration) (Strategies, error) {
 	merged, err := mergeStrategies(strategyType, runningTimeMin, runningTimeMax,
-		SortPair{Sort: SortByRoi, Direction: IntPointer(NEUTRAL)},
-		SortPair{Sort: SortByRoi, Direction: IntPointer(SHORT)},
-		SortPair{Sort: SortByRoi, Direction: IntPointer(LONG)},
-		SortPair{Sort: SortByMatched},
-		SortPair{Sort: SortByPnl},
-		SortPair{Sort: SortByCopyCount},
+		SortPair{Sort: SortByRoi},
+		//SortPair{Sort: SortByRoi, Direction: IntPointer(SHORT)},
+		//SortPair{Sort: SortByRoi, Direction: IntPointer(LONG)},
+		//SortPair{Sort: SortByMatched},
+		//SortPair{Sort: SortByPnl},
+		//SortPair{Sort: SortByCopyCount},
 	)
 	if err != nil {
 		return nil, err
