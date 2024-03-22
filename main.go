@@ -66,6 +66,7 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 		return iWeight > jWeight
 	})
 	bundle := &StrategiesBundle{Raw: strategies, AllowOpen: allowOpen.toTrackedStrategies(), AllowKeep: allowKeep.toTrackedStrategies()}
+	DiscordWebhook("### Strategies")
 	DiscordWebhook("Raw: " + bundle.Raw.String())
 	DiscordWebhook("Keep: " + bundle.AllowKeep.String())
 	DiscordWebhook("Open: " + bundle.AllowOpen.String())
@@ -85,6 +86,7 @@ func GetRoiChange(roi StrategyRoi, t time.Duration) float64 {
 }
 
 func tick() error {
+	DiscordWebhook(fmt.Sprintf("## Run: %v", time.Now().Format("2006-01-02 15:04:05")))
 	usdt, err := getFutureUSDT()
 	if err != nil {
 		return err
@@ -94,6 +96,7 @@ func tick() error {
 	if err != nil {
 		return err
 	}
+	DiscordWebhook("### Current Grids:")
 	openGrids, err := getOpenGrids()
 	if err != nil {
 		return err
@@ -101,9 +104,12 @@ func tick() error {
 	for _, grid := range openGrids.Data {
 		grid.track()
 	}
+	for c, grid := range openGrids.Data {
+		DiscordWebhook(display(globalStrategies[grid.CopiedStrategyID], grid, "Existing", c+1, len(openGrids.Data)))
+	}
 	expiredCopiedIds := openGrids.existingIds.Difference(bundle.AllowKeep.ids)
 	if expiredCopiedIds.Cardinality() > 0 {
-		DiscordWebhook(fmt.Sprintf("Expired Strategies: %v", expiredCopiedIds))
+		DiscordWebhook(fmt.Sprintf("### Expired Strategies: %v", expiredCopiedIds))
 	}
 	closedIds := mapset.NewSet[int]()
 	for c, id := range expiredCopiedIds.ToSlice() {
@@ -117,7 +123,7 @@ func tick() error {
 		log.Infof("Closing Grid: %d", id)
 		tracked, ok := globalGrids[id]
 		if ok && tracked.LastRoi < -0.03 { // attempting to close loss
-			reason += "Too much loss"
+			reason += " too much loss"
 			DiscordWebhook(display(att, tracked.grid, "Skip Cancel "+reason, c+1, expiredCopiedIds.Cardinality()))
 			continue
 		}
@@ -151,15 +157,11 @@ func tick() error {
 		return nil
 	}
 
-	for c, grid := range openGrids.Data {
-		DiscordWebhook(display(globalStrategies[grid.CopiedStrategyID], grid, "Existing", c+1, len(openGrids.Data)))
-	}
-
 	if TheConfig.MaxChunks-len(openGrids.Data) <= 0 && !TheConfig.Paper {
 		DiscordWebhook("Max Chunks reached, No cancel - Skip current run")
 		return nil
 	}
-
+	DiscordWebhook("### Opening new grids:")
 	chunksInt := TheConfig.MaxChunks - len(openGrids.Data)
 	chunks := float64(TheConfig.MaxChunks - len(openGrids.Data))
 	invChunk := (usdt - chunks*0.8) / chunks
@@ -206,6 +208,7 @@ func tick() error {
 		}
 	}
 
+	DiscordWebhook("### Opened Grids:")
 	newOpenGrids, err := getOpenGrids()
 	if err != nil {
 		return err
