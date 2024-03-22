@@ -315,6 +315,7 @@ func closeGridConv(copiedId int, openGrids *OpenGridResponse) error {
 		if err != nil {
 			return err
 		}
+		delete(globalGrids, copiedId)
 	}
 	return nil
 }
