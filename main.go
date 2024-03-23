@@ -135,9 +135,9 @@ func tick() error {
 		reason := ""
 		grid := gGrids.gridsByUid[id]
 		att, ok := globalStrategies[id]
-		if !bundle.Raw.exists(id) {
+		if !bundle.Raw.exists(grid.CopiedStrategyID) {
 			reason += "Strategy not found"
-		} else if ok && !bundle.Filtered.exists(id) {
+		} else if ok && !bundle.Filtered.exists(grid.CopiedStrategyID) {
 			reason += "Strategy not picked"
 		}
 		log.Infof("Closing Grid with Strategy Id: %d", id)
