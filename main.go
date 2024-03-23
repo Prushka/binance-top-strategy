@@ -48,6 +48,7 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 			s.last3HrRoiChange = GetRoiChange(s.Rois, 3*time.Hour)
 			s.last2HrRoiChange = GetRoiChange(s.Rois, 2*time.Hour)
 			s.lastHrRoiChange = GetRoiChange(s.Rois, 1*time.Hour)
+			s.lastDayRoiPerHr = GetRoiPerHr(s.Rois, 24*time.Hour)
 			s.roiPerHour = (s.roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
 			prefix := ""
 			if s.lastDayRoiChange > 0.1 &&
@@ -91,12 +92,13 @@ func GetRoiPerHr(roi StrategyRoi, t time.Duration) float64 {
 	latestTimestamp := roi[0].Time
 	latestRoi := roi[0].Roi
 	l := latestTimestamp - int64(t.Seconds())
+	hrs := float64(t.Seconds()) / 3600
 	for _, r := range roi {
 		if r.Time <= l {
-			return (latestRoi - r.Roi) / (float64(t.Seconds()) / 3600)
+			return (latestRoi - r.Roi) / hrs
 		}
 	}
-	return (latestRoi - roi[len(roi)-1].Roi) / float64(t.Seconds())
+	return (latestRoi - roi[len(roi)-1].Roi) / (float64(roi[0].Time-roi[len(roi)-1].Time) / 3600)
 }
 
 func tick() error {
