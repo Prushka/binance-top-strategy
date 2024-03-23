@@ -16,9 +16,8 @@ var globalStrategies = make(map[int]*Strategy) // StrategyOriginalID -> Strategy
 var gGrids = newTrackedGrids()
 
 type StrategiesBundle struct {
-	Raw       *TrackedStrategies
-	AllowOpen *TrackedStrategies
-	AllowKeep *TrackedStrategies
+	Raw      *TrackedStrategies
+	Filtered *TrackedStrategies
 }
 
 func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
@@ -26,8 +25,7 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 	if err != nil {
 		return nil, err
 	}
-	allowKeep := make(Strategies, 0)
-	allowOpen := make(Strategies, 0)
+	filtered := make(Strategies, 0)
 	for c, s := range strategies.strategies {
 		id := s.StrategyID
 		roi, err := getStrategyRois(id, s.UserID)
@@ -45,48 +43,60 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 		s.roi /= 100
 
 		if len(s.Rois) > 1 {
+			s.roi = s.Rois[0].Roi
 			s.lastDayRoiChange = GetRoiChange(s.Rois, 24*time.Hour)
 			s.last3HrRoiChange = GetRoiChange(s.Rois, 3*time.Hour)
 			s.last2HrRoiChange = GetRoiChange(s.Rois, 2*time.Hour)
 			s.lastHrRoiChange = GetRoiChange(s.Rois, 1*time.Hour)
 			s.roiPerHour = (s.roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
 			prefix := ""
-			if s.lastDayRoiChange > 0.1 && s.last3HrRoiChange > 0.05 && s.last2HrRoiChange > 0 && s.lastHrRoiChange > -0.05 {
-				allowKeep = append(allowKeep, s)
-				prefix += "Keep "
-				if s.last2HrRoiChange > s.lastHrRoiChange && s.lastHrRoiChange > 0.01 {
-					allowOpen = append(allowOpen, s)
-					prefix += " Open "
-				}
+			if s.lastDayRoiChange > 0.1 &&
+				s.last3HrRoiChange > 0.05 &&
+				s.last2HrRoiChange > 0 &&
+				s.lastHrRoiChange > 0.01 &&
+				s.last2HrRoiChange > s.lastHrRoiChange {
+				filtered = append(filtered, s)
+				prefix += "Open"
 			}
 			log.Info(prefix + display(s, nil, "Found", c+1, len(strategies.strategiesById)))
 		}
 	}
-	sort.Slice(allowOpen, func(i, j int) bool {
-		I := allowOpen[i]
-		J := allowOpen[j]
+	sort.Slice(filtered, func(i, j int) bool {
+		I := filtered[i]
+		J := filtered[j]
 		iWeight := I.last3HrRoiChange*TheConfig.Last3HrWeight + I.last2HrRoiChange*TheConfig.Last2HrWeight + I.lastHrRoiChange*TheConfig.LastHrWeight
 		jWeight := J.last3HrRoiChange*TheConfig.Last3HrWeight + J.last2HrRoiChange*TheConfig.Last2HrWeight + J.lastHrRoiChange*TheConfig.LastHrWeight
 		return iWeight > jWeight
 	})
-	bundle := &StrategiesBundle{Raw: strategies, AllowOpen: allowOpen.toTrackedStrategies(), AllowKeep: allowKeep.toTrackedStrategies()}
+	bundle := &StrategiesBundle{Raw: strategies, Filtered: filtered.toTrackedStrategies()}
 	DiscordWebhook("### Strategies")
 	DiscordWebhook("Raw: " + bundle.Raw.String())
-	DiscordWebhook("Keep: " + bundle.AllowKeep.String())
-	DiscordWebhook("Open: " + bundle.AllowOpen.String())
+	DiscordWebhook("Open: " + bundle.Filtered.String())
 	return bundle, nil
 }
 
 func GetRoiChange(roi StrategyRoi, t time.Duration) float64 {
 	latestTimestamp := roi[0].Time
 	latestRoi := roi[0].Roi
+	l := latestTimestamp - int64(t.Seconds())
 	for _, r := range roi {
-		l := latestTimestamp - int64(t.Seconds())
 		if r.Time <= l {
 			return latestRoi - r.Roi
 		}
 	}
 	return latestRoi - roi[len(roi)-1].Roi
+}
+
+func GetRoiPerHr(roi StrategyRoi, t time.Duration) float64 {
+	latestTimestamp := roi[0].Time
+	latestRoi := roi[0].Roi
+	l := latestTimestamp - int64(t.Seconds())
+	for _, r := range roi {
+		if r.Time <= l {
+			return (latestRoi - r.Roi) / (float64(t.Seconds()) / 3600)
+		}
+	}
+	return (latestRoi - roi[len(roi)-1].Roi) / float64(t.Seconds())
 }
 
 func tick() error {
@@ -109,11 +119,11 @@ func tick() error {
 	for _, grid := range gGrids.gridsByUid {
 		id := grid.CopiedStrategyID
 		DiscordWebhook(display(globalStrategies[id], grid,
-			fmt.Sprintf("%d, %d", bundle.Raw.findStrategyRanking(id), bundle.AllowOpen.findStrategyRanking(id)),
+			fmt.Sprintf("%d, %d", bundle.Raw.findStrategyRanking(id), bundle.Filtered.findStrategyRanking(id)),
 			count+1, len(gGrids.gridsByUid)))
 		count++
 	}
-	expiredCopiedIds := gGrids.existingIds.Difference(bundle.AllowOpen.ids)
+	expiredCopiedIds := gGrids.existingIds.Difference(bundle.Filtered.ids)
 	if expiredCopiedIds.Cardinality() > 0 {
 		DiscordWebhook(fmt.Sprintf("### Expired Strategies: %v", expiredCopiedIds))
 	}
@@ -125,7 +135,7 @@ func tick() error {
 		att, ok := globalStrategies[id]
 		if !bundle.Raw.exists(id) {
 			reason += "Strategy not found"
-		} else if ok && !bundle.AllowOpen.exists(id) {
+		} else if ok && !bundle.Filtered.exists(id) {
 			reason += "Strategy not picked"
 		}
 		log.Infof("Closing Grid with Strategy Id: %d", id)
@@ -175,8 +185,8 @@ func tick() error {
 	if invChunk > idealInvChunk {
 		invChunk = idealInvChunk
 	}
-	for c, s := range bundle.AllowOpen.strategies {
-		DiscordWebhook(display(s, nil, "New", c+1, len(bundle.AllowOpen.strategies)))
+	for c, s := range bundle.Filtered.strategies {
+		DiscordWebhook(display(s, nil, "New", c+1, len(bundle.Filtered.strategies)))
 		if gGrids.existingIds.Contains(s.StrategyID) {
 			DiscordWebhook("Strategy exists in open grids, Skip")
 			continue

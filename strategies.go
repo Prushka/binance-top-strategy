@@ -188,6 +188,7 @@ type Strategy struct {
 	last3HrRoiChange float64
 	last2HrRoiChange float64
 	lastHrRoiChange  float64
+	lastDayRoiPerHr  float64
 	roiPerHour       float64
 	StrategyParams   struct {
 		Type           string  `json:"type"`
@@ -211,8 +212,8 @@ type Strategy struct {
 
 func (s Strategy) String() string {
 	runTime := time.Duration(s.RunningTime) * time.Second
-	return fmt.Sprintf("%s, Copy: %d, Matched: [%d, %d], PerH: %.1f%%, A: %s%%, D: %.1f%%, 3H: %.1f%%, 2H: %.1f%%, 1H: %.1f%%, MinInv: %s",
-		runTime, s.CopyCount, s.MatchedCount, s.LatestMatchedCount, s.roiPerHour*100, s.Roi,
+	return fmt.Sprintf("%s, Copy: %d, Matched: [%d, %d], PnL: %s, PerH: %.1f%%, A: %s%%, D: %.1f%%, 3H: %.1f%%, 2H: %.1f%%, 1H: %.1f%%, MinInv: %s",
+		runTime, s.CopyCount, s.MatchedCount, s.LatestMatchedCount, s.Pnl, s.roiPerHour*100, s.Roi,
 		s.lastDayRoiChange*100, s.last3HrRoiChange*100, s.last2HrRoiChange*100, s.lastHrRoiChange*100, s.MinInvestment)
 }
 
