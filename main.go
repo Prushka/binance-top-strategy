@@ -123,6 +123,24 @@ func tick() error {
 		count++
 	}
 	expiredCopiedIds := gGrids.existingIds.Difference(bundle.Filtered.ids)
+	for _, grid := range gGrids.gridsByUid {
+		if !expiredCopiedIds.Contains(grid.CopiedStrategyID) {
+			direction := grid.Direction
+			gridRank := bundle.Filtered.findStrategyRanking(grid.CopiedStrategyID)
+			sameSymbolDifferentDirectionHigherRank := 0
+			for _, s := range bundle.Filtered.strategies {
+				if s.Symbol == grid.Symbol && DirectionMap[s.Direction] != direction && (bundle.Filtered.findStrategyRanking(s.StrategyID) < gridRank) {
+					sameSymbolDifferentDirectionHigherRank++
+				}
+			}
+			if sameSymbolDifferentDirectionHigherRank >= 2 {
+				expiredCopiedIds.Add(grid.CopiedStrategyID)
+				DiscordWebhook(display(globalStrategies[grid.CopiedStrategyID], grid,
+					fmt.Sprintf("Exists %d Opposite Direction in Filtered", sameSymbolDifferentDirectionHigherRank),
+					0, 0))
+			}
+		}
+	}
 	if expiredCopiedIds.Cardinality() > 0 {
 		DiscordWebhook(fmt.Sprintf("### Expired Strategies: %v", expiredCopiedIds))
 	}
