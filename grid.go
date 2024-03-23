@@ -147,40 +147,39 @@ func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
 	g.initialValue = initial / float64(g.InitialLeverage)
 	g.totalPnl = profit + fundingFee + position*(marketPrice-entryPrice) // position is negative for short
 	g.lastRoi = g.totalPnl / g.initialValue
-	trackedG, ok := tracked.gridsByUid[g.StrategyID]
+	oldG, ok := tracked.gridsByUid[g.StrategyID]
 	if ok {
-		tracked.totalGridInitial -= trackedG.initialValue
-		tracked.totalGridPnl -= trackedG.totalPnl
+		tracked.totalGridInitial -= oldG.initialValue
+		tracked.totalGridPnl -= oldG.totalPnl
 	} else {
-		tracked.gridsByUid[g.StrategyID] = g
-		trackedG = g
+		oldG = g
 		g.lowestRoi = &g.lastRoi
 		g.highestRoi = &g.lastRoi
 	}
 	tracked.totalGridInitial += g.initialValue
 	tracked.totalGridPnl += g.totalPnl
-
-	if g.lastRoi < *trackedG.lowestRoi {
-		trackedG.lowestRoi = &g.lastRoi
+	if g.lastRoi < *oldG.lowestRoi {
+		g.lowestRoi = &g.lastRoi
 	}
-	if g.lastRoi > *trackedG.highestRoi {
-		trackedG.highestRoi = &g.lastRoi
+	if g.lastRoi > *oldG.highestRoi {
+		g.highestRoi = &g.lastRoi
 	}
 	if ok && trackContinuous {
-		if g.lastRoi > trackedG.lastRoi {
-			trackedG.continuousRoiGrowth += 1
-			trackedG.continuousRoiLoss = 0
-			trackedG.continuousRoiNoChange = 0
-		} else if g.lastRoi < trackedG.lastRoi {
-			trackedG.continuousRoiLoss += 1
-			trackedG.continuousRoiGrowth = 0
-			trackedG.continuousRoiNoChange = 0
+		if g.lastRoi > oldG.lastRoi {
+			g.continuousRoiGrowth += 1
+			g.continuousRoiLoss = 0
+			g.continuousRoiNoChange = 0
+		} else if g.lastRoi < oldG.lastRoi {
+			g.continuousRoiLoss += 1
+			g.continuousRoiGrowth = 0
+			g.continuousRoiNoChange = 0
 		} else {
-			trackedG.continuousRoiNoChange += 1
-			trackedG.continuousRoiGrowth = 0
-			trackedG.continuousRoiLoss = 0
+			g.continuousRoiNoChange += 1
+			g.continuousRoiGrowth = 0
+			g.continuousRoiLoss = 0
 		}
 	}
+	tracked.gridsByUid[g.StrategyID] = g
 }
 
 type TrackedGrids struct {
