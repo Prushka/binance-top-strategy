@@ -174,19 +174,20 @@ type StrategiesResponse struct {
 
 type Strategy struct {
 	Rois             StrategyRoi
-	Symbol           string  `json:"symbol"`
-	CopyCount        int     `json:"copyCount"`
-	Roi              string  `json:"roi"`
-	Pnl              string  `json:"pnl"`
-	RunningTime      int     `json:"runningTime"`
-	StrategyID       int     `json:"strategyId"`
-	StrategyType     int     `json:"strategyType"`
-	Direction        int     `json:"direction"`
-	UserID           int     `json:"userId"`
-	LastDayRoiChange float64 `json:"lastDayRoiChange"`
-	Last3HrRoiChange float64 `json:"last3HrRoiChange"`
-	Last2HrRoiChange float64 `json:"last2HrRoiChange"`
-	LastHrRoiChange  float64 `json:"lastHrRoiChange"`
+	Symbol           string `json:"symbol"`
+	CopyCount        int    `json:"copyCount"`
+	Roi              string `json:"roi"`
+	Pnl              string `json:"pnl"`
+	RunningTime      int    `json:"runningTime"`
+	StrategyID       int    `json:"strategyId"`
+	StrategyType     int    `json:"strategyType"`
+	Direction        int    `json:"direction"`
+	UserID           int    `json:"userId"`
+	lastDayRoiChange float64
+	last3HrRoiChange float64
+	last2HrRoiChange float64
+	lastHrRoiChange  float64
+	roiPerHour       float64
 	StrategyParams   struct {
 		Type           string  `json:"type"`
 		LowerLimit     string  `json:"lowerLimit"`
@@ -209,9 +210,9 @@ type Strategy struct {
 
 func (s Strategy) String() string {
 	runTime := time.Duration(s.RunningTime) * time.Second
-	return fmt.Sprintf("%s, Copy: %d, Matched: [%d, %d], A: %s%%, D: %.1f%%, 3H: %.1f%%, 2H: %.1f%%, 1H: %.1f%%, MinInv: %s",
-		runTime, s.CopyCount, s.MatchedCount, s.LatestMatchedCount, s.Roi,
-		s.LastDayRoiChange*100, s.Last3HrRoiChange*100, s.Last2HrRoiChange*100, s.LastHrRoiChange*100, s.MinInvestment)
+	return fmt.Sprintf("%s, Copy: %d, Matched: [%d, %d], PerH: %.1f%%, A: %s%%, D: %.1f%%, 3H: %.1f%%, 2H: %.1f%%, 1H: %.1f%%, MinInv: %s",
+		runTime, s.CopyCount, s.MatchedCount, s.LatestMatchedCount, s.roiPerHour*100, s.Roi,
+		s.lastDayRoiChange*100, s.last3HrRoiChange*100, s.last2HrRoiChange*100, s.lastHrRoiChange*100, s.MinInvestment)
 }
 
 func display(s *Strategy, grid *Grid, action string, index int, length int) string {

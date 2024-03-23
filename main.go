@@ -42,15 +42,16 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 		s.Rois = roi
 
 		if len(s.Rois) > 1 {
-			s.LastDayRoiChange = GetRoiChange(s.Rois, 24*time.Hour)
-			s.Last3HrRoiChange = GetRoiChange(s.Rois, 3*time.Hour)
-			s.Last2HrRoiChange = GetRoiChange(s.Rois, 2*time.Hour)
-			s.LastHrRoiChange = GetRoiChange(s.Rois, 1*time.Hour)
+			s.lastDayRoiChange = GetRoiChange(s.Rois, 24*time.Hour)
+			s.last3HrRoiChange = GetRoiChange(s.Rois, 3*time.Hour)
+			s.last2HrRoiChange = GetRoiChange(s.Rois, 2*time.Hour)
+			s.lastHrRoiChange = GetRoiChange(s.Rois, 1*time.Hour)
+			s.roiPerHour = (s.Rois[0].Roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
 			prefix := ""
-			if s.LastDayRoiChange > 0.1 && s.Last3HrRoiChange > 0.05 && s.Last2HrRoiChange > 0 && s.LastHrRoiChange > -0.05 {
+			if s.lastDayRoiChange > 0.1 && s.last3HrRoiChange > 0.05 && s.last2HrRoiChange > 0 && s.lastHrRoiChange > -0.05 {
 				allowKeep = append(allowKeep, s)
 				prefix += "Keep "
-				if s.Last2HrRoiChange > s.LastHrRoiChange && s.LastHrRoiChange > 0.01 {
+				if s.last2HrRoiChange > s.lastHrRoiChange && s.lastHrRoiChange > 0.01 {
 					allowOpen = append(allowOpen, s)
 					prefix += " Open "
 				}
@@ -61,8 +62,8 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 	sort.Slice(allowOpen, func(i, j int) bool {
 		I := allowOpen[i]
 		J := allowOpen[j]
-		iWeight := I.Last3HrRoiChange*TheConfig.Last3HrWeight + I.Last2HrRoiChange*TheConfig.Last2HrWeight + I.LastHrRoiChange*TheConfig.LastHrWeight
-		jWeight := J.Last3HrRoiChange*TheConfig.Last3HrWeight + J.Last2HrRoiChange*TheConfig.Last2HrWeight + J.LastHrRoiChange*TheConfig.LastHrWeight
+		iWeight := I.last3HrRoiChange*TheConfig.Last3HrWeight + I.last2HrRoiChange*TheConfig.Last2HrWeight + I.lastHrRoiChange*TheConfig.LastHrWeight
+		jWeight := J.last3HrRoiChange*TheConfig.Last3HrWeight + J.last2HrRoiChange*TheConfig.Last2HrWeight + J.lastHrRoiChange*TheConfig.LastHrWeight
 		return iWeight > jWeight
 	})
 	bundle := &StrategiesBundle{Raw: strategies, AllowOpen: allowOpen.toTrackedStrategies(), AllowKeep: allowKeep.toTrackedStrategies()}
@@ -125,7 +126,7 @@ func tick() error {
 			reason += "Strategy not picked"
 		}
 		log.Infof("Closing Grid with Strategy Id: %d", id)
-		if grid.lastRoi < -0.03 { // attempting to close loss
+		if grid.lastRoi < TheConfig.MaxCancelLoss {
 			reason += " too much loss"
 			DiscordWebhook(display(att, grid, "Skip Cancel "+reason, c+1, expiredCopiedIds.Cardinality()))
 			continue
