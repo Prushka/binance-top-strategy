@@ -11,8 +11,8 @@ import (
 
 var scheduler = gocron.NewScheduler(time.Now().Location())
 
-var globalStrategies = make(map[int]*Strategy)
-var globalGrids = make(map[int]*TrackedGrid)
+var globalStrategies = make(map[int]*Strategy) // StrategyOriginalID -> Strategy
+var gGrids = newTrackedGrids()
 
 type StrategiesBundle struct {
 	Raw       *TrackedStrategies
@@ -97,98 +97,96 @@ func tick() error {
 		return err
 	}
 	DiscordWebhook("### Current Grids:")
-	openGrids, err := getOpenGrids()
+	err = updateOpenGrids(true)
 	if err != nil {
 		return err
 	}
-	for _, grid := range openGrids.Data {
-		grid.track()
-	}
-	for c, grid := range openGrids.Data {
+	for c, grid := range gGrids.gridsByUid {
 		id := grid.CopiedStrategyID
 		DiscordWebhook(display(globalStrategies[id], grid,
 			fmt.Sprintf("%d, %d, %d", bundle.Raw.findStrategyRanking(id), bundle.AllowKeep.findStrategyRanking(id), bundle.AllowOpen.findStrategyRanking(id)),
-			c+1, len(openGrids.Data)))
+			c+1, len(gGrids.gridsByUid)))
 	}
-	expiredCopiedIds := openGrids.existingIds.Difference(bundle.AllowKeep.ids)
+	expiredCopiedIds := gGrids.existingIds.Difference(bundle.AllowKeep.ids)
 	if expiredCopiedIds.Cardinality() > 0 {
 		DiscordWebhook(fmt.Sprintf("### Expired Strategies: %v", expiredCopiedIds))
 	}
 	closedIds := mapset.NewSet[int]()
-	for c, id := range expiredCopiedIds.ToSlice() {
+	expiredGridIds := gGrids.findGridIdsByStrategyId(expiredCopiedIds.ToSlice()...)
+	for c, id := range expiredGridIds.ToSlice() {
 		reason := ""
+		grid := gGrids.gridsByUid[id]
 		att, ok := globalStrategies[id]
 		if !bundle.Raw.exists(id) {
 			reason += "Strategy not found"
 		} else if ok && !bundle.AllowKeep.exists(id) {
 			reason += "Strategy not picked"
 		}
-		log.Infof("Closing Grid: %d", id)
-		tracked, ok := globalGrids[id]
-		if ok && tracked.LastRoi < -0.03 { // attempting to close loss
+		log.Infof("Closing Grid with Strategy Id: %d", id)
+		if grid.lastRoi < -0.03 { // attempting to close loss
 			reason += " too much loss"
-			DiscordWebhook(display(att, tracked.grid, "Skip Cancel "+reason, c+1, expiredCopiedIds.Cardinality()))
+			DiscordWebhook(display(att, grid, "Skip Cancel "+reason, c+1, expiredCopiedIds.Cardinality()))
 			continue
 		}
-		err := closeGridConv(id, openGrids)
+		err := closeGrid(id)
 		if err != nil {
 			return err
 		}
 		closedIds.Add(id)
-		DiscordWebhook(display(att, tracked.grid, "Cancelled "+reason, c+1, expiredCopiedIds.Cardinality()))
+		DiscordWebhook(display(att, grid, "Cancelled "+reason, c+1, expiredCopiedIds.Cardinality()))
 	}
 
-	for _, grid := range openGrids.Data {
-		t, ok := globalGrids[grid.CopiedStrategyID]
-		if ok && t.ContinuousRoiNoChange > 3 && grid.profit >= 0 {
-			err := closeGridConv(grid.CopiedStrategyID, openGrids)
+	for _, grid := range gGrids.gridsByUid {
+		if grid.continuousRoiNoChange > 3 && grid.lastRoi >= 0 {
+			err := closeGrid(grid.StrategyID)
 			if err != nil {
 				return err
 			}
-			closedIds.Add(grid.CopiedStrategyID)
-			DiscordWebhook(display(globalStrategies[grid.CopiedStrategyID], t.grid, "Cancelled No Change", 0, 0))
+			closedIds.Add(grid.StrategyID)
+			DiscordWebhook(display(globalStrategies[grid.CopiedStrategyID], grid, "Cancelled No Change", 0, 0))
 		}
 	}
 
 	if closedIds.Cardinality() > 0 && !TheConfig.Paper {
 		DiscordWebhook("Cleared expired grids - Skip current run")
 		for _, id := range closedIds.ToSlice() {
-			delete(globalGrids, id)
+			gGrids.Remove(id)
 		}
 		return nil
 	}
 
-	if TheConfig.MaxChunks-len(openGrids.Data) <= 0 && !TheConfig.Paper {
+	gridsOpen := len(gGrids.gridsByUid)
+	if TheConfig.MaxChunks-gridsOpen <= 0 && !TheConfig.Paper {
 		DiscordWebhook("Max Chunks reached, No cancel - Skip current run")
 		return nil
 	}
 	DiscordWebhook("### Opening new grids:")
-	chunksInt := TheConfig.MaxChunks - len(openGrids.Data)
-	chunks := float64(TheConfig.MaxChunks - len(openGrids.Data))
+	chunksInt := TheConfig.MaxChunks - gridsOpen
+	chunks := float64(TheConfig.MaxChunks - gridsOpen)
 	invChunk := (usdt - chunks*0.8) / chunks
-	idealInvChunk := (usdt + openGrids.totalGridPnl + openGrids.totalGridInitial) / float64(TheConfig.MaxChunks)
+	idealInvChunk := (usdt + gGrids.totalGridPnl + gGrids.totalGridInitial) / float64(TheConfig.MaxChunks)
 	log.Infof("Ideal Investment: %f, allowed Investment: %f, missing %f chunks", idealInvChunk, invChunk, chunks)
 	if invChunk > idealInvChunk {
 		invChunk = idealInvChunk
 	}
 	for c, s := range bundle.AllowOpen.strategies {
 		DiscordWebhook(display(s, nil, "New", c+1, len(bundle.AllowOpen.strategies)))
-		if openGrids.existingIds.Contains(s.StrategyID) {
+		if gGrids.existingIds.Contains(s.StrategyID) {
 			DiscordWebhook("Strategy exists in open grids, Skip")
 			continue
 		}
-		if openGrids.existingPairs.Contains(s.Symbol) {
+		if gGrids.existingPairs.Contains(s.Symbol) {
 			DiscordWebhook("Symbol exists in open grids, Skip")
 			continue
 		}
 		switch s.Direction {
 		case LONG:
-			if TheConfig.MaxLongs >= 0 && openGrids.totalLongs >= TheConfig.MaxLongs {
+			if TheConfig.MaxLongs >= 0 && gGrids.longs.Cardinality() >= TheConfig.MaxLongs {
 				DiscordWebhook("Max Longs reached, Skip")
 				continue
 			}
 		case NEUTRAL:
-			if TheConfig.MaxNeutrals >= 0 && openGrids.totalNeutrals >= TheConfig.MaxNeutrals {
+			if TheConfig.MaxNeutrals >= 0 && gGrids.shorts.Cardinality() >= TheConfig.MaxNeutrals {
 				DiscordWebhook("Max Neutrals not reached, Skip")
 				continue
 			}
@@ -201,20 +199,17 @@ func tick() error {
 		} else {
 			DiscordWebhook(fmt.Sprintf("**Placed grid**"))
 			chunksInt -= 1
-			openGrids.existingPairs.Add(s.Symbol)
+			gGrids.existingPairs.Add(s.Symbol)
 			if chunksInt <= 0 {
 				break
 			}
 		}
 	}
 
-	DiscordWebhook("### Opened Grids:")
-	newOpenGrids, err := getOpenGrids()
+	DiscordWebhook("### Placed Grids:")
+	err = updateOpenGrids(false)
 	if err != nil {
 		return err
-	}
-	for _, newId := range newOpenGrids.existingIds.Difference(openGrids.existingIds).ToSlice() {
-		DiscordWebhook(display(globalStrategies[newId], nil, "Opened", 0, 0))
 	}
 	return nil
 }

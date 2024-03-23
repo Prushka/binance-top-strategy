@@ -360,39 +360,3 @@ func _getTopStrategies(sort string, direction *int, strategyType int, runningTim
 	}
 	return strategies.Data, nil
 }
-
-func getOpenGrids() (*OpenGridResponse, error) {
-	url := "https://www.binance.com/bapi/futures/v2/private/future/grid/query-open-grids"
-	res, err := privateRequest(url, "POST", nil, &OpenGridResponse{})
-	if err != nil {
-		return res, err
-	}
-	res.existingPairs = mapset.NewSet[string]()
-	res.existingIds = mapset.NewSet[int]()
-	for _, g := range res.Data {
-		res.existingPairs.Add(g.Symbol)
-		res.existingIds.Add(g.CopiedStrategyID)
-		initial, _ := strconv.ParseFloat(g.GridInitialValue, 64)
-		profit, _ := strconv.ParseFloat(g.GridProfit, 64)
-		fundingFee, _ := strconv.ParseFloat(g.FundingFee, 64)
-		position, _ := strconv.ParseFloat(g.GridPosition, 64)
-		entryPrice, _ := strconv.ParseFloat(g.GridEntryPrice, 64)
-		marketPrice, _ := fetchMarketPrice(g.Symbol)
-		g.initialValue = initial / float64(g.InitialLeverage)
-		g.totalPnl = profit + fundingFee + position*(marketPrice-entryPrice) // position is negative for short
-		g.profit = g.totalPnl / g.initialValue
-		res.totalGridInitial += g.initialValue
-		res.totalGridPnl += g.totalPnl
-		if g.Direction == DirectionMap[LONG] {
-			res.totalLongs += 1
-		} else if g.Direction == DirectionMap[SHORT] {
-			res.totalShorts += 1
-		} else {
-			res.totalNeutrals += 1
-		}
-	}
-	DiscordWebhook(fmt.Sprintf("Open Pairs: %v, Open Ids: %v, Initial: %f, TotalPnL: %f, C: %f, L/S/N: %d/%d/%d",
-		res.existingPairs, res.existingIds, res.totalGridInitial, res.totalGridPnl, res.totalGridPnl+res.totalGridInitial,
-		res.totalLongs, res.totalShorts, res.totalNeutrals))
-	return res, err
-}

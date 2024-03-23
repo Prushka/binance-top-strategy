@@ -225,11 +225,8 @@ func updateOpenGrids(trackContinuous bool) error {
 
 func (grid *Grid) String() string {
 	extendedProfit := ""
-	tracked, ok := gGrids.gridsByUid[grid.StrategyID]
-	if ok {
-		extendedProfit = fmt.Sprintf(" [%.2f%%, %.2f%%][+%d, -%d, %d]",
-			*tracked.lowestRoi*100, *tracked.highestRoi*100, tracked.continuousRoiGrowth, tracked.continuousRoiLoss, tracked.continuousRoiNoChange)
-	}
+	extendedProfit = fmt.Sprintf(" [%.2f%%, %.2f%%][+%d, -%d, %d]",
+		*grid.lowestRoi*100, *grid.highestRoi*100, grid.continuousRoiGrowth, grid.continuousRoiLoss, grid.continuousRoiNoChange)
 	return fmt.Sprintf("In: %.2f, RealizedPnL: %s, TotalPnL: %f, Profit: %f%%%s",
 		grid.initialValue,
 		grid.GridProfit, grid.totalPnl, grid.lastRoi*100, extendedProfit)
