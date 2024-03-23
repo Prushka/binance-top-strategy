@@ -183,6 +183,7 @@ type Strategy struct {
 	StrategyType     int    `json:"strategyType"`
 	Direction        int    `json:"direction"`
 	UserID           int    `json:"userId"`
+	roi              float64
 	lastDayRoiChange float64
 	last3HrRoiChange float64
 	last2HrRoiChange float64

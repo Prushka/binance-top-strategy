@@ -6,6 +6,7 @@ import (
 	"github.com/go-co-op/gocron"
 	log "github.com/sirupsen/logrus"
 	"sort"
+	"strconv"
 	"time"
 )
 
@@ -40,13 +41,15 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 			return roi[i].Time > roi[j].Time
 		})
 		s.Rois = roi
+		s.roi, _ = strconv.ParseFloat(s.Roi, 64)
+		s.roi /= 100
 
 		if len(s.Rois) > 1 {
 			s.lastDayRoiChange = GetRoiChange(s.Rois, 24*time.Hour)
 			s.last3HrRoiChange = GetRoiChange(s.Rois, 3*time.Hour)
 			s.last2HrRoiChange = GetRoiChange(s.Rois, 2*time.Hour)
 			s.lastHrRoiChange = GetRoiChange(s.Rois, 1*time.Hour)
-			s.roiPerHour = (s.Rois[0].Roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
+			s.roiPerHour = (s.roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
 			prefix := ""
 			if s.lastDayRoiChange > 0.1 && s.last3HrRoiChange > 0.05 && s.last2HrRoiChange > 0 && s.lastHrRoiChange > -0.05 {
 				allowKeep = append(allowKeep, s)
