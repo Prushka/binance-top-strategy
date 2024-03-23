@@ -52,10 +52,9 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 			s.roiPerHour = (s.roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
 			prefix := ""
 			if s.lastDayRoiChange > 0.1 &&
-				s.last3HrRoiChange > 0.05 &&
-				s.last2HrRoiChange > 0 &&
-				s.lastHrRoiChange > 0.01 &&
-				s.last2HrRoiChange > s.lastHrRoiChange {
+				s.last3HrRoiChange > 0.04 &&
+				s.lastHrRoiChange > 0.02 &&
+				s.last2HrRoiChange-s.lastHrRoiChange > 0.01 {
 				filtered = append(filtered, s)
 				prefix += "Open"
 			}
@@ -65,9 +64,7 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 	sort.Slice(filtered, func(i, j int) bool {
 		I := filtered[i]
 		J := filtered[j]
-		iWeight := I.last3HrRoiChange*TheConfig.Last3HrWeight + I.last2HrRoiChange*TheConfig.Last2HrWeight + I.lastHrRoiChange*TheConfig.LastHrWeight
-		jWeight := J.last3HrRoiChange*TheConfig.Last3HrWeight + J.last2HrRoiChange*TheConfig.Last2HrWeight + J.lastHrRoiChange*TheConfig.LastHrWeight
-		return iWeight > jWeight
+		return I.lastDayRoiPerHr > J.lastDayRoiPerHr
 	})
 	bundle := &StrategiesBundle{Raw: strategies, Filtered: filtered.toTrackedStrategies()}
 	DiscordWebhook("### Strategies")
@@ -134,13 +131,13 @@ func tick() error {
 	for c, id := range expiredGridIds.ToSlice() {
 		reason := ""
 		grid := gGrids.gridsByUid[id]
-		att, ok := globalStrategies[id]
-		if !bundle.Raw.exists(grid.CopiedStrategyID) {
+		strategyId := grid.CopiedStrategyID
+		att, ok := globalStrategies[strategyId]
+		if !bundle.Raw.exists(strategyId) {
 			reason += "Strategy not found"
-		} else if ok && !bundle.Filtered.exists(grid.CopiedStrategyID) {
+		} else if ok && !bundle.Filtered.exists(strategyId) {
 			reason += "Strategy not picked"
 		}
-		log.Infof("Closing Grid with Strategy Id: %d", id)
 		if grid.lastRoi < TheConfig.MaxCancelLoss {
 			reason += " too much loss"
 			DiscordWebhook(display(att, grid, "Skip Cancel "+reason, c+1, expiredCopiedIds.Cardinality()))
