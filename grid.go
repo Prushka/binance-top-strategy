@@ -5,6 +5,7 @@ import (
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
 	log "github.com/sirupsen/logrus"
+	"strconv"
 )
 
 type PlaceGridRequest struct {
@@ -45,7 +46,12 @@ type PlaceGridResponse struct {
 type Grid struct {
 	totalPnl               float64
 	initialValue           float64
-	profit                 float64
+	lastRoi                float64
+	lowestRoi              *float64
+	highestRoi             *float64
+	continuousRoiGrowth    int
+	continuousRoiLoss      int
+	continuousRoiNoChange  int
 	StrategyID             int    `json:"strategyId"`
 	RootUserID             int    `json:"rootUserId"`
 	StrategyUserID         int    `json:"strategyUserId"`
@@ -87,74 +93,146 @@ type Grid struct {
 }
 
 type OpenGridResponse struct {
-	totalGridInitial float64
-	totalGridPnl     float64
-	totalShorts      int
-	totalLongs       int
-	totalNeutrals    int
-	existingIds      mapset.Set[int]
-	existingPairs    mapset.Set[string]
-	Data             []*Grid `json:"data"`
+	Grids []*Grid `json:"data"`
 	BinanceBaseResponse
 }
 
-type TrackedGrid struct {
-	LowestRoi             float64
-	HighestRoi            float64
-	LastRoi               float64
-	ContinuousRoiGrowth   int
-	ContinuousRoiLoss     int
-	ContinuousRoiNoChange int
-	grid                  *Grid
+func newTrackedGrids() *TrackedGrids {
+	return &TrackedGrids{
+		shorts:        mapset.NewSet[int](),
+		longs:         mapset.NewSet[int](),
+		neutrals:      mapset.NewSet[int](),
+		existingIds:   mapset.NewSet[int](),
+		existingPairs: mapset.NewSet[string](),
+		gridsByUid:    make(map[int]*Grid),
+	}
+}
+
+func (tracked *TrackedGrids) Remove(id int) {
+	g, ok := tracked.gridsByUid[id]
+	if !ok {
+		return
+	}
+	tracked.existingPairs.Remove(g.Symbol)
+	tracked.existingIds.Remove(g.CopiedStrategyID)
+	if g.Direction == DirectionMap[LONG] {
+		tracked.longs.Remove(g.StrategyID)
+	} else if g.Direction == DirectionMap[SHORT] {
+		tracked.shorts.Remove(g.StrategyID)
+	} else {
+		tracked.neutrals.Remove(g.StrategyID)
+	}
+	tracked.totalGridInitial -= g.initialValue
+	tracked.totalGridPnl -= g.totalPnl
+	delete(tracked.gridsByUid, g.StrategyID)
+}
+
+func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
+	tracked.existingPairs.Add(g.Symbol)
+	tracked.existingIds.Add(g.CopiedStrategyID)
+
+	if g.Direction == DirectionMap[LONG] {
+		tracked.longs.Add(g.StrategyID)
+	} else if g.Direction == DirectionMap[SHORT] {
+		tracked.shorts.Add(g.StrategyID)
+	} else {
+		tracked.neutrals.Add(g.StrategyID)
+	}
+	initial, _ := strconv.ParseFloat(g.GridInitialValue, 64)
+	profit, _ := strconv.ParseFloat(g.GridProfit, 64)
+	fundingFee, _ := strconv.ParseFloat(g.FundingFee, 64)
+	position, _ := strconv.ParseFloat(g.GridPosition, 64)
+	entryPrice, _ := strconv.ParseFloat(g.GridEntryPrice, 64)
+	marketPrice, _ := fetchMarketPrice(g.Symbol)
+	g.initialValue = initial / float64(g.InitialLeverage)
+	g.totalPnl = profit + fundingFee + position*(marketPrice-entryPrice) // position is negative for short
+	g.lastRoi = g.totalPnl / g.initialValue
+	trackedG, ok := tracked.gridsByUid[g.StrategyID]
+	if ok {
+		tracked.totalGridInitial -= trackedG.initialValue
+		tracked.totalGridPnl -= trackedG.totalPnl
+	} else {
+		tracked.gridsByUid[g.StrategyID] = g
+		trackedG = g
+		g.lowestRoi = &g.lastRoi
+		g.highestRoi = &g.lastRoi
+	}
+	tracked.totalGridInitial += g.initialValue
+	tracked.totalGridPnl += g.totalPnl
+
+	if g.lastRoi < *trackedG.lowestRoi {
+		trackedG.lowestRoi = &g.lastRoi
+	}
+	if g.lastRoi > *trackedG.highestRoi {
+		trackedG.highestRoi = &g.lastRoi
+	}
+	if ok && trackContinuous {
+		if g.lastRoi > trackedG.lastRoi {
+			trackedG.continuousRoiGrowth += 1
+			trackedG.continuousRoiLoss = 0
+			trackedG.continuousRoiNoChange = 0
+		} else if g.lastRoi < trackedG.lastRoi {
+			trackedG.continuousRoiLoss += 1
+			trackedG.continuousRoiGrowth = 0
+			trackedG.continuousRoiNoChange = 0
+		} else {
+			trackedG.continuousRoiNoChange += 1
+			trackedG.continuousRoiGrowth = 0
+			trackedG.continuousRoiLoss = 0
+		}
+	}
+}
+
+type TrackedGrids struct {
+	totalGridInitial float64
+	totalGridPnl     float64
+	shorts           mapset.Set[int]
+	longs            mapset.Set[int]
+	neutrals         mapset.Set[int]
+	existingIds      mapset.Set[int]
+	existingPairs    mapset.Set[string]
+	gridsByUid       map[int]*Grid
+}
+
+func (tracked *TrackedGrids) findGridIdsByStrategyId(ids ...int) mapset.Set[int] {
+	gridIds := mapset.NewSet[int]()
+	idsSet := mapset.NewSet[int](ids...)
+	for _, g := range tracked.gridsByUid {
+		if idsSet.Contains(g.CopiedStrategyID) {
+			gridIds.Add(g.StrategyID)
+		}
+	}
+	return gridIds
+}
+
+func updateOpenGrids(trackContinuous bool) error {
+	url := "https://www.binance.com/bapi/futures/v2/private/future/grid/query-open-grids"
+	res, err := privateRequest(url, "POST", nil, &OpenGridResponse{})
+	if err != nil {
+		return err
+	}
+	if !res.Success {
+		return fmt.Errorf(res.Message)
+	}
+	for _, grid := range res.Grids {
+		gGrids.Add(grid, trackContinuous)
+	}
+	DiscordWebhook(fmt.Sprintf("Open Pairs: %v, Open Ids: %v, Initial: %f, TotalPnL: %f, C: %f, L/S/N: %d/%d/%d",
+		gGrids.existingPairs, gGrids.existingIds, gGrids.totalGridInitial, gGrids.totalGridPnl, gGrids.totalGridPnl+gGrids.totalGridInitial,
+		gGrids.longs.Cardinality(), gGrids.shorts.Cardinality(), gGrids.neutrals.Cardinality()))
+	return nil
 }
 
 func (grid *Grid) String() string {
 	extendedProfit := ""
-	tracked, ok := globalGrids[grid.CopiedStrategyID]
+	tracked, ok := gGrids.gridsByUid[grid.StrategyID]
 	if ok {
 		extendedProfit = fmt.Sprintf(" [%.2f%%, %.2f%%][+%d, -%d, %d]",
-			tracked.LowestRoi*100, tracked.HighestRoi*100, tracked.ContinuousRoiGrowth, tracked.ContinuousRoiLoss, tracked.ContinuousRoiNoChange)
+			*tracked.lowestRoi*100, *tracked.highestRoi*100, tracked.continuousRoiGrowth, tracked.continuousRoiLoss, tracked.continuousRoiNoChange)
 	}
 	return fmt.Sprintf("In: %.2f, RealizedPnL: %s, TotalPnL: %f, Profit: %f%%%s",
 		grid.initialValue,
-		grid.GridProfit, grid.totalPnl, grid.profit*100, extendedProfit)
-}
-
-func (grid *Grid) track() *TrackedGrid {
-	_, ok := globalGrids[grid.CopiedStrategyID]
-	if !ok {
-		globalGrids[grid.CopiedStrategyID] = &TrackedGrid{
-			LowestRoi:  grid.profit,
-			HighestRoi: grid.profit,
-			LastRoi:    grid.profit,
-		}
-	}
-	tracked := globalGrids[grid.CopiedStrategyID]
-	tracked.grid = grid
-
-	if grid.profit < tracked.LowestRoi {
-		tracked.LowestRoi = grid.profit
-	}
-	if grid.profit > tracked.HighestRoi {
-		tracked.HighestRoi = grid.profit
-	}
-	if ok {
-		if grid.profit > tracked.LastRoi {
-			tracked.ContinuousRoiGrowth += 1
-			tracked.ContinuousRoiLoss = 0
-			tracked.ContinuousRoiNoChange = 0
-		} else if grid.profit < tracked.LastRoi {
-			tracked.ContinuousRoiLoss += 1
-			tracked.ContinuousRoiGrowth = 0
-			tracked.ContinuousRoiNoChange = 0
-		} else {
-			tracked.ContinuousRoiNoChange += 1
-			tracked.ContinuousRoiGrowth = 0
-			tracked.ContinuousRoiLoss = 0
-		}
-	}
-	tracked.LastRoi = grid.profit
-	return tracked
+		grid.GridProfit, grid.totalPnl, grid.lastRoi*100, extendedProfit)
 }
 
 func closeGrid(strategyId int) error {
@@ -168,24 +246,6 @@ func closeGrid(strategyId int) error {
 	}
 	_, err := privateRequest(url, "POST", payload, &BinanceBaseResponse{})
 	return err
-}
-
-func closeGridConv(copiedId int, openGrids *OpenGridResponse) error {
-	gridToClose := copiedId
-	gridCurrId := 0
-	for _, g := range openGrids.Data {
-		if g.CopiedStrategyID == gridToClose {
-			gridCurrId = g.StrategyID
-			break
-		}
-	}
-	if gridCurrId != 0 {
-		err := closeGrid(gridCurrId)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func placeGrid(strategy Strategy, initialUSDT float64) error {
