@@ -5,6 +5,7 @@ import (
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
 	log "github.com/sirupsen/logrus"
+	"math"
 	"strconv"
 )
 
@@ -153,17 +154,11 @@ func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
 		tracked.totalGridPnl -= oldG.totalPnl
 	} else {
 		oldG = g
-		g.lowestRoi = &g.lastRoi
-		g.highestRoi = &g.lastRoi
 	}
+	g.lowestRoi = Float64Pointer(math.Min(g.lastRoi, *oldG.lowestRoi))
+	g.highestRoi = Float64Pointer(math.Max(g.lastRoi, *oldG.highestRoi))
 	tracked.totalGridInitial += g.initialValue
 	tracked.totalGridPnl += g.totalPnl
-	if g.lastRoi < *oldG.lowestRoi {
-		g.lowestRoi = &g.lastRoi
-	}
-	if g.lastRoi > *oldG.highestRoi {
-		g.highestRoi = &g.lastRoi
-	}
 	if ok && trackContinuous {
 		if g.lastRoi > oldG.lastRoi {
 			g.continuousRoiGrowth += 1
