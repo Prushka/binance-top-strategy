@@ -101,11 +101,13 @@ func tick() error {
 	if err != nil {
 		return err
 	}
-	for c, grid := range gGrids.gridsByUid {
+	count := 0
+	for _, grid := range gGrids.gridsByUid {
 		id := grid.CopiedStrategyID
 		DiscordWebhook(display(globalStrategies[id], grid,
 			fmt.Sprintf("%d, %d, %d", bundle.Raw.findStrategyRanking(id), bundle.AllowKeep.findStrategyRanking(id), bundle.AllowOpen.findStrategyRanking(id)),
-			c+1, len(gGrids.gridsByUid)))
+			count+1, len(gGrids.gridsByUid)))
+		count++
 	}
 	expiredCopiedIds := gGrids.existingIds.Difference(bundle.AllowKeep.ids)
 	if expiredCopiedIds.Cardinality() > 0 {
@@ -206,7 +208,7 @@ func tick() error {
 		}
 	}
 
-	DiscordWebhook("### Placed Grids:")
+	DiscordWebhook("### New Grids:")
 	err = updateOpenGrids(false)
 	if err != nil {
 		return err
