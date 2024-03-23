@@ -109,11 +109,11 @@ func tick() error {
 	for _, grid := range gGrids.gridsByUid {
 		id := grid.CopiedStrategyID
 		DiscordWebhook(display(globalStrategies[id], grid,
-			fmt.Sprintf("%d, %d, %d", bundle.Raw.findStrategyRanking(id), bundle.AllowKeep.findStrategyRanking(id), bundle.AllowOpen.findStrategyRanking(id)),
+			fmt.Sprintf("%d, %d", bundle.Raw.findStrategyRanking(id), bundle.AllowOpen.findStrategyRanking(id)),
 			count+1, len(gGrids.gridsByUid)))
 		count++
 	}
-	expiredCopiedIds := gGrids.existingIds.Difference(bundle.AllowKeep.ids)
+	expiredCopiedIds := gGrids.existingIds.Difference(bundle.AllowOpen.ids)
 	if expiredCopiedIds.Cardinality() > 0 {
 		DiscordWebhook(fmt.Sprintf("### Expired Strategies: %v", expiredCopiedIds))
 	}
@@ -125,7 +125,7 @@ func tick() error {
 		att, ok := globalStrategies[id]
 		if !bundle.Raw.exists(id) {
 			reason += "Strategy not found"
-		} else if ok && !bundle.AllowKeep.exists(id) {
+		} else if ok && !bundle.AllowOpen.exists(id) {
 			reason += "Strategy not picked"
 		}
 		log.Infof("Closing Grid with Strategy Id: %d", id)
