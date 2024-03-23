@@ -154,6 +154,8 @@ func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
 		tracked.totalGridPnl -= oldG.totalPnl
 	} else {
 		oldG = g
+		g.lowestRoi = Float64Pointer(g.lastRoi)
+		g.highestRoi = Float64Pointer(g.lastRoi)
 	}
 	g.lowestRoi = Float64Pointer(math.Min(g.lastRoi, *oldG.lowestRoi))
 	g.highestRoi = Float64Pointer(math.Max(g.lastRoi, *oldG.highestRoi))
