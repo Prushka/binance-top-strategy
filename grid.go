@@ -210,8 +210,16 @@ func updateOpenGrids(trackContinuous bool) error {
 	if !res.Success {
 		return fmt.Errorf(res.Message)
 	}
+	currentIds := mapset.NewSet[int]()
 	for _, grid := range res.Grids {
 		gGrids.Add(grid, trackContinuous)
+		currentIds.Add(grid.StrategyID)
+	}
+	for _, g := range gGrids.gridsByUid {
+		if !currentIds.Contains(g.StrategyID) {
+			gGrids.Remove(g.StrategyID)
+			DiscordWebhook(display(globalStrategies[g.CopiedStrategyID], g, "Gone", 0, 0))
+		}
 	}
 	DiscordWebhook(fmt.Sprintf("Open Pairs: %v, Open Ids: %v, Initial: %f, TotalPnL: %f, C: %f, L/S/N: %d/%d/%d",
 		gGrids.existingPairs, gGrids.existingIds, gGrids.totalGridInitial, gGrids.totalGridPnl, gGrids.totalGridPnl+gGrids.totalGridInitial,

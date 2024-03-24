@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/gtuk/discordwebhook"
 	log "github.com/sirupsen/logrus"
-	"strings"
 	"time"
 )
 
@@ -20,9 +19,6 @@ func DiscordJson(chat string) string {
 }
 
 func DiscordWebhook(chat string) {
-	if strings.Contains(chat, "Opened") || strings.Contains(chat, "Cancelled") {
-		DiscordWebhookS(chat, ActionWebhook)
-	}
 	DiscordWebhookS(chat, DefaultWebhook)
 }
 
