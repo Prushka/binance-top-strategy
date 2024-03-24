@@ -327,6 +327,7 @@ func getTopStrategies(strategyType int) (*TrackedStrategies, error) {
 	merged, err := mergeStrategies(strategyType,
 		SortPair{Sort: SortByRoi, RuntimeMin: 3 * time.Hour, RuntimeMax: 48 * time.Hour},
 		SortPair{Sort: SortByRoi, RuntimeMin: 48 * time.Hour, RuntimeMax: 168 * time.Hour},
+		SortPair{Sort: SortByRoi, RuntimeMin: 168 * time.Hour, RuntimeMax: 350 * time.Hour},
 		//SortPair{Sort: SortByRoi, Direction: IntPointer(SHORT), Count: 15},
 		//SortPair{Sort: SortByRoi, Direction: IntPointer(NEUTRAL), Count: 15},
 		//SortPair{Sort: SortByMatched},
