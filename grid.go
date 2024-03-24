@@ -100,12 +100,12 @@ type OpenGridResponse struct {
 
 func newTrackedGrids() *TrackedGrids {
 	return &TrackedGrids{
-		shorts:        mapset.NewSet[int](),
-		longs:         mapset.NewSet[int](),
-		neutrals:      mapset.NewSet[int](),
-		existingIds:   mapset.NewSet[int](),
-		existingPairs: mapset.NewSet[string](),
-		gridsByUid:    make(map[int]*Grid),
+		shorts:          mapset.NewSet[int](),
+		longs:           mapset.NewSet[int](),
+		neutrals:        mapset.NewSet[int](),
+		existingIds:     mapset.NewSet[int](),
+		existingSymbols: mapset.NewSet[string](),
+		gridsByUid:      make(map[int]*Grid),
 	}
 }
 
@@ -114,7 +114,7 @@ func (tracked *TrackedGrids) Remove(id int) {
 	if !ok {
 		return
 	}
-	tracked.existingPairs.Remove(g.Symbol)
+	tracked.existingSymbols.Remove(g.Symbol)
 	tracked.existingIds.Remove(g.SID)
 	if g.Direction == DirectionMap[LONG] {
 		tracked.longs.Remove(g.GID)
@@ -129,7 +129,7 @@ func (tracked *TrackedGrids) Remove(id int) {
 }
 
 func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
-	tracked.existingPairs.Add(g.Symbol)
+	tracked.existingSymbols.Add(g.Symbol)
 	tracked.existingIds.Add(g.SID)
 
 	if g.Direction == DirectionMap[LONG] {
@@ -186,7 +186,7 @@ type TrackedGrids struct {
 	longs            mapset.Set[int]
 	neutrals         mapset.Set[int]
 	existingIds      mapset.Set[int]
-	existingPairs    mapset.Set[string]
+	existingSymbols  mapset.Set[string]
 	gridsByUid       map[int]*Grid
 }
 
@@ -222,7 +222,7 @@ func updateOpenGrids(trackContinuous bool) error {
 		}
 	}
 	DiscordWebhook(fmt.Sprintf("Open Pairs: %v, Open Ids: %v, Initial: %f, TotalPnL: %f, C: %f, L/S/N: %d/%d/%d",
-		gGrids.existingPairs, gGrids.existingIds, gGrids.totalGridInitial, gGrids.totalGridPnl, gGrids.totalGridPnl+gGrids.totalGridInitial,
+		gGrids.existingSymbols, gGrids.existingIds, gGrids.totalGridInitial, gGrids.totalGridPnl, gGrids.totalGridPnl+gGrids.totalGridInitial,
 		gGrids.longs.Cardinality(), gGrids.shorts.Cardinality(), gGrids.neutrals.Cardinality()))
 	return nil
 }

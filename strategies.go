@@ -155,7 +155,7 @@ func (t *TrackedStrategies) findStrategyRanking(id int) int {
 }
 
 func (t *TrackedStrategies) String() string {
-	return fmt.Sprintf("%d, Symbols: %d, SymbolDirections: %d, %v, H: %v, L: %v", len(t.strategiesById), len(t.symbolCount), len(t.symbolDirectionCount), asJson(t.usersWithMoreThan1Strategy), asJson(t.highest), asJson(t.lowest))
+	return fmt.Sprintf("%d, Symbols: %d, SymbolDirections: %v, %v, H: %v, L: %v", len(t.strategiesById), len(t.symbolCount), asJson(t.symbolDirectionCount), asJson(t.usersWithMoreThan1Strategy), asJson(t.highest), asJson(t.lowest))
 }
 
 func (t *TrackedStrategies) exists(id int) bool {

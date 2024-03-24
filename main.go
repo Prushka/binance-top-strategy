@@ -193,6 +193,10 @@ func tick() error {
 		DiscordWebhook("Max Chunks reached, No cancel - Skip current run")
 		return nil
 	}
+	if mapset.NewSetFromMapKeys(bundle.Filtered.symbolCount).Difference(gGrids.existingSymbols).Cardinality() == 0 {
+		DiscordWebhook("All symbols exists in open grids, Skip")
+		return nil
+	}
 	DiscordWebhook("### Opening new grids:")
 	chunksInt := TheConfig.MaxChunks - gridsOpen
 	chunks := float64(TheConfig.MaxChunks - gridsOpen)
@@ -208,7 +212,7 @@ func tick() error {
 			DiscordWebhook("Strategy exists in open grids, Skip")
 			continue
 		}
-		if gGrids.existingPairs.Contains(s.Symbol) {
+		if gGrids.existingSymbols.Contains(s.Symbol) {
 			DiscordWebhook("Symbol exists in open grids, Skip")
 			continue
 		}
@@ -232,7 +236,7 @@ func tick() error {
 		} else {
 			DiscordWebhookS(display(s, nil, "**Opened Grid**", c+1, len(bundle.Filtered.strategies)), ActionWebhook, DefaultWebhook)
 			chunksInt -= 1
-			gGrids.existingPairs.Add(s.Symbol)
+			gGrids.existingSymbols.Add(s.Symbol)
 			if chunksInt <= 0 {
 				break
 			}
