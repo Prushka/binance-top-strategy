@@ -294,18 +294,26 @@ func getStrategyRois(strategyID int, rootUserId int) (StrategyRoi, error) {
 }
 
 type SortPair struct {
-	Sort      string
-	Direction *int
-	Count     int
+	Sort       string
+	Direction  *int
+	Count      int
+	RuntimeMax time.Duration
+	RuntimeMin time.Duration
 }
 
-func mergeStrategies(strategyType int, runningTimeMin time.Duration, runningTimeMax time.Duration, sps ...SortPair) (*TrackedStrategies, error) {
+func mergeStrategies(strategyType int, sps ...SortPair) (*TrackedStrategies, error) {
 	sss := make(Strategies, 0)
 	for _, sp := range sps {
 		if sp.Count == 0 {
 			sp.Count = TheConfig.StrategiesCount
 		}
-		by, err := _getTopStrategies(sp.Sort, sp.Direction, strategyType, runningTimeMin, runningTimeMax, sp.Count)
+		if sp.RuntimeMin == 0 {
+			sp.RuntimeMin = time.Duration(TheConfig.RuntimeMinHours) * time.Hour
+		}
+		if sp.RuntimeMax == 0 {
+			sp.RuntimeMax = time.Duration(TheConfig.RuntimeMaxHours) * time.Hour
+		}
+		by, err := _getTopStrategies(sp.Sort, sp.Direction, strategyType, sp.RuntimeMin, sp.RuntimeMax, sp.Count)
 		if err != nil {
 			return nil, err
 		}
@@ -315,11 +323,12 @@ func mergeStrategies(strategyType int, runningTimeMin time.Duration, runningTime
 	return sss.toTrackedStrategies(), nil
 }
 
-func getTopStrategies(strategyType int, runningTimeMin time.Duration, runningTimeMax time.Duration) (*TrackedStrategies, error) {
-	merged, err := mergeStrategies(strategyType, runningTimeMin, runningTimeMax,
-		SortPair{Sort: SortByRoi},
-		SortPair{Sort: SortByRoi, Direction: IntPointer(SHORT), Count: 15},
-		SortPair{Sort: SortByRoi, Direction: IntPointer(NEUTRAL), Count: 15},
+func getTopStrategies(strategyType int) (*TrackedStrategies, error) {
+	merged, err := mergeStrategies(strategyType,
+		SortPair{Sort: SortByRoi, RuntimeMin: 3 * time.Hour, RuntimeMax: 48 * time.Hour},
+		SortPair{Sort: SortByRoi, RuntimeMin: 48 * time.Hour, RuntimeMax: 168 * time.Hour},
+		//SortPair{Sort: SortByRoi, Direction: IntPointer(SHORT), Count: 15},
+		//SortPair{Sort: SortByRoi, Direction: IntPointer(NEUTRAL), Count: 15},
 		//SortPair{Sort: SortByMatched},
 		//SortPair{Sort: SortByPnl},
 		//SortPair{Sort: SortByCopyCount},

@@ -21,7 +21,7 @@ type StrategiesBundle struct {
 }
 
 func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
-	strategies, err := getTopStrategies(FUTURE, time.Duration(TheConfig.RuntimeMinHours)*time.Hour, time.Duration(TheConfig.RuntimeMaxHours)*time.Hour)
+	strategies, err := getTopStrategies(FUTURE)
 	if err != nil {
 		return nil, err
 	}
@@ -151,12 +151,14 @@ func tick() error {
 		grid := gGrids.gridsByUid[id]
 		strategyId := grid.CopiedStrategyID
 		att, ok := globalStrategies[strategyId]
+		maxCancelLoss := TheConfig.MaxCancelLoss
 		if !bundle.Raw.exists(strategyId) {
 			reason += "Strategy not found"
+			maxCancelLoss = -0.2
 		} else if ok && !bundle.Filtered.exists(strategyId) {
 			reason += "Strategy not picked"
 		}
-		if grid.lastRoi < TheConfig.MaxCancelLoss {
+		if grid.lastRoi < maxCancelLoss {
 			reason += " too much loss"
 			DiscordWebhookS(display(att, grid, "Skip Cancel "+reason, c+1, expiredCopiedIds.Cardinality()), ActionWebhook)
 			continue
@@ -183,9 +185,6 @@ func tick() error {
 
 	if closedIds.Cardinality() > 0 && !TheConfig.Paper {
 		DiscordWebhook("Cleared expired grids - Skip current run")
-		for _, id := range closedIds.ToSlice() {
-			gGrids.Remove(id)
-		}
 		return nil
 	}
 
