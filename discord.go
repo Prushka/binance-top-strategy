@@ -22,9 +22,11 @@ func DiscordWebhook(chat string) {
 	DiscordWebhookS(chat, DefaultWebhook)
 }
 
-func DiscordWebhookS(chat string, webhookType int) {
+func DiscordWebhookS(chat string, webhookTypes ...int) {
 	log.Info(chat)
-	discordMessageChan <- DiscordMessagePayload{Content: chat, WebhookType: webhookType}
+	for _, webhookType := range webhookTypes {
+		discordMessageChan <- DiscordMessagePayload{Content: chat, WebhookType: webhookType}
+	}
 }
 
 func DiscordService() {

@@ -160,7 +160,7 @@ func tick() error {
 		}
 		if grid.lastRoi < maxCancelLoss {
 			reason += " too much loss"
-			DiscordWebhookS(display(att, grid, "Skip Cancel "+reason, c+1, expiredCopiedIds.Cardinality()), ActionWebhook)
+			DiscordWebhookS(display(att, grid, "Skip Cancel "+reason, c+1, expiredCopiedIds.Cardinality()), ActionWebhook, DefaultWebhook)
 			continue
 		}
 		err := closeGrid(id)
@@ -168,7 +168,7 @@ func tick() error {
 			return err
 		}
 		closedIds.Add(id)
-		DiscordWebhookS(display(att, grid, "Cancelled "+reason, c+1, expiredCopiedIds.Cardinality()), ActionWebhook)
+		DiscordWebhookS(display(att, grid, "Cancelled "+reason, c+1, expiredCopiedIds.Cardinality()), ActionWebhook, DefaultWebhook)
 	}
 
 	for _, grid := range gGrids.gridsByUid {
@@ -179,7 +179,7 @@ func tick() error {
 			}
 			closedIds.Add(grid.StrategyID)
 			DiscordWebhookS(display(globalStrategies[grid.CopiedStrategyID], grid, "Cancelled No Change",
-				0, 0), ActionWebhook)
+				0, 0), ActionWebhook, DefaultWebhook)
 		}
 	}
 
@@ -230,7 +230,7 @@ func tick() error {
 		} else if errr != nil {
 			DiscordWebhook(fmt.Sprintf("**Error placing grid: %v**", errr))
 		} else {
-			DiscordWebhookS(display(s, nil, "**Opened Grid**", c+1, len(bundle.Filtered.strategies)), ActionWebhook)
+			DiscordWebhookS(display(s, nil, "**Opened Grid**", c+1, len(bundle.Filtered.strategies)), ActionWebhook, DefaultWebhook)
 			chunksInt -= 1
 			gGrids.existingPairs.Add(s.Symbol)
 			if chunksInt <= 0 {
