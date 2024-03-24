@@ -27,7 +27,7 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 	}
 	filtered := make(Strategies, 0)
 	for c, s := range strategies.strategies {
-		id := s.StrategyID
+		id := s.SID
 		roi, err := getStrategyRois(id, s.UserID)
 		if err != nil {
 			return nil, err
@@ -54,7 +54,8 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 			if s.lastDayRoiChange > 0.1 &&
 				s.last3HrRoiChange > 0.04 &&
 				s.lastHrRoiChange > 0.02 &&
-				s.last2HrRoiChange-s.lastHrRoiChange > 0.01 {
+				s.last2HrRoiChange-s.lastHrRoiChange > 0.01 &&
+				s.lastDayRoiPerHr > 0.02 {
 				filtered = append(filtered, s)
 				prefix += "Open"
 			}
@@ -104,7 +105,6 @@ func tick() error {
 	if err != nil {
 		return err
 	}
-	log.Infof("USDT: %f", usdt)
 	bundle, err := getTopStrategiesWithRoi()
 	if err != nil {
 		return err
@@ -116,26 +116,26 @@ func tick() error {
 	}
 	count := 0
 	for _, grid := range gGrids.gridsByUid {
-		id := grid.CopiedStrategyID
-		DiscordWebhook(display(globalStrategies[id], grid,
-			fmt.Sprintf("%d, %d", bundle.Raw.findStrategyRanking(id), bundle.Filtered.findStrategyRanking(id)),
+		sid := grid.SID
+		DiscordWebhook(display(globalStrategies[sid], grid,
+			fmt.Sprintf("%d, %d", bundle.Raw.findStrategyRanking(sid), bundle.Filtered.findStrategyRanking(sid)),
 			count+1, len(gGrids.gridsByUid)))
 		count++
 	}
 	expiredCopiedIds := gGrids.existingIds.Difference(bundle.Filtered.ids)
 	for _, grid := range gGrids.gridsByUid {
-		if !expiredCopiedIds.Contains(grid.CopiedStrategyID) {
+		if !expiredCopiedIds.Contains(grid.SID) {
 			direction := grid.Direction
-			gridRank := bundle.Filtered.findStrategyRanking(grid.CopiedStrategyID)
+			gridRank := bundle.Filtered.findStrategyRanking(grid.SID)
 			sameSymbolDifferentDirectionHigherRank := 0
 			for _, s := range bundle.Filtered.strategies {
-				if s.Symbol == grid.Symbol && DirectionMap[s.Direction] != direction && (bundle.Filtered.findStrategyRanking(s.StrategyID) < gridRank) {
+				if s.Symbol == grid.Symbol && DirectionMap[s.Direction] != direction && (bundle.Filtered.findStrategyRanking(s.SID) < gridRank) {
 					sameSymbolDifferentDirectionHigherRank++
 				}
 			}
 			if sameSymbolDifferentDirectionHigherRank >= 2 {
-				expiredCopiedIds.Add(grid.CopiedStrategyID)
-				DiscordWebhook(display(globalStrategies[grid.CopiedStrategyID], grid,
+				expiredCopiedIds.Add(grid.SID)
+				DiscordWebhook(display(globalStrategies[grid.SID], grid,
 					fmt.Sprintf("Exists %d Opposite Direction in Filtered", sameSymbolDifferentDirectionHigherRank),
 					0, 0))
 			}
@@ -149,7 +149,7 @@ func tick() error {
 	for c, id := range expiredGridIds.ToSlice() {
 		reason := ""
 		grid := gGrids.gridsByUid[id]
-		strategyId := grid.CopiedStrategyID
+		strategyId := grid.SID
 		att, ok := globalStrategies[strategyId]
 		maxCancelLoss := TheConfig.MaxCancelLoss
 		if !bundle.Raw.exists(strategyId) {
@@ -173,12 +173,12 @@ func tick() error {
 
 	for _, grid := range gGrids.gridsByUid {
 		if grid.continuousRoiNoChange > 3 && grid.lastRoi >= 0 {
-			err := closeGrid(grid.StrategyID)
+			err := closeGrid(grid.GID)
 			if err != nil {
 				return err
 			}
-			closedIds.Add(grid.StrategyID)
-			DiscordWebhookS(display(globalStrategies[grid.CopiedStrategyID], grid, "Cancelled No Change",
+			closedIds.Add(grid.GID)
+			DiscordWebhookS(display(globalStrategies[grid.SID], grid, "Cancelled No Change",
 				0, 0), ActionWebhook, DefaultWebhook)
 		}
 	}
@@ -204,7 +204,7 @@ func tick() error {
 	}
 	for c, s := range bundle.Filtered.strategies {
 		DiscordWebhook(display(s, nil, "New", c+1, len(bundle.Filtered.strategies)))
-		if gGrids.existingIds.Contains(s.StrategyID) {
+		if gGrids.existingIds.Contains(s.SID) {
 			DiscordWebhook("Strategy exists in open grids, Skip")
 			continue
 		}

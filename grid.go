@@ -53,7 +53,7 @@ type Grid struct {
 	continuousRoiGrowth    int
 	continuousRoiLoss      int
 	continuousRoiNoChange  int
-	StrategyID             int    `json:"strategyId"`
+	GID                    int    `json:"strategyId"`
 	RootUserID             int    `json:"rootUserId"`
 	StrategyUserID         int    `json:"strategyUserId"`
 	StrategyAccountID      int    `json:"strategyAccountId"`
@@ -74,7 +74,7 @@ type Grid struct {
 	GridPosition           string `json:"gridPosition"`
 	Version                int    `json:"version"`
 	CopyCount              int    `json:"copyCount"`
-	CopiedStrategyID       int    `json:"copiedStrategyId"`
+	SID                    int    `json:"copiedStrategyId"`
 	Sharing                bool   `json:"sharing"`
 	IsSubAccount           bool   `json:"isSubAccount"`
 	StrategyAmount         string `json:"strategyAmount"`
@@ -115,29 +115,29 @@ func (tracked *TrackedGrids) Remove(id int) {
 		return
 	}
 	tracked.existingPairs.Remove(g.Symbol)
-	tracked.existingIds.Remove(g.CopiedStrategyID)
+	tracked.existingIds.Remove(g.SID)
 	if g.Direction == DirectionMap[LONG] {
-		tracked.longs.Remove(g.StrategyID)
+		tracked.longs.Remove(g.GID)
 	} else if g.Direction == DirectionMap[SHORT] {
-		tracked.shorts.Remove(g.StrategyID)
+		tracked.shorts.Remove(g.GID)
 	} else {
-		tracked.neutrals.Remove(g.StrategyID)
+		tracked.neutrals.Remove(g.GID)
 	}
 	tracked.totalGridInitial -= g.initialValue
 	tracked.totalGridPnl -= g.totalPnl
-	delete(tracked.gridsByUid, g.StrategyID)
+	delete(tracked.gridsByUid, g.GID)
 }
 
 func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
 	tracked.existingPairs.Add(g.Symbol)
-	tracked.existingIds.Add(g.CopiedStrategyID)
+	tracked.existingIds.Add(g.SID)
 
 	if g.Direction == DirectionMap[LONG] {
-		tracked.longs.Add(g.StrategyID)
+		tracked.longs.Add(g.GID)
 	} else if g.Direction == DirectionMap[SHORT] {
-		tracked.shorts.Add(g.StrategyID)
+		tracked.shorts.Add(g.GID)
 	} else {
-		tracked.neutrals.Add(g.StrategyID)
+		tracked.neutrals.Add(g.GID)
 	}
 	initial, _ := strconv.ParseFloat(g.GridInitialValue, 64)
 	profit, _ := strconv.ParseFloat(g.GridProfit, 64)
@@ -148,7 +148,7 @@ func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
 	g.initialValue = initial / float64(g.InitialLeverage)
 	g.totalPnl = profit + fundingFee + position*(marketPrice-entryPrice) // position is negative for short
 	g.lastRoi = g.totalPnl / g.initialValue
-	oldG, ok := tracked.gridsByUid[g.StrategyID]
+	oldG, ok := tracked.gridsByUid[g.GID]
 	if ok {
 		tracked.totalGridInitial -= oldG.initialValue
 		tracked.totalGridPnl -= oldG.totalPnl
@@ -176,7 +176,7 @@ func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
 			g.continuousRoiLoss = 0
 		}
 	}
-	tracked.gridsByUid[g.StrategyID] = g
+	tracked.gridsByUid[g.GID] = g
 }
 
 type TrackedGrids struct {
@@ -194,8 +194,8 @@ func (tracked *TrackedGrids) findGridIdsByStrategyId(ids ...int) mapset.Set[int]
 	gridIds := mapset.NewSet[int]()
 	idsSet := mapset.NewSet[int](ids...)
 	for _, g := range tracked.gridsByUid {
-		if idsSet.Contains(g.CopiedStrategyID) {
-			gridIds.Add(g.StrategyID)
+		if idsSet.Contains(g.SID) {
+			gridIds.Add(g.GID)
 		}
 	}
 	return gridIds
@@ -213,12 +213,12 @@ func updateOpenGrids(trackContinuous bool) error {
 	currentIds := mapset.NewSet[int]()
 	for _, grid := range res.Grids {
 		gGrids.Add(grid, trackContinuous)
-		currentIds.Add(grid.StrategyID)
+		currentIds.Add(grid.GID)
 	}
 	for _, g := range gGrids.gridsByUid {
-		if !currentIds.Contains(g.StrategyID) {
-			gGrids.Remove(g.StrategyID)
-			DiscordWebhook(display(globalStrategies[g.CopiedStrategyID], g, "Gone", 0, 0))
+		if !currentIds.Contains(g.GID) {
+			gGrids.Remove(g.GID)
+			DiscordWebhook(display(globalStrategies[g.SID], g, "Gone", 0, 0))
 		}
 	}
 	DiscordWebhook(fmt.Sprintf("Open Pairs: %v, Open Ids: %v, Initial: %f, TotalPnL: %f, C: %f, L/S/N: %d/%d/%d",
@@ -273,7 +273,7 @@ func placeGrid(strategy Strategy, initialUSDT float64) error {
 		TrailingDown:           strategy.StrategyParams.TrailingDown,
 		OrderCurrency:          "BASE",
 		ClientStrategyID:       "ctrc_web_" + generateRandomNumberUUID(),
-		CopiedStrategyID:       strategy.StrategyID,
+		CopiedStrategyID:       strategy.SID,
 		TrailingStopLowerLimit: false, // !!t[E.w2.stopLowerLimit]
 		TrailingStopUpperLimit: false, // !1 in js
 	}

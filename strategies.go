@@ -37,11 +37,11 @@ func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 		symbolCount:        make(map[string]int),
 	}
 	for _, s := range by {
-		_, ok := sss.strategiesById[s.StrategyID]
+		_, ok := sss.strategiesById[s.SID]
 		if ok {
 			continue
 		}
-		sss.strategiesById[s.StrategyID] = s
+		sss.strategiesById[s.SID] = s
 		if _, ok := sss.strategiesByUserId[s.UserID]; !ok {
 			sss.strategiesByUserId[s.UserID] = make(Strategies, 0)
 		}
@@ -86,7 +86,7 @@ func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 		if sss.lowest.LatestMatchedCount == nil || s.LatestMatchedCount < *sss.lowest.LatestMatchedCount {
 			sss.lowest.LatestMatchedCount = &s.LatestMatchedCount
 		}
-		globalStrategies[s.StrategyID] = s
+		globalStrategies[s.SID] = s
 		sss.strategies = append(sss.strategies, s)
 	}
 	if sss.highest.runningTime != nil {
@@ -125,9 +125,17 @@ type TrackedStrategies struct {
 }
 
 func (t *TrackedStrategies) findStrategyRanking(id int) int {
-	for i, s := range t.strategies {
-		if s.StrategyID == id {
-			return i
+	symbolDirection := mapset.NewSet[string]()
+	counter := 0
+	for _, s := range t.strategies {
+		sd := s.Symbol + DirectionMap[s.Direction]
+		if symbolDirection.Contains(sd) {
+			continue
+		}
+		symbolDirection.Add(sd)
+		counter++
+		if s.SID == id {
+			return counter
 		}
 	}
 	return -1
@@ -179,7 +187,7 @@ type Strategy struct {
 	Roi              string `json:"roi"`
 	Pnl              string `json:"pnl"`
 	RunningTime      int    `json:"runningTime"`
-	StrategyID       int    `json:"strategyId"`
+	SID              int    `json:"strategyId"`
 	StrategyType     int    `json:"strategyType"`
 	Direction        int    `json:"direction"`
 	UserID           int    `json:"userId"`
@@ -232,17 +240,17 @@ func display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		direction = grid.Direction
 		userId = fmt.Sprintf("%d", grid.RootUserID)
 		symbol = grid.Symbol
-		strategyId = fmt.Sprintf("%d", grid.CopiedStrategyID)
+		strategyId = fmt.Sprintf("%d", grid.SID)
 	} else if grid == nil || DirectionMap[s.Direction] == grid.Direction {
 		direction = DirectionMap[s.Direction]
 		userId = fmt.Sprintf("%d", s.UserID)
 		symbol = s.Symbol
-		strategyId = fmt.Sprintf("%d", s.StrategyID)
+		strategyId = fmt.Sprintf("%d", s.SID)
 	} else {
 		direction = fmt.Sprintf("S: %s, G: %s", DirectionMap[s.Direction], grid.Direction)
 		userId = fmt.Sprintf("S: %d, G: %d", s.UserID, grid.RootUserID)
 		symbol = fmt.Sprintf("S: %s, G: %s", s.Symbol, grid.Symbol)
-		strategyId = fmt.Sprintf("S: %d, G: %d", s.StrategyID, grid.CopiedStrategyID)
+		strategyId = fmt.Sprintf("S: %d, G: %d", s.SID, grid.SID)
 	}
 	if s != nil {
 		ss = s.String()
