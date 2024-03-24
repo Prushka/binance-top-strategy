@@ -31,10 +31,11 @@ type Strategies []*Strategy
 
 func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 	sss := &TrackedStrategies{
-		strategiesById:     make(map[int]*Strategy),
-		strategiesByUserId: make(map[int]Strategies),
-		userRankings:       make(map[int]int),
-		symbolCount:        make(map[string]int),
+		strategiesById:       make(map[int]*Strategy),
+		strategiesByUserId:   make(map[int]Strategies),
+		userRankings:         make(map[int]int),
+		symbolCount:          make(map[string]int),
+		symbolDirectionCount: make(map[string]int),
 	}
 	for _, s := range by {
 		_, ok := sss.strategiesById[s.SID]
@@ -48,6 +49,7 @@ func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 		sss.strategiesByUserId[s.UserID] = append(sss.strategiesByUserId[s.UserID], s)
 		sss.userRankings[s.UserID] += 1
 		sss.symbolCount[s.Symbol] += 1
+		sss.symbolDirectionCount[s.Symbol+DirectionMap[s.Direction]] += 1
 		roi, _ := strconv.ParseFloat(s.Roi, 64)
 		pnl, _ := strconv.ParseFloat(s.Pnl, 64)
 		if sss.highest.CopyCount == nil || s.CopyCount > *sss.highest.CopyCount {
@@ -119,6 +121,7 @@ type TrackedStrategies struct {
 	userRankings               map[int]int
 	usersWithMoreThan1Strategy []UserPair
 	symbolCount                map[string]int
+	symbolDirectionCount       map[string]int
 	highest                    StrategyMetrics
 	lowest                     StrategyMetrics
 	ids                        mapset.Set[int]
@@ -127,22 +130,32 @@ type TrackedStrategies struct {
 func (t *TrackedStrategies) findStrategyRanking(id int) int {
 	symbolDirection := mapset.NewSet[string]()
 	counter := 0
+	sd := ""
 	for _, s := range t.strategies {
-		sd := s.Symbol + DirectionMap[s.Direction]
-		if symbolDirection.Contains(sd) {
-			continue
-		}
-		symbolDirection.Add(sd)
-		counter++
 		if s.SID == id {
+			sd = s.Symbol + DirectionMap[s.Direction]
+			break
+		}
+	}
+	if sd == "" {
+		return -1
+	}
+	for _, s := range t.strategies {
+		sdd := s.Symbol + DirectionMap[s.Direction]
+		if sdd == sd {
 			return counter
 		}
+		if symbolDirection.Contains(sdd) {
+			continue
+		}
+		symbolDirection.Add(sdd)
+		counter++
 	}
 	return -1
 }
 
 func (t *TrackedStrategies) String() string {
-	return fmt.Sprintf("%d, Symbols: %d, %v, H: %v, L: %v", len(t.strategiesById), len(t.symbolCount), asJson(t.usersWithMoreThan1Strategy), asJson(t.highest), asJson(t.lowest))
+	return fmt.Sprintf("%d, Symbols: %d, SymbolDirections: %d, %v, H: %v, L: %v", len(t.strategiesById), len(t.symbolCount), len(t.symbolDirectionCount), asJson(t.usersWithMoreThan1Strategy), asJson(t.highest), asJson(t.lowest))
 }
 
 func (t *TrackedStrategies) exists(id int) bool {
