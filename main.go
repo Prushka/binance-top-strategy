@@ -44,7 +44,7 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 
 		lower, _ := strconv.ParseFloat(s.StrategyParams.LowerLimit, 64)
 		upper, _ := strconv.ParseFloat(s.StrategyParams.UpperLimit, 64)
-		s.priceDifference = (upper/lower - 1) * 100
+		s.priceDifference = upper/lower - 1
 
 		if len(s.Rois) > 1 {
 			s.roi = s.Rois[0].Roi
