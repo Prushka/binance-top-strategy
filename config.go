@@ -24,7 +24,7 @@ type Config struct {
 	MaxNeutrals                    int     `env:"MAX_NEUTRALS" envDefault:"-1"`
 	MaxCancelLoss                  float64 `env:"MAX_CANCEL_LOSS" envDefault:"0"`
 	Mode                           string  `env:"MODE" envDefault:"trading"`
-	Leverage                       int     `env:"LEVERAGE" envDefault:"20"`
+	MaxLeverage                    int     `env:"LEVERAGE" envDefault:"50"`
 	KeepTopNStrategiesOfSameSymbol int     `env:"KEEP_TOP_N_STRATEGIES_OF_SAME_SYMBOL" envDefault:"99"`
 	Last3HrWeight                  float64 `env:"LAST_3_HR_WEIGHT" envDefault:"0"`
 	Last2HrWeight                  float64 `env:"LAST_2_HR_WEIGHT" envDefault:"1"`
