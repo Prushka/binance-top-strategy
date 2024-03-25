@@ -60,7 +60,8 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 				s.last3HrRoiChange > 0.03 &&
 				s.lastHrRoiChange > 0.01 &&
 				s.last2HrRoiChange > s.lastHrRoiChange &&
-				s.lastDayRoiPerHr > 0.01 {
+				s.lastDayRoiPerHr > 0.01 &&
+				s.priceDifference > 0.05 {
 				filtered = append(filtered, s)
 				prefix += "Open"
 			}
