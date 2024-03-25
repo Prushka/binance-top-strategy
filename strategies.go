@@ -211,6 +211,7 @@ type Strategy struct {
 	lastHrRoiChange  float64
 	lastDayRoiPerHr  float64
 	roiPerHour       float64
+	priceDifference  float64
 	StrategyParams   struct {
 		Type           string  `json:"type"`
 		LowerLimit     string  `json:"lowerLimit"`
@@ -233,9 +234,9 @@ type Strategy struct {
 
 func (s Strategy) String() string {
 	runTime := time.Duration(s.RunningTime) * time.Second
-	return fmt.Sprintf("%s, Copy: %d, Matched: [%d, %d], PnL: %s, PerH: %.1f%%, PerHLastDay: %.1f%%, A: %s%%, D: %.1f%%, 3H: %.1f%%, 2H: %.1f%%, 1H: %.1f%%, MinInv: %s",
+	return fmt.Sprintf("%s, Copy: %d, Matched: [%d, %d], PnL: %s, PerH: %.1f%%, PerHLastDay: %.1f%%, A: %s%%, D: %.1f%%, 3H: %.1f%%, 2H: %.1f%%, 1H: %.1f%%, MinInv: %s, Grids: %d, Price: %s-%s, %.2f%%",
 		runTime, s.CopyCount, s.MatchedCount, s.LatestMatchedCount, s.Pnl, s.roiPerHour*100, s.lastDayRoiPerHr*100, s.Roi,
-		s.lastDayRoiChange*100, s.last3HrRoiChange*100, s.last2HrRoiChange*100, s.lastHrRoiChange*100, s.MinInvestment)
+		s.lastDayRoiChange*100, s.last3HrRoiChange*100, s.last2HrRoiChange*100, s.lastHrRoiChange*100, s.MinInvestment, s.StrategyParams.GridCount, s.StrategyParams.LowerLimit, s.StrategyParams.UpperLimit, s.priceDifference)
 }
 
 func display(s *Strategy, grid *Grid, action string, index int, length int) string {

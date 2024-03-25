@@ -42,6 +42,10 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 		s.roi, _ = strconv.ParseFloat(s.Roi, 64)
 		s.roi /= 100
 
+		lower, _ := strconv.ParseFloat(s.StrategyParams.LowerLimit, 64)
+		upper, _ := strconv.ParseFloat(s.StrategyParams.UpperLimit, 64)
+		s.priceDifference = (upper/lower - 1) * 100
+
 		if len(s.Rois) > 1 {
 			s.roi = s.Rois[0].Roi
 			s.lastDayRoiChange = GetRoiChange(s.Rois, 24*time.Hour)
