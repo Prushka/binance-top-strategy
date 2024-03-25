@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"math"
 	"strconv"
+	"time"
 )
 
 type PlaceGridRequest struct {
@@ -231,8 +232,10 @@ func (grid *Grid) String() string {
 	extendedProfit := ""
 	extendedProfit = fmt.Sprintf(" [%.2f%%, %.2f%%][+%d, -%d, %d]",
 		*grid.lowestRoi*100, *grid.highestRoi*100, grid.continuousRoiGrowth, grid.continuousRoiLoss, grid.continuousRoiNoChange)
-	return fmt.Sprintf("In: %.2f, RealizedPnL: %s, TotalPnL: %f, Profit: %f%%%s",
-		grid.initialValue,
+	d := time.Now().Unix() - grid.BookTime/1000
+	dDuration := time.Duration(d) * time.Second
+	return fmt.Sprintf("In: %.2f %dX, %s, RealizedPnL: %s, TotalPnL: %f, Profit: %f%%%s",
+		grid.initialValue, grid.InitialLeverage, dDuration,
 		grid.GridProfit, grid.totalPnl, grid.lastRoi*100, extendedProfit)
 }
 
