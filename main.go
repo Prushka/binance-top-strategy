@@ -53,6 +53,7 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 			s.last2HrRoiChange = GetRoiChange(s.Rois, 2*time.Hour)
 			s.lastHrRoiChange = GetRoiChange(s.Rois, 1*time.Hour)
 			s.lastDayRoiPerHr = GetRoiPerHr(s.Rois, 24*time.Hour)
+			s.last12HrRoiPerHr = GetRoiPerHr(s.Rois, 12*time.Hour)
 			s.roiPerHour = (s.roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
 			prefix := ""
 			if s.lastDayRoiChange > 0.1 &&
@@ -69,7 +70,7 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 	sort.Slice(filtered, func(i, j int) bool {
 		I := filtered[i]
 		J := filtered[j]
-		return I.lastDayRoiPerHr > J.lastDayRoiPerHr
+		return I.last12HrRoiPerHr > J.last12HrRoiPerHr
 	})
 	bundle := &StrategiesBundle{Raw: strategies, Filtered: filtered.toTrackedStrategies()}
 	DiscordWebhook("### Strategies")
