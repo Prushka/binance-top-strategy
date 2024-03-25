@@ -203,7 +203,7 @@ func (tracked *TrackedGrids) findGridIdsByStrategyId(ids ...int) mapset.Set[int]
 
 func updateOpenGrids(trackContinuous bool) error {
 	url := "https://www.binance.com/bapi/futures/v2/private/future/grid/query-open-grids"
-	res, err := privateRequest(url, "POST", nil, &OpenGridResponse{})
+	res, _, err := privateRequest(url, "POST", nil, &OpenGridResponse{})
 	if err != nil {
 		return err
 	}
@@ -245,7 +245,7 @@ func closeGrid(strategyId int) error {
 	payload := map[string]interface{}{
 		"strategyId": strategyId,
 	}
-	_, err := privateRequest(url, "POST", payload, &BinanceBaseResponse{})
+	_, _, err := privateRequest(url, "POST", payload, &BinanceBaseResponse{})
 	return err
 }
 
@@ -291,7 +291,7 @@ func placeGrid(strategy Strategy, initialUSDT float64) error {
 	}
 	s, _ := json.Marshal(payload)
 	DiscordWebhookS(DiscordJson(string(s)), OrderWebhook)
-	res, err := privateRequest("https://www.binance.com/bapi/futures/v2/private/future/grid/place-grid", "POST", payload, &PlaceGridResponse{})
+	res, _, err := privateRequest("https://www.binance.com/bapi/futures/v2/private/future/grid/place-grid", "POST", payload, &PlaceGridResponse{})
 	if !res.Success {
 		return fmt.Errorf(res.Message)
 	}

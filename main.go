@@ -56,9 +56,9 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 			s.roiPerHour = (s.roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
 			prefix := ""
 			if s.lastDayRoiChange > 0.1 &&
-				s.last3HrRoiChange > 0.04 &&
+				s.last3HrRoiChange > 0.03 &&
 				s.lastHrRoiChange > 0.01 &&
-				s.last2HrRoiChange-s.lastHrRoiChange > 0.01 &&
+				s.last2HrRoiChange > s.lastHrRoiChange &&
 				s.lastDayRoiPerHr > 0.01 {
 				filtered = append(filtered, s)
 				prefix += "Open"

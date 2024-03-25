@@ -44,10 +44,10 @@ func request[T any](url string, payload any, response T) (T, []byte, error) {
 	return response, body, nil
 }
 
-func privateRequest[T BinanceResponse](url, method string, payload any, response T) (T, error) {
+func privateRequest[T BinanceResponse](url, method string, payload any, response T) (T, []byte, error) {
 	p, err := json.Marshal(payload)
 	if err != nil {
-		return response, err
+		return response, nil, err
 	}
 	var r io.Reader
 	if p != nil {
@@ -55,7 +55,7 @@ func privateRequest[T BinanceResponse](url, method string, payload any, response
 	}
 	req, err := http.NewRequest(method, url, r)
 	if err != nil {
-		return response, err
+		return response, nil, err
 	}
 	req.Header.Set("Cookie", TheConfig.COOKIE)
 	req.Header.Set("Accept", "*/*")
@@ -72,12 +72,12 @@ func privateRequest[T BinanceResponse](url, method string, payload any, response
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return response, err
+		return response, nil, err
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return response, err
+		return response, nil, err
 	}
 	log.Infof("Response: %s", body)
 	time.Sleep(1 * time.Second)
@@ -85,8 +85,8 @@ func privateRequest[T BinanceResponse](url, method string, payload any, response
 	if err == nil {
 		if response.getCode() == "100002001" || response.getCode() == "100001005" {
 			DiscordWebhook("Error, login expired")
-			return response, fmt.Errorf("login expired")
+			return response, body, fmt.Errorf("login expired")
 		}
 	}
-	return response, err
+	return response, body, err
 }

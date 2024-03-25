@@ -342,6 +342,11 @@ func mergeStrategies(strategyType int, sps ...SortPair) (*TrackedStrategies, err
 		sss = append(sss, by...)
 		time.Sleep(1 * time.Second)
 	}
+	sort.Slice(sss, func(i, j int) bool {
+		roiI, _ := strconv.ParseFloat(sss[i].Roi, 64)
+		roiJ, _ := strconv.ParseFloat(sss[j].Roi, 64)
+		return roiI > roiJ
+	})
 	return sss.toTrackedStrategies(), nil
 }
 
@@ -372,9 +377,11 @@ func _getTopStrategies(sort string, direction *int, strategyType int, runningTim
 		Sort:           sort,
 		Direction:      direction,
 	}
-	strategies, res, err := request(
-		"https://www.binance.com/bapi/futures/v1/public/future/common/strategy/landing-page/queryTopStrategy",
+	strategies, res, err := privateRequest(
+		"https://www.binance.com/bapi/futures/v1/public/future/common/strategy/landing-page/queryTopStrategy", "POST",
 		query, &StrategiesResponse{})
+	// this API returns different results based on if user agents or another header is passed to it
+	// if no such header is passed to it, it returns grids count min 2 (high risk)
 	if err != nil || !strategies.Success {
 		return nil, err
 	}
