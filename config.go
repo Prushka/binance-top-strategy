@@ -22,7 +22,7 @@ type Config struct {
 	MaxChunks                      int     `env:"MAX_CHUNKS" envDefault:"4"`
 	MaxLongs                       int     `env:"MAX_LONGS" envDefault:"-1"`
 	MaxNeutrals                    int     `env:"MAX_NEUTRALS" envDefault:"-1"`
-	MaxCancelLoss                  float64 `env:"MAX_CANCEL_LOSS" envDefault:"-0.01"`
+	MaxCancelLoss                  float64 `env:"MAX_CANCEL_LOSS" envDefault:"0"`
 	Mode                           string  `env:"MODE" envDefault:"trading"`
 	Leverage                       int     `env:"LEVERAGE" envDefault:"20"`
 	KeepTopNStrategiesOfSameSymbol int     `env:"KEEP_TOP_N_STRATEGIES_OF_SAME_SYMBOL" envDefault:"99"`
