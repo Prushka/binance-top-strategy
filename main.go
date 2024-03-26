@@ -55,6 +55,7 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 			s.lastHrRoiChange = GetRoiChange(s.Rois, 1*time.Hour)
 			s.lastDayRoiPerHr = GetRoiPerHr(s.Rois, 24*time.Hour)
 			s.last12HrRoiPerHr = GetRoiPerHr(s.Rois, 12*time.Hour)
+			s.last6HrNoDip = NoDip(s.Rois, 6*time.Hour)
 			s.roiPerHour = (s.roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
 			prefix := ""
 			if s.lastDayRoiChange > 0.1 &&
@@ -62,7 +63,9 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 				s.lastHrRoiChange > 0.01 &&
 				s.last2HrRoiChange > s.lastHrRoiChange &&
 				s.lastDayRoiPerHr > 0.01 &&
-				s.priceDifference > 0.05 {
+				s.last12HrRoiPerHr > 0.02 &&
+				s.priceDifference > 0.05 &&
+				s.last6HrNoDip {
 				filtered = append(filtered, s)
 				prefix += "Open"
 			}
@@ -104,6 +107,20 @@ func GetRoiPerHr(roi StrategyRoi, t time.Duration) float64 {
 		}
 	}
 	return (latestRoi - roi[len(roi)-1].Roi) / (float64(roi[0].Time-roi[len(roi)-1].Time) / 3600)
+}
+
+func NoDip(roi StrategyRoi, t time.Duration) bool {
+	latestTimestamp := roi[0].Time
+	l := latestTimestamp - int64(t.Seconds())
+	for c, r := range roi {
+		if r.Time < l {
+			return true
+		}
+		if c > 0 && roi[c-1].Roi-r.Roi < 0 {
+			return false
+		}
+	}
+	return true
 }
 
 func tick() error {
@@ -272,7 +289,6 @@ func tick() error {
 
 // cancel when oppposite direction exists, use better n count, n > original direction n?
 // cancel when above n%, then cooldown?
-// TODO: exists opposite direction needs rework
 
 func main() {
 	configure()

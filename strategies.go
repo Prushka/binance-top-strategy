@@ -226,6 +226,7 @@ type Strategy struct {
 	lastHrRoiChange  float64
 	lastDayRoiPerHr  float64
 	last12HrRoiPerHr float64
+	last6HrNoDip     bool
 	roiPerHour       float64
 	priceDifference  float64
 	StrategyParams   struct {
