@@ -155,7 +155,8 @@ func tick() error {
 			sameDirections := 0
 			for _, s := range bundle.Filtered.strategies {
 				if s.Symbol == grid.Symbol {
-					if DirectionMap[s.Direction] != direction {
+					if (s.Direction == LONG && direction == "SHORT") || (s.Direction == SHORT && direction == "LONG") {
+						// todo: neutral
 						oppositeDirections++
 					} else {
 						sameDirections++
@@ -289,6 +290,7 @@ func tick() error {
 
 // cancel when oppposite direction exists, use better n count, n > original direction n?
 // cancel when above n%, then cooldown?
+// sort by symbol pair in filtered
 
 func main() {
 	configure()
