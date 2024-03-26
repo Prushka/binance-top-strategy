@@ -23,6 +23,7 @@ type Config struct {
 	MaxLongs                       int     `env:"MAX_LONGS" envDefault:"-1"`
 	MaxNeutrals                    int     `env:"MAX_NEUTRALS" envDefault:"-1"`
 	MaxCancelLoss                  float64 `env:"MAX_CANCEL_LOSS" envDefault:"0"`
+	MaxCancelLostStrategyDeleted   float64 `env:"MAX_CANCEL_LOST_STRATEGY_DELETED" envDefault:"-0.2"`
 	Mode                           string  `env:"MODE" envDefault:"trading"`
 	MaxLeverage                    int     `env:"LEVERAGE" envDefault:"40"`
 	KeepTopNStrategiesOfSameSymbol int     `env:"KEEP_TOP_N_STRATEGIES_OF_SAME_SYMBOL" envDefault:"99"`

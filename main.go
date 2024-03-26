@@ -184,7 +184,7 @@ func tick() error {
 		maxCancelLoss := TheConfig.MaxCancelLoss
 		if !bundle.Raw.exists(strategyId) {
 			reason += "Strategy not found"
-			maxCancelLoss = -0.2
+			maxCancelLoss = TheConfig.MaxCancelLostStrategyDeleted
 		} else if ok && !bundle.Filtered.exists(strategyId) {
 			reason += "Strategy not picked"
 		}
