@@ -295,6 +295,8 @@ func placeGrid(strategy Strategy, initialUSDT float64) error {
 		payload.StopLowerLimit = *strategy.StrategyParams.StopLowerLimit
 		payload.StopTriggerType = "MARK_PRICE"
 		payload.TrailingStopLowerLimit = true
+		payload.OrderCurrency = "QUOTE"
+		// Error placing grid: Unable to do grid trailing when order currency is not quote token.
 	}
 	s, _ := json.Marshal(payload)
 	DiscordWebhookS(DiscordJson(string(s)), OrderWebhook)
