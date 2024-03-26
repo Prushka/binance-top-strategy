@@ -234,9 +234,9 @@ func (grid *Grid) String() string {
 		*grid.lowestRoi*100, *grid.highestRoi*100, grid.continuousRoiGrowth, grid.continuousRoiLoss, grid.continuousRoiNoChange)
 	d := time.Now().Unix() - grid.BookTime/1000
 	dDuration := time.Duration(d) * time.Second
-	return fmt.Sprintf("In: %.2f %dX, %s, RealizedPnL: %s, TotalPnL: %f, Profit: %f%%%s",
+	return fmt.Sprintf("In: %.2f %dX, %s, RealizedPnL: %s, TotalPnL: %f, Profit: %f%%%s, %s-%s",
 		grid.initialValue, grid.InitialLeverage, dDuration,
-		grid.GridProfit, grid.totalPnl, grid.lastRoi*100, extendedProfit)
+		grid.GridProfit, grid.totalPnl, grid.lastRoi*100, extendedProfit, grid.GridLowerLimit, grid.GridUpperLimit)
 }
 
 func closeGrid(strategyId int) error {
@@ -286,6 +286,9 @@ func placeGrid(strategy Strategy, initialUSDT float64) error {
 	}
 	if payload.TrailingUp || payload.TrailingDown {
 		payload.OrderCurrency = "QUOTE"
+		if strategy.StrategyParams.StopLowerLimit != nil {
+			payload.TrailingStopLowerLimit = true
+		}
 	}
 	if strategy.StrategyParams.StopUpperLimit != nil {
 		payload.StopUpperLimit = *strategy.StrategyParams.StopUpperLimit
@@ -294,10 +297,6 @@ func placeGrid(strategy Strategy, initialUSDT float64) error {
 	if strategy.StrategyParams.StopLowerLimit != nil {
 		payload.StopLowerLimit = *strategy.StrategyParams.StopLowerLimit
 		payload.StopTriggerType = "MARK_PRICE"
-		payload.TrailingStopLowerLimit = true
-		//payload.OrderCurrency = "QUOTE"
-		// TODO: json doesn't have TrailingStopLowerLimit when StopLowerLimit is set
-		// Error placing grid: Unable to do grid trailing when order currency is not quote token.
 	}
 	s, _ := json.Marshal(payload)
 	DiscordWebhookS(DiscordJson(string(s)), OrderWebhook)
