@@ -27,6 +27,8 @@ type PlaceGridRequest struct {
 	OrderCurrency          string `json:"orderCurrency"`
 	StopUpperLimit         string `json:"stopUpperLimit,omitempty"`
 	StopLowerLimit         string `json:"stopLowerLimit,omitempty"`
+	TriggerPrice           string `json:"triggerPrice,omitempty"`
+	TriggerType            string `json:"triggerType,omitempty"`
 	TrailingStopUpperLimit bool   `json:"trailingStopUpperLimit"`
 	TrailingStopLowerLimit bool   `json:"trailingStopLowerLimit"`
 	StopTriggerType        string `json:"stopTriggerType,omitempty"`
@@ -289,6 +291,10 @@ func placeGrid(strategy Strategy, initialUSDT float64) error {
 		if strategy.StrategyParams.StopLowerLimit != nil {
 			payload.TrailingStopLowerLimit = true
 		}
+	}
+	if strategy.StrategyParams.TriggerPrice != nil {
+		payload.TriggerPrice = *strategy.StrategyParams.TriggerPrice
+		payload.TriggerType = "MARK_PRICE"
 	}
 	if strategy.StrategyParams.StopUpperLimit != nil {
 		payload.StopUpperLimit = *strategy.StrategyParams.StopUpperLimit

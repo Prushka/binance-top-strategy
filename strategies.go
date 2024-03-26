@@ -234,7 +234,7 @@ type Strategy struct {
 		LowerLimit     string  `json:"lowerLimit"`
 		UpperLimit     string  `json:"upperLimit"`
 		GridCount      int     `json:"gridCount"`
-		TriggerPrice   any     `json:"triggerPrice"`
+		TriggerPrice   *string `json:"triggerPrice"`
 		StopLowerLimit *string `json:"stopLowerLimit"`
 		StopUpperLimit *string `json:"stopUpperLimit"`
 		BaseAsset      any     `json:"baseAsset"`
