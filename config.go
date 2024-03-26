@@ -10,7 +10,7 @@ type Config struct {
 	SecretKey                      string  `env:"SECRET_KEY"`
 	CSRFToken                      string  `env:"CSRF"`
 	COOKIE                         string  `env:"COOKIE"`
-	StrategiesCount                int     `env:"STRATEGIES_COUNT" envDefault:"50"`
+	StrategiesCount                int     `env:"STRATEGIES_COUNT" envDefault:"55"`
 	RuntimeMinHours                int     `env:"RUNTIME_MIN_HOURS" envDefault:"3"`
 	RuntimeMaxHours                int     `env:"RUNTIME_MAX_HOURS" envDefault:"168"`
 	Paper                          bool    `env:"PAPER" envDefault:"true"`
@@ -19,7 +19,7 @@ type Config struct {
 	DiscordWebhookOrder            string  `env:"DISCORD_WEBHOOK_ORDER"`
 	DiscordName                    string  `env:"DISCORD_NAME" envDefault:"BTS"`
 	TickEveryMinutes               int     `env:"TICK_EVERY_MINUTES" envDefault:"5"`
-	MaxChunks                      int     `env:"MAX_CHUNKS" envDefault:"4"`
+	MaxChunks                      int     `env:"MAX_CHUNKS" envDefault:"5"`
 	MaxLongs                       int     `env:"MAX_LONGS" envDefault:"-1"`
 	MaxNeutrals                    int     `env:"MAX_NEUTRALS" envDefault:"-1"`
 	MaxCancelLoss                  float64 `env:"MAX_CANCEL_LOSS" envDefault:"0"`

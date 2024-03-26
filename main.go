@@ -259,6 +259,14 @@ func tick() error {
 	return nil
 }
 
+// TODO: cancel when symbolpair count decreases
+//by 2 more
+//2 and more
+//then avoid that sp for how long?
+//if increases again cancel blacklist
+
+// cancel when oppposite direction exists, use better n count, n > original direction n?
+
 func main() {
 	configure()
 	log.Infof("Public IP: %s", getPublicIP())
