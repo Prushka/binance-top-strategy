@@ -361,7 +361,6 @@ func mergeStrategies(strategyType int, sps ...SortPair) (*TrackedStrategies, err
 			return nil, err
 		}
 		sss = append(sss, by...)
-		time.Sleep(1 * time.Second)
 	}
 	sort.Slice(sss, func(i, j int) bool {
 		roiI, _ := strconv.ParseFloat(sss[i].Roi, 64)
