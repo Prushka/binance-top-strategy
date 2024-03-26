@@ -19,7 +19,7 @@ type Config struct {
 	DiscordWebhookOrder            string  `env:"DISCORD_WEBHOOK_ORDER"`
 	DiscordName                    string  `env:"DISCORD_NAME" envDefault:"BTS"`
 	TickEveryMinutes               int     `env:"TICK_EVERY_MINUTES" envDefault:"5"`
-	MaxChunks                      int     `env:"MAX_CHUNKS" envDefault:"5"`
+	MaxChunks                      int     `env:"MAX_CHUNKS" envDefault:"4"`
 	MaxLongs                       int     `env:"MAX_LONGS" envDefault:"-1"`
 	MaxNeutrals                    int     `env:"MAX_NEUTRALS" envDefault:"-1"`
 	MaxCancelLoss                  float64 `env:"MAX_CANCEL_LOSS" envDefault:"0"`
