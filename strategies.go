@@ -36,6 +36,9 @@ func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 		userRankings:         make(map[int]int),
 		symbolCount:          make(map[string]int),
 		symbolDirectionCount: make(map[string]int),
+		longs:                mapset.NewSet[int](),
+		shorts:               mapset.NewSet[int](),
+		neutrals:             mapset.NewSet[int](),
 	}
 	for _, s := range by {
 		_, ok := sss.strategiesById[s.SID]
@@ -50,6 +53,13 @@ func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 		sss.userRankings[s.UserID] += 1
 		sss.symbolCount[s.Symbol] += 1
 		sss.symbolDirectionCount[s.Symbol+DirectionMap[s.Direction]] += 1
+		if s.Direction == LONG {
+			sss.longs.Add(s.SID)
+		} else if s.Direction == SHORT {
+			sss.shorts.Add(s.SID)
+		} else {
+			sss.neutrals.Add(s.SID)
+		}
 		roi, _ := strconv.ParseFloat(s.Roi, 64)
 		pnl, _ := strconv.ParseFloat(s.Pnl, 64)
 		if sss.highest.CopyCount == nil || s.CopyCount > *sss.highest.CopyCount {
@@ -122,6 +132,9 @@ type TrackedStrategies struct {
 	usersWithMoreThan1Strategy []UserPair
 	symbolCount                map[string]int
 	symbolDirectionCount       map[string]int
+	longs                      mapset.Set[int]
+	shorts                     mapset.Set[int]
+	neutrals                   mapset.Set[int]
 	highest                    StrategyMetrics
 	lowest                     StrategyMetrics
 	ids                        mapset.Set[int]
@@ -155,7 +168,9 @@ func (t *TrackedStrategies) findStrategyRanking(id int) int {
 }
 
 func (t *TrackedStrategies) String() string {
-	return fmt.Sprintf("%d, Symbols: %d, SymbolDirections: %v, %v, H: %v, L: %v", len(t.strategiesById), len(t.symbolCount), asJson(t.symbolDirectionCount), asJson(t.usersWithMoreThan1Strategy), asJson(t.highest), asJson(t.lowest))
+	return fmt.Sprintf("%d, Symbols: %d, L/S/N: %d/%d/%d, SymbolDirections: %v, H: %v, L: %v", len(t.strategiesById), len(t.symbolCount),
+		t.longs.Cardinality(), t.shorts.Cardinality(), t.neutrals.Cardinality(),
+		asJson(t.symbolDirectionCount), asJson(t.highest), asJson(t.lowest))
 }
 
 func (t *TrackedStrategies) exists(id int) bool {
