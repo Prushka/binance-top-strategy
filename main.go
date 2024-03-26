@@ -14,6 +14,7 @@ var scheduler = gocron.NewScheduler(time.Now().Location())
 
 var globalStrategies = make(map[int]*Strategy) // StrategyOriginalID -> Strategy
 var gGrids = newTrackedGrids()
+var sessionSymbolPrice = make(map[string]float64)
 
 type StrategiesBundle struct {
 	Raw      *TrackedStrategies
@@ -106,6 +107,7 @@ func GetRoiPerHr(roi StrategyRoi, t time.Duration) float64 {
 }
 
 func tick() error {
+	clear(sessionSymbolPrice)
 	DiscordWebhook(fmt.Sprintf("## Run: %v", time.Now().Format("2006-01-02 15:04:05")))
 	usdt, err := getFutureUSDT()
 	if err != nil {
