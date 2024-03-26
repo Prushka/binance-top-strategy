@@ -144,7 +144,7 @@ func tick() error {
 			if sameSymbolDifferentDirectionHigherRank >= 2 {
 				expiredCopiedIds.Add(grid.SID)
 				DiscordWebhook(display(globalStrategies[grid.SID], grid,
-					fmt.Sprintf("Exists %d Opposite Direction in Filtered", sameSymbolDifferentDirectionHigherRank),
+					fmt.Sprintf("**Exists %d Opposite Direction in Filtered**", sameSymbolDifferentDirectionHigherRank),
 					0, 0))
 			}
 		}
@@ -266,6 +266,8 @@ func tick() error {
 //if increases again cancel blacklist
 
 // cancel when oppposite direction exists, use better n count, n > original direction n?
+// cancel when above n%, then cooldown?
+// TODO: exists opposite direction needs rework
 
 func main() {
 	configure()
