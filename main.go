@@ -63,7 +63,7 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 				s.lastHrRoiChange > 0.01 &&
 				s.last2HrRoiChange > s.lastHrRoiChange &&
 				s.lastDayRoiPerHr > 0.01 &&
-				s.last12HrRoiPerHr > 0.02 &&
+				s.last12HrRoiPerHr > 0.015 &&
 				s.priceDifference > 0.05 &&
 				s.last6HrNoDip {
 				filtered = append(filtered, s)
