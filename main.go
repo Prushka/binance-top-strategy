@@ -134,17 +134,22 @@ func tick() error {
 	for _, grid := range gGrids.gridsByUid {
 		if !expiredCopiedIds.Contains(grid.SID) {
 			direction := grid.Direction
-			gridRank := bundle.Filtered.findStrategyRanking(grid.SID)
-			sameSymbolDifferentDirectionHigherRank := 0
+			oppositeDirections := 0
+			sameDirections := 0
 			for _, s := range bundle.Filtered.strategies {
-				if s.Symbol == grid.Symbol && DirectionMap[s.Direction] != direction && (bundle.Filtered.findStrategyRanking(s.SID) < gridRank) {
-					sameSymbolDifferentDirectionHigherRank++
+				if s.Symbol == grid.Symbol {
+					if DirectionMap[s.Direction] != direction {
+						oppositeDirections++
+					} else {
+						sameDirections++
+					}
 				}
 			}
-			if sameSymbolDifferentDirectionHigherRank >= 2 {
+
+			if oppositeDirections > sameDirections {
 				expiredCopiedIds.Add(grid.SID)
 				DiscordWebhook(display(globalStrategies[grid.SID], grid,
-					fmt.Sprintf("**Exists %d Opposite Direction in Filtered**", sameSymbolDifferentDirectionHigherRank),
+					fmt.Sprintf("**Same Directions: %d, Opposite Directions: %d**", sameDirections, oppositeDirections),
 					0, 0))
 			}
 		}
