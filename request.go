@@ -95,16 +95,16 @@ func _request[T BinanceResponse](url, method string, sleep time.Duration,
 	time.Sleep(sleep)
 	err = json.Unmarshal(body, response)
 	if err != nil {
-		log.Error(body)
+		log.Errorf("Response: %s", body)
 		return response, body, err
 	}
 	if response.code() == "100002001" || response.code() == "100001005" {
-		log.Error(body)
+		log.Errorf("Response: %s", body)
 		DiscordWebhook("Error, login expired")
 		return response, body, fmt.Errorf("login expired")
 	}
 	if !response.success() {
-		log.Error(body)
+		log.Errorf("Response: %s", body)
 		DiscordWebhook(response.message())
 		return response, body, fmt.Errorf("error: %s", response.message())
 	}
