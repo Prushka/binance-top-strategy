@@ -12,7 +12,7 @@ type DiscordMessagePayload struct {
 	WebhookType int    `json:"webhookType"`
 }
 
-var discordMessageChan = make(chan DiscordMessagePayload, 300)
+var discordMessageChan = make(chan DiscordMessagePayload, 3000)
 
 func DiscordJson(chat string) string {
 	return "```json\n" + chat + "\n```"

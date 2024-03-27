@@ -333,11 +333,12 @@ func main() {
 		sdk()
 		_, err := scheduler.Every(TheConfig.TickEveryMinutes).Minutes().Do(
 			func() {
+				t := time.Now()
 				err := tick()
 				if err != nil {
 					log.Errorf("Error: %v", err)
 				}
-				Time("Fetch final grids")
+				DiscordWebhook(fmt.Sprintf("*Run took: %v*", time.Since(t)))
 			},
 		)
 		if err != nil {
