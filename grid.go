@@ -256,10 +256,6 @@ func closeGrid(strategyId int) error {
 }
 
 func placeGrid(strategy Strategy, initialUSDT float64) error {
-	if TheConfig.Paper {
-		log.Infof("Paper mode, not placing grid")
-		return nil
-	}
 	if _, ok := DirectionMap[strategy.Direction]; !ok {
 		return fmt.Errorf("invalid direction: %d", strategy.Direction)
 	}
@@ -308,6 +304,10 @@ func placeGrid(strategy Strategy, initialUSDT float64) error {
 	}
 	s, _ := json.Marshal(payload)
 	DiscordWebhookS(DiscordJson(string(s)), OrderWebhook)
+	if TheConfig.Paper {
+		log.Infof("Paper mode, not placing grid")
+		return nil
+	}
 	res, _, err := privateRequest("https://www.binance.com/bapi/futures/v2/private/future/grid/place-grid", "POST", payload, &PlaceGridResponse{})
 	if !res.Success {
 		return fmt.Errorf(res.Message)
