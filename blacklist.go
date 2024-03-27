@@ -7,9 +7,12 @@ import (
 type Blacklist struct {
 	BySID             map[int]time.Time
 	BySymbolDirection map[string]time.Time
+	BySymbol          map[string]time.Time
 }
 
-var blacklist = &Blacklist{BySID: make(map[int]time.Time), BySymbolDirection: make(map[string]time.Time)}
+var blacklist = &Blacklist{BySID: make(map[int]time.Time),
+	BySymbolDirection: make(map[string]time.Time),
+	BySymbol:          make(map[string]time.Time)}
 
 func addSymbolDirectionToBlacklist(symbol, direction string, d time.Duration) {
 	blacklist.BySymbolDirection[symbol+direction] = time.Now().Add(d)
@@ -38,6 +41,22 @@ func SIDBlacklisted(id int) (bool, time.Time) {
 			return true, t
 		} else {
 			delete(blacklist.BySID, id)
+		}
+	}
+	return false, time.Time{}
+}
+
+func addSymbolToBlacklist(symbol string, d time.Duration) {
+	blacklist.BySymbol[symbol] = time.Now().Add(d)
+	Discordf("**Add blacklist:** %s, %s", symbol, d)
+}
+
+func SymbolBlacklisted(symbol string) (bool, time.Time) {
+	if t, ok := blacklist.BySymbol[symbol]; ok {
+		if time.Now().Before(t) {
+			return true, t
+		} else {
+			delete(blacklist.BySymbol, symbol)
 		}
 	}
 	return false, time.Time{}

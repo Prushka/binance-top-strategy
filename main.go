@@ -362,6 +362,10 @@ func tick() error {
 			Discordf("Symbol Direction blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
 			continue
 		}
+		if bl, till := SymbolBlacklisted(s.Symbol); bl {
+			Discordf("Symbol blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
+			continue
+		}
 
 		if s.StrategyParams.TriggerPrice != nil {
 			triggerPrice, _ := strconv.ParseFloat(*s.StrategyParams.TriggerPrice, 64)
@@ -413,6 +417,9 @@ func tick() error {
 	}
 	return nil
 }
+
+// percentage of direction in same symbol group in filtered
+// use it to cancel
 
 // TODO: cancel when above n%, then cooldown?
 // perform last 20 min roi (latest - last 20 OR if max roi was reached more than 20 min ago), if not positive and stop gain, cancel then block symbolpairdirection until next hr
