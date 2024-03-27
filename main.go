@@ -18,15 +18,14 @@ var gGrids = newTrackedGrids()
 var sessionSymbolPrice = make(map[string]float64)
 
 func getSessionSymbolPrice(symbol string) (float64, error) {
-	marketPrice, ok := sessionSymbolPrice[symbol]
-	if !ok {
+	if _, ok := sessionSymbolPrice[symbol]; !ok {
 		marketPrice, err := fetchMarketPrice(symbol)
 		if err != nil {
 			return 0, err
 		}
 		sessionSymbolPrice[symbol] = marketPrice
 	}
-	return marketPrice, nil
+	return sessionSymbolPrice[symbol], nil
 }
 
 type StrategiesBundle struct {
