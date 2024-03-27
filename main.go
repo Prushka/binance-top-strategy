@@ -156,6 +156,8 @@ func tick() error {
 	if err != nil {
 		return err
 	}
+
+	Time("Fetch grids")
 	count := 0
 	for _, grid := range gGrids.gridsByUid {
 		sid := grid.SID
@@ -304,6 +306,7 @@ func tick() error {
 		}
 	}
 
+	Time("Place/Cancel done")
 	DiscordWebhook("### New Grids:")
 	err = updateOpenGrids(false)
 	if err != nil {
