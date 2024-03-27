@@ -177,10 +177,6 @@ func tick() error {
 					}
 				}
 			}
-
-			DiscordWebhook(display(globalStrategies[grid.SID], grid,
-				fmt.Sprintf("**Opposite directions at top: %d**", symbolDifferentDirectionsHigherRanking),
-				0, 0))
 			if symbolDifferentDirectionsHigherRanking >= 2 {
 				expiredCopiedIds.Add(grid.SID)
 				DiscordWebhook(display(globalStrategies[grid.SID], grid,
@@ -326,8 +322,6 @@ func tick() error {
 // cancel when above n%, then cooldown?
 // perform last 20 min roi (latest - last 20 OR if max roi was reached more than 20 min ago), if not positive and stop gain, cancel then block symbolpairdirection until next hr
 // sort by symbol pair in filtered
-
-// Cancel when 2 strategies with opposite directions r at the very top ranking wise compared to all other directions
 
 func main() {
 	configure()
