@@ -265,22 +265,18 @@ func display(s *Strategy, grid *Grid, action string, index int, length int) stri
 	gg := ""
 	seq := ""
 	direction := ""
-	userId := ""
 	strategyId := ""
 	symbol := ""
 	if s == nil {
 		direction = grid.Direction
-		userId = fmt.Sprintf("%d", grid.RootUserID)
 		symbol = grid.Symbol
 		strategyId = fmt.Sprintf("%d", grid.SID)
 	} else if grid == nil || DirectionMap[s.Direction] == grid.Direction {
 		direction = DirectionMap[s.Direction]
-		userId = fmt.Sprintf("%d", s.UserID)
 		symbol = s.Symbol
 		strategyId = fmt.Sprintf("%d", s.SID)
 	} else {
 		direction = fmt.Sprintf("S: %s, G: %s", DirectionMap[s.Direction], grid.Direction)
-		userId = fmt.Sprintf("S: %d, G: %d", s.UserID, grid.RootUserID)
 		symbol = fmt.Sprintf("S: %s, G: %s", s.Symbol, grid.Symbol)
 		strategyId = fmt.Sprintf("S: %d, G: %d", s.SID, grid.SID)
 	}
@@ -294,7 +290,7 @@ func display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		seq = fmt.Sprintf("%d/%d - ", index, length)
 	}
 
-	return fmt.Sprintf("[%s%s, %s, %s, %s] %s: %s%s", seq, symbol, strategyId, direction, userId, action, ss, gg)
+	return fmt.Sprintf("[%s%s%s, %s] %s: %s%s", seq, symbol, direction, strategyId, action, ss, gg)
 }
 
 const (

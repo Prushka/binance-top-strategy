@@ -31,6 +31,14 @@ type StateOnGridOpen struct {
 
 var statesOnGridOpen = make(map[int]*StateOnGridOpen)
 
+func gridSDCount(gid int, symbol, direction string) (int, int, float64) {
+	sd := symbol + direction
+	currentSDCount := bundle.Raw.symbolDirectionCount[sd]
+	sdCountWhenOpen := statesOnGridOpen[gid].SymbolDirectionCount[sd]
+	ratio := float64(currentSDCount) / float64(sdCountWhenOpen)
+	return currentSDCount, sdCountWhenOpen, ratio
+}
+
 func persistStateOnGridOpen(gid int) {
 	if _, ok := statesOnGridOpen[gid]; !ok {
 		statesOnGridOpen[gid] = &StateOnGridOpen{SymbolDirectionCount: bundle.Raw.symbolDirectionCount}
@@ -180,7 +188,6 @@ func tick() error {
 	expiredCopiedIds := gGrids.existingIds.Difference(bundle.Filtered.ids)
 	for _, grid := range gGrids.gridsByUid {
 		if !expiredCopiedIds.Contains(grid.SID) {
-			sd := grid.Symbol + grid.Direction
 			// exit signal: outdated direction
 			symbolDifferentDirectionsHigherRanking := 0
 			for _, s := range bundle.Filtered.strategies {
@@ -200,9 +207,7 @@ func tick() error {
 			}
 
 			// exit signal: symbol direction shrunk in raw strategies
-			currentSDCount := bundle.Raw.symbolDirectionCount[sd]
-			sdCountWhenOpen := statesOnGridOpen[grid.GID].SymbolDirectionCount[sd]
-			ratio := float64(currentSDCount) / float64(sdCountWhenOpen)
+			_, _, ratio := gridSDCount(grid.GID, grid.Symbol, grid.Direction)
 			if ratio < TheConfig.CancelSymbolDirectionShrink {
 				expiredCopiedIds.Add(grid.SID)
 				addSymbolDirectionToBlacklist(grid.Symbol, grid.Direction, 75*time.Minute)
