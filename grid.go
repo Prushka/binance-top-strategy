@@ -308,9 +308,6 @@ func placeGrid(strategy Strategy, initialUSDT float64) error {
 		log.Infof("Paper mode, not placing grid")
 		return nil
 	}
-	res, _, err := privateRequest("https://www.binance.com/bapi/futures/v2/private/future/grid/place-grid", "POST", payload, &PlaceGridResponse{})
-	if !res.Success {
-		return fmt.Errorf(res.Message)
-	}
+	_, _, err := privateRequest("https://www.binance.com/bapi/futures/v2/private/future/grid/place-grid", "POST", payload, &PlaceGridResponse{})
 	return err
 }

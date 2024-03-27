@@ -7,7 +7,19 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"time"
 )
+
+var timing = time.Now()
+
+func Time(s string) {
+	DiscordWebhook(fmt.Sprintf("*%s took: %v*", s, time.Since(timing)))
+	timing = time.Now()
+}
+
+func ResetTime() {
+	timing = time.Now()
+}
 
 func IntPointer(i int) *int {
 	return &i

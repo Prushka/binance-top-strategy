@@ -10,6 +10,10 @@ import (
 	"time"
 )
 
+const (
+	CreateGridTooFrequently = "90805176"
+)
+
 type BinanceBaseResponse struct {
 	Code          any                    `json:"code"`
 	Message       string                 `json:"message"`

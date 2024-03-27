@@ -8,6 +8,7 @@ import (
 	"math"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -136,7 +137,7 @@ func NoDip(roi StrategyRoi, t time.Duration) bool {
 }
 
 func tick() error {
-	timing := time.Now()
+	ResetTime()
 	clear(sessionSymbolPrice)
 	DiscordWebhook(fmt.Sprintf("## Run: %v", time.Now().Format("2006-01-02 15:04:05")))
 	usdt, err := getFutureUSDT()
@@ -147,8 +148,8 @@ func tick() error {
 	if err != nil {
 		return err
 	}
-	DiscordWebhook(fmt.Sprintf("*Took %v to get strategies*", time.Since(timing)))
-	timing = time.Now()
+
+	Time("Fetch strategies")
 	clear(sessionSymbolPrice)
 	DiscordWebhook("### Current Grids:")
 	err = updateOpenGrids(true)
@@ -166,24 +167,24 @@ func tick() error {
 	expiredCopiedIds := gGrids.existingIds.Difference(bundle.Filtered.ids)
 	for _, grid := range gGrids.gridsByUid {
 		if !expiredCopiedIds.Contains(grid.SID) {
-			direction := grid.Direction
-			oppositeDirections := 0
-			sameDirections := 0
+			symbolDifferentDirectionsHigherRanking := 0
 			for _, s := range bundle.Filtered.strategies {
 				if s.Symbol == grid.Symbol {
-					if (s.Direction == LONG && direction == "SHORT") || (s.Direction == SHORT && direction == "LONG") {
-						// todo: neutral
-						oppositeDirections++
+					if DirectionMap[s.Direction] != grid.Direction {
+						symbolDifferentDirectionsHigherRanking++
 					} else {
-						sameDirections++
+						break
 					}
 				}
 			}
 
-			if oppositeDirections > sameDirections {
+			DiscordWebhook(display(globalStrategies[grid.SID], grid,
+				fmt.Sprintf("**Opposite directions at top: %d**", symbolDifferentDirectionsHigherRanking),
+				0, 0))
+			if symbolDifferentDirectionsHigherRanking >= 2 {
 				expiredCopiedIds.Add(grid.SID)
 				DiscordWebhook(display(globalStrategies[grid.SID], grid,
-					fmt.Sprintf("**Same Directions: %d, Opposite Directions: %d**", sameDirections, oppositeDirections),
+					fmt.Sprintf("**Opposite directions at top: %d**", symbolDifferentDirectionsHigherRanking),
 					0, 0))
 			}
 		}
@@ -293,6 +294,10 @@ func tick() error {
 
 		} else if errr != nil {
 			DiscordWebhook(fmt.Sprintf("**Error placing grid: %v**", errr))
+			if strings.Contains(errr.Error(), "Create grid too frequently") {
+				DiscordWebhook("**Too Frequent Error, Skip Current Run**")
+				break
+			}
 		} else {
 			DiscordWebhookS(display(s, nil, "**Opened Grid**", c+1, len(bundle.Filtered.strategies)), ActionWebhook, DefaultWebhook)
 			chunksInt -= 1
@@ -308,8 +313,6 @@ func tick() error {
 	if err != nil {
 		return err
 	}
-
-	DiscordWebhook(fmt.Sprintf("*Took %v to process grids*", time.Since(timing)))
 	return nil
 }
 
@@ -344,6 +347,7 @@ func main() {
 				if err != nil {
 					log.Errorf("Error: %v", err)
 				}
+				Time("Process grids")
 			},
 		)
 		if err != nil {
