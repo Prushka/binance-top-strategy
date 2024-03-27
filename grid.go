@@ -155,6 +155,9 @@ func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
 	if ok {
 		tracked.totalGridInitial -= oldG.initialValue
 		tracked.totalGridPnl -= oldG.totalPnl
+		g.continuousRoiNoChange = oldG.continuousRoiNoChange
+		g.continuousRoiGrowth = oldG.continuousRoiGrowth
+		g.continuousRoiLoss = oldG.continuousRoiLoss
 	} else {
 		oldG = g
 		g.lowestRoi = Float64Pointer(g.lastRoi)
