@@ -327,7 +327,7 @@ func getStrategyRois(strategyID int, rootUserId int) (StrategyRoi, error) {
 	roi, _, err := request(
 		"https://www.binance.com/bapi/futures/v1/public/future/common/strategy/landing-page/queryRoiChart",
 		query, &StrategyRoiResponse{})
-	if err != nil || !roi.Success {
+	if err != nil {
 		return nil, err
 	}
 	return roi.Data, nil
@@ -399,7 +399,7 @@ func _getTopStrategies(sort string, direction *int, strategyType int, runningTim
 		query, &StrategiesResponse{})
 	// this API returns different results based on if user agents or another header is passed to it
 	// if no such header is passed to it, it returns grids count min 2 (high risk)
-	if err != nil || !strategies.Success {
+	if err != nil {
 		return nil, err
 	}
 	generic := map[string]interface{}{}

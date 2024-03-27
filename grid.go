@@ -210,9 +210,6 @@ func updateOpenGrids(trackContinuous bool) error {
 	if err != nil {
 		return err
 	}
-	if !res.Success {
-		return fmt.Errorf(res.Message)
-	}
 	currentIds := mapset.NewSet[int]()
 	for _, grid := range res.Grids {
 		gGrids.Add(grid, trackContinuous)
