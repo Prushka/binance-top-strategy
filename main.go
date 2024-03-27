@@ -440,7 +440,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("Error loading state on grid open: %v", err)
 		}
-		_, err = scheduler.SingletonMode().Every(TheConfig.TickEveryMinutes).Minutes().Do(
+		_, err = scheduler.SingletonMode().Every(TheConfig.TickEverySeconds).Seconds().Do(
 			func() {
 				t := time.Now()
 				err := tick()
