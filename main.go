@@ -309,7 +309,7 @@ func tick() error {
 	Discordf("### Opening new grids:")
 	chunksInt := TheConfig.MaxChunks - gridsOpen
 	chunks := float64(TheConfig.MaxChunks - gridsOpen)
-	invChunk := (usdt - chunks*0.8) / chunks
+	invChunk := (usdt - TheConfig.LeavingAsset) / chunks
 	idealInvChunk := (usdt + gGrids.totalGridPnl + gGrids.totalGridInitial) / float64(TheConfig.MaxChunks)
 	log.Infof("Ideal Investment: %f, allowed Investment: %f, missing %f chunks", idealInvChunk, invChunk, chunks)
 	if invChunk > idealInvChunk {
