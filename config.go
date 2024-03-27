@@ -18,7 +18,7 @@ type Config struct {
 	DiscordWebhookAction           string  `env:"DISCORD_WEBHOOK_ACTION"`
 	DiscordWebhookOrder            string  `env:"DISCORD_WEBHOOK_ORDER"`
 	DiscordName                    string  `env:"DISCORD_NAME" envDefault:"BTS"`
-	TickEveryMinutes               int     `env:"TICK_EVERY_MINUTES" envDefault:"5"`
+	TickEveryMinutes               int     `env:"TICK_EVERY_MINUTES" envDefault:"1"`
 	AssetSymbol                    string  `env:"ASSET_SYMBOL" envDefault:"USDT"`
 	MaxChunks                      int     `env:"MAX_CHUNKS" envDefault:"4"`
 	MaxLongs                       int     `env:"MAX_LONGS" envDefault:"-1"`

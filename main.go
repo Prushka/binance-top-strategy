@@ -42,7 +42,7 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 	filtered := make(Strategies, 0)
 	for c, s := range strategies.strategies {
 		id := s.SID
-		roi, err := getStrategyRois(id, s.UserID)
+		roi, err := RoisCache.Get(fmt.Sprintf("%d-%d", id, s.UserID))
 		if err != nil {
 			return nil, err
 		}
@@ -343,7 +343,7 @@ func main() {
 				if err != nil {
 					log.Errorf("Error: %v", err)
 				}
-				Time("Process grids")
+				Time("Run")
 			},
 		)
 		if err != nil {
