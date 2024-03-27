@@ -212,7 +212,7 @@ func tick() error {
 	}
 
 	for _, grid := range gGrids.gridsByUid {
-		if grid.continuousRoiNoChange > 3 && grid.lastRoi >= 0 {
+		if grid.tracking.continuousRoiNoChange > 3 && grid.lastRoi >= 0 {
 			err := closeGrid(grid.GID)
 			if err != nil {
 				return err

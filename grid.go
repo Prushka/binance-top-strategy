@@ -5,6 +5,7 @@ import (
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
 	log "github.com/sirupsen/logrus"
+	"math"
 	"strconv"
 	"time"
 )
@@ -46,17 +47,21 @@ type PlaceGridResponse struct {
 	BinanceBaseResponse
 }
 
+type GridTracking struct {
+	lowestRoi             float64
+	highestRoi            float64
+	timeHighestRoi        time.Time
+	timeLowestRoi         time.Time
+	continuousRoiGrowth   int
+	continuousRoiLoss     int
+	continuousRoiNoChange int
+}
+
 type Grid struct {
 	totalPnl               float64
 	initialValue           float64
 	lastRoi                float64
-	lowestRoi              *float64
-	highestRoi             *float64
-	timeHighestRoi         time.Time
-	timeLowestRoi          time.Time
-	continuousRoiGrowth    int
-	continuousRoiLoss      int
-	continuousRoiNoChange  int
+	tracking               *GridTracking
 	GID                    int    `json:"strategyId"`
 	RootUserID             int    `json:"rootUserId"`
 	StrategyUserID         int    `json:"strategyUserId"`
@@ -154,42 +159,43 @@ func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
 	g.lastRoi = g.totalPnl / g.initialValue
 	updateTime := time.Now()
 	oldG, ok := tracked.gridsByUid[g.GID]
+	tracked.totalGridInitial += g.initialValue
+	tracked.totalGridPnl += g.totalPnl
 	if ok {
 		tracked.totalGridInitial -= oldG.initialValue
 		tracked.totalGridPnl -= oldG.totalPnl
-		g.continuousRoiNoChange = oldG.continuousRoiNoChange
-		g.continuousRoiGrowth = oldG.continuousRoiGrowth
-		g.continuousRoiLoss = oldG.continuousRoiLoss
+		tracking := oldG.tracking
+		if g.lastRoi < tracking.lowestRoi {
+			tracking.timeLowestRoi = updateTime
+		}
+		if g.lastRoi > tracking.highestRoi {
+			tracking.timeHighestRoi = updateTime
+		}
+		tracking.lowestRoi = math.Min(g.lastRoi, tracking.lowestRoi)
+		tracking.highestRoi = math.Max(g.lastRoi, tracking.highestRoi)
+
+		if trackContinuous {
+			if g.lastRoi > oldG.lastRoi {
+				tracking.continuousRoiGrowth += 1
+				tracking.continuousRoiLoss = 0
+				tracking.continuousRoiNoChange = 0
+			} else if g.lastRoi < oldG.lastRoi {
+				tracking.continuousRoiLoss += 1
+				tracking.continuousRoiGrowth = 0
+				tracking.continuousRoiNoChange = 0
+			} else {
+				tracking.continuousRoiNoChange += 1
+				tracking.continuousRoiGrowth = 0
+				tracking.continuousRoiLoss = 0
+			}
+		}
+		g.tracking = tracking
 	} else {
-		oldG = g
-		g.lowestRoi = Float64Pointer(g.lastRoi)
-		g.highestRoi = Float64Pointer(g.lastRoi)
-		g.timeLowestRoi = updateTime
-		g.timeHighestRoi = updateTime
-	}
-	if g.lastRoi < *oldG.lowestRoi {
-		g.lowestRoi = Float64Pointer(g.lastRoi)
-		g.timeLowestRoi = updateTime
-	}
-	if g.lastRoi > *oldG.highestRoi {
-		g.highestRoi = Float64Pointer(g.lastRoi)
-		g.timeHighestRoi = updateTime
-	}
-	tracked.totalGridInitial += g.initialValue
-	tracked.totalGridPnl += g.totalPnl
-	if ok && trackContinuous {
-		if g.lastRoi > oldG.lastRoi {
-			g.continuousRoiGrowth += 1
-			g.continuousRoiLoss = 0
-			g.continuousRoiNoChange = 0
-		} else if g.lastRoi < oldG.lastRoi {
-			g.continuousRoiLoss += 1
-			g.continuousRoiGrowth = 0
-			g.continuousRoiNoChange = 0
-		} else {
-			g.continuousRoiNoChange += 1
-			g.continuousRoiGrowth = 0
-			g.continuousRoiLoss = 0
+		g.tracking = &GridTracking{
+			lowestRoi:      g.lastRoi,
+			highestRoi:     g.lastRoi,
+			timeHighestRoi: updateTime,
+			timeLowestRoi:  updateTime,
 		}
 	}
 	tracked.gridsByUid[g.GID] = g
@@ -241,13 +247,14 @@ func updateOpenGrids(trackContinuous bool) error {
 }
 
 func (grid *Grid) String() string {
+	tracking := grid.tracking
 	extendedProfit := ""
 	extendedProfit = fmt.Sprintf(" [%.2f%% (%s), %.2f%% (%s)][+%d, -%d, %d]",
-		*grid.lowestRoi*100,
-		time.Since(grid.timeLowestRoi).Round(time.Second),
-		*grid.highestRoi*100,
-		time.Since(grid.timeHighestRoi).Round(time.Second),
-		grid.continuousRoiGrowth, grid.continuousRoiLoss, grid.continuousRoiNoChange)
+		tracking.lowestRoi*100,
+		time.Since(tracking.timeLowestRoi).Round(time.Second),
+		tracking.highestRoi*100,
+		time.Since(tracking.timeHighestRoi).Round(time.Second),
+		tracking.continuousRoiGrowth, tracking.continuousRoiLoss, tracking.continuousRoiNoChange)
 	d := time.Now().Unix() - grid.BookTime/1000
 	dDuration := time.Duration(d) * time.Second
 	notional := int(grid.initialValue * float64(grid.InitialLeverage))
