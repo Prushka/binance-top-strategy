@@ -320,6 +320,10 @@ func tick() error {
 			DiscordWebhook(fmt.Sprintf("Strategy blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05")))
 			continue
 		}
+		if bl, till := SymbolDirectionBlacklisted(s.Symbol, DirectionMap[s.Direction]); bl {
+			DiscordWebhook(fmt.Sprintf("Symbol Direction blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05")))
+			continue
+		}
 
 		if s.StrategyParams.TriggerPrice != nil {
 			triggerPrice, _ := strconv.ParseFloat(*s.StrategyParams.TriggerPrice, 64)
