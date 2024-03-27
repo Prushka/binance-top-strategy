@@ -386,11 +386,7 @@ func tick() error {
 	return nil
 }
 
-// TODO: cancel when symbolpair count decreases
-//then avoid that sp for how long?
-//if increases again cancel blacklist
-
-// cancel when above n%, then cooldown?
+// TODO: cancel when above n%, then cooldown?
 // perform last 20 min roi (latest - last 20 OR if max roi was reached more than 20 min ago), if not positive and stop gain, cancel then block symbolpairdirection until next hr
 
 func main() {
