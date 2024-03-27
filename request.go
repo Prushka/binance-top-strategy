@@ -64,9 +64,18 @@ func privateRequest[T BinanceResponse](url, method string, payload any, response
 
 func _request[T BinanceResponse](url, method string, sleep time.Duration,
 	payload any, headers map[string]string, response T) (T, []byte, error) {
-	p, err := json.Marshal(payload)
-	if err != nil {
-		return response, nil, err
+	var p []byte
+	var err error
+	switch v := payload.(type) {
+	case string:
+		p = []byte(v)
+	default:
+		if payload != nil {
+			p, err = json.Marshal(payload)
+			if err != nil {
+				return response, nil, err
+			}
+		}
 	}
 	var r io.Reader
 	if p != nil {
