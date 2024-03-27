@@ -294,8 +294,7 @@ func tick() error {
 		} else {
 			DiscordWebhookS(display(s, nil, "**Opened Grid**", c+1, len(bundle.Filtered.strategies)), ActionWebhook, DefaultWebhook)
 			chunksInt -= 1
-			//sessionSymbols.Add(s.Symbol)
-			//TODO: there's a max investment? success true doesn't guarantee placed
+			sessionSymbols.Add(s.Symbol)
 			if chunksInt <= 0 {
 				break
 			}
