@@ -298,11 +298,11 @@ func tick() error {
 		Discordf("Max Chunks reached, No cancel - Skip current run")
 		return nil
 	}
-	if mapset.NewSetFromMapKeys(bundle.Filtered.symbolCount).Difference(gGrids.existingSymbols).Cardinality() == 0 {
+	if mapset.NewSetFromMapKeys(bundle.Filtered.symbolCount).Difference(gGrids.existingSymbols).Cardinality() == 0 && !TheConfig.Paper {
 		Discordf("All symbols exists in open grids, Skip")
 		return nil
 	}
-	if time.Now().Before(tradingBlock) {
+	if time.Now().Before(tradingBlock) && !TheConfig.Paper {
 		Discordf("Trading Block, Skip")
 		return nil
 	}
