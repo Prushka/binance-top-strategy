@@ -210,7 +210,12 @@ func tick() error {
 			_, _, ratio := gridSDCount(grid.GID, grid.Symbol, grid.Direction)
 			if ratio < TheConfig.CancelSymbolDirectionShrink {
 				expiredCopiedIds.Add(grid.SID)
-				addSymbolDirectionToBlacklist(grid.Symbol, grid.Direction, 75*time.Minute)
+				minutesTillNextHour := 60 - time.Now().Minute()
+				blockDuration := 75 * time.Minute
+				if minutesTillNextHour < 30 {
+					blockDuration = time.Duration(minutesTillNextHour+75) * time.Minute
+				}
+				addSymbolDirectionToBlacklist(grid.Symbol, grid.Direction, blockDuration)
 				Discordf(display(globalStrategies[grid.SID], grid,
 					fmt.Sprintf("**Direction shrink: %.2f**", ratio),
 					0, 0))
