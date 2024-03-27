@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gtuk/discordwebhook"
 	log "github.com/sirupsen/logrus"
 	"time"
@@ -18,8 +19,12 @@ func DiscordJson(chat string) string {
 	return "```json\n" + chat + "\n```"
 }
 
-func DiscordWebhook(chat string) {
-	DiscordWebhookS(chat, DefaultWebhook)
+func Discordf(format string, args ...any) {
+	s := format
+	if len(args) > 0 {
+		s = fmt.Sprintf(format, args)
+	}
+	DiscordWebhookS(s, DefaultWebhook)
 }
 
 func DiscordWebhookS(chat string, webhookTypes ...int) {

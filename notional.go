@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"math"
 	"sort"
 )
@@ -43,7 +42,7 @@ func getLeverage(symbol string, initialAsset float64, maxLeverage int) int {
 	for _, b := range s.RiskBrackets {
 		if float64(b.MinOpenPosLeverage)*initialAsset <= float64(b.BracketNotionalCap) { // fits in this bracket
 			leverage := int(math.Min(float64(b.BracketNotionalCap)/initialAsset, float64(b.MaxOpenPosLeverage)))
-			DiscordWebhook(fmt.Sprintf("Notional Leverage: %d, Initial: %f, Max Leverage: %d", leverage, initialAsset, maxLeverage))
+			Discordf("Notional Leverage: %d, Initial: %f, Max Leverage: %d", leverage, initialAsset, maxLeverage)
 			if leverage > maxLeverage {
 				return maxLeverage
 			}

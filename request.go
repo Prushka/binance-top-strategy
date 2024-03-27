@@ -113,12 +113,12 @@ func _request[T BinanceResponse](url, method string, sleep time.Duration,
 	}
 	if response.code() == "100002001" || response.code() == "100001005" {
 		log.Errorf("Response: %s", body)
-		DiscordWebhook("Error, login expired")
+		Discordf("Error, login expired")
 		return response, body, fmt.Errorf("login expired")
 	}
 	if !response.success() {
 		log.Errorf("Response: %s", body)
-		DiscordWebhook(response.message())
+		Discordf(response.message())
 		return response, body, fmt.Errorf("error: %s", response.message())
 	}
 	return response, body, err

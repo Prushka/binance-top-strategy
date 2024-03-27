@@ -18,7 +18,7 @@ func sdk() {
 func fetchMarketPrice(symbol string) (float64, error) {
 	res, err := _fetchMarketPrice(symbol)
 	if err != nil {
-		DiscordWebhook(fmt.Sprintf("Error fetching market price: %v", err))
+		Discordf("Error fetching market price: %v", err)
 		return 0, err
 	}
 	return res, nil

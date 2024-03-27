@@ -242,12 +242,12 @@ func updateOpenGrids(trackContinuous bool) error {
 	for _, g := range gGrids.gridsByUid {
 		if !currentIds.Contains(g.GID) {
 			gGrids.Remove(g.GID)
-			DiscordWebhook(display(globalStrategies[g.SID], g, "Gone", 0, 0))
+			Discordf(display(globalStrategies[g.SID], g, "Gone", 0, 0))
 		}
 	}
-	DiscordWebhook(fmt.Sprintf("Open Pairs: %v, Open Ids: %v, Initial: %f, TotalPnL: %f, C: %f, L/S/N: %d/%d/%d",
+	Discordf("Open Pairs: %v, Open Ids: %v, Initial: %f, TotalPnL: %f, C: %f, L/S/N: %d/%d/%d",
 		gGrids.existingSymbols, gGrids.existingIds, gGrids.totalGridInitial, gGrids.totalGridPnl, gGrids.totalGridPnl+gGrids.totalGridInitial,
-		gGrids.longs.Cardinality(), gGrids.shorts.Cardinality(), gGrids.neutrals.Cardinality()))
+		gGrids.longs.Cardinality(), gGrids.shorts.Cardinality(), gGrids.neutrals.Cardinality())
 	return nil
 }
 

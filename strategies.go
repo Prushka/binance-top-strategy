@@ -404,13 +404,13 @@ func _getTopStrategies(sort string, direction *int, strategyType int, runningTim
 		return nil, err
 	}
 	if len(generic) != 6 {
-		DiscordWebhook(fmt.Sprintf("Error, strategies root response has length %d: %+v", len(generic),
-			generic))
+		Discordf("Error, strategies root response has length %d: %+v", len(generic),
+			generic)
 	}
 	for _, v := range generic["data"].([]interface{}) {
 		if len(v.(map[string]interface{})) != 14 {
-			DiscordWebhook(fmt.Sprintf("Error, strategy response has length %d: %+v", len(v.(map[string]interface{})),
-				v))
+			Discordf("Error, strategy response has length %d: %+v", len(v.(map[string]interface{})),
+				v)
 		}
 	}
 	return strategies.Data, nil

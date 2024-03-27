@@ -13,7 +13,7 @@ import (
 var timing = time.Now()
 
 func Time(s string) {
-	DiscordWebhook(fmt.Sprintf("*%s took: %v*", s, time.Since(timing)))
+	Discordf("*%s took: %v*", s, time.Since(timing))
 	timing = time.Now()
 }
 

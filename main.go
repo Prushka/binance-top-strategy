@@ -44,7 +44,7 @@ func persistStateOnGridOpen(gid int) {
 		statesOnGridOpen[gid] = &StateOnGridOpen{SymbolDirectionCount: bundle.Raw.symbolDirectionCount}
 		err := save(statesOnGridOpen, GridStatesFileName)
 		if err != nil {
-			DiscordWebhook(fmt.Sprintf("Error saving state on grid open: %v", err))
+			Discordf("Error saving state on grid open: %v", err)
 		}
 	}
 }
@@ -111,9 +111,9 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 		return I.last12HrRoiPerHr > J.last12HrRoiPerHr
 	})
 	bundle := &StrategiesBundle{Raw: strategies, Filtered: filtered.toTrackedStrategies()}
-	DiscordWebhook("### Strategies")
-	DiscordWebhook("Raw: " + bundle.Raw.String())
-	DiscordWebhook("Open: " + bundle.Filtered.String())
+	Discordf("### Strategies")
+	Discordf("Raw: " + bundle.Raw.String())
+	Discordf("Open: " + bundle.Filtered.String())
 	return bundle, nil
 }
 
@@ -159,7 +159,7 @@ func NoDip(roi StrategyRoi, t time.Duration) bool {
 func tick() error {
 	ResetTime()
 	clear(sessionSymbolPrice)
-	DiscordWebhook(fmt.Sprintf("## Run: %v", time.Now().Format("2006-01-02 15:04:05")))
+	Discordf("## Run: %v", time.Now().Format("2006-01-02 15:04:05"))
 	usdt, err := getFutureUSDT()
 	if err != nil {
 		return err
@@ -170,7 +170,7 @@ func tick() error {
 	}
 	Time("Fetch strategies")
 	clear(sessionSymbolPrice)
-	DiscordWebhook("### Current Grids:")
+	Discordf("### Current Grids:")
 	err = updateOpenGrids(true)
 	if err != nil {
 		return err
@@ -180,7 +180,7 @@ func tick() error {
 	count := 0
 	for _, grid := range gGrids.gridsByUid {
 		sid := grid.SID
-		DiscordWebhook(display(globalStrategies[sid], grid,
+		Discordf(display(globalStrategies[sid], grid,
 			fmt.Sprintf("%d, %d", bundle.Raw.findStrategyRanking(sid), bundle.Filtered.findStrategyRanking(sid)),
 			count+1, len(gGrids.gridsByUid)))
 		count++
@@ -201,7 +201,7 @@ func tick() error {
 			}
 			if symbolDifferentDirectionsHigherRanking >= 2 {
 				expiredCopiedIds.Add(grid.SID)
-				DiscordWebhook(display(globalStrategies[grid.SID], grid,
+				Discordf(display(globalStrategies[grid.SID], grid,
 					fmt.Sprintf("**Opposite directions at top: %d**", symbolDifferentDirectionsHigherRanking),
 					0, 0))
 			}
@@ -211,14 +211,14 @@ func tick() error {
 			if ratio < TheConfig.CancelSymbolDirectionShrink {
 				expiredCopiedIds.Add(grid.SID)
 				addSymbolDirectionToBlacklist(grid.Symbol, grid.Direction, 75*time.Minute)
-				DiscordWebhook(display(globalStrategies[grid.SID], grid,
+				Discordf(display(globalStrategies[grid.SID], grid,
 					fmt.Sprintf("**Direction shrink: %.2f**", ratio),
 					0, 0))
 			}
 		}
 	}
 	if expiredCopiedIds.Cardinality() > 0 {
-		DiscordWebhook(fmt.Sprintf("### Expired Strategies: %v", expiredCopiedIds))
+		Discordf("### Expired Strategies: %v", expiredCopiedIds)
 	}
 	closedIds := mapset.NewSet[int]()
 	expiredGridIds := gGrids.findGridIdsByStrategyId(expiredCopiedIds.ToSlice()...)
@@ -283,25 +283,25 @@ func tick() error {
 	}
 
 	if closedIds.Cardinality() > 0 && !TheConfig.Paper {
-		DiscordWebhook(fmt.Sprintf("Cleared expired grids - Skip current run - Block trading for %d minutes", TheConfig.TradingBlockMinutesAfterCancel))
+		Discordf("Cleared expired grids - Skip current run - Block trading for %d minutes", TheConfig.TradingBlockMinutesAfterCancel)
 		tradingBlock = time.Now().Add(time.Duration(TheConfig.TradingBlockMinutesAfterCancel) * time.Minute)
 		return nil
 	}
 
 	gridsOpen := len(gGrids.gridsByUid)
 	if TheConfig.MaxChunks-gridsOpen <= 0 && !TheConfig.Paper {
-		DiscordWebhook("Max Chunks reached, No cancel - Skip current run")
+		Discordf("Max Chunks reached, No cancel - Skip current run")
 		return nil
 	}
 	if mapset.NewSetFromMapKeys(bundle.Filtered.symbolCount).Difference(gGrids.existingSymbols).Cardinality() == 0 {
-		DiscordWebhook("All symbols exists in open grids, Skip")
+		Discordf("All symbols exists in open grids, Skip")
 		return nil
 	}
 	if time.Now().Before(tradingBlock) {
-		DiscordWebhook("Trading Block, Skip")
+		Discordf("Trading Block, Skip")
 		return nil
 	}
-	DiscordWebhook("### Opening new grids:")
+	Discordf("### Opening new grids:")
 	chunksInt := TheConfig.MaxChunks - gridsOpen
 	chunks := float64(TheConfig.MaxChunks - gridsOpen)
 	invChunk := (usdt - chunks*0.8) / chunks
@@ -312,21 +312,21 @@ func tick() error {
 	}
 	sessionSymbols := gGrids.existingSymbols.Clone()
 	for c, s := range bundle.Filtered.strategies {
-		DiscordWebhook(display(s, nil, "New", c+1, len(bundle.Filtered.strategies)))
+		Discordf(display(s, nil, "New", c+1, len(bundle.Filtered.strategies)))
 		if gGrids.existingIds.Contains(s.SID) {
-			DiscordWebhook("Strategy exists in open grids, Skip")
+			Discordf("Strategy exists in open grids, Skip")
 			continue
 		}
 		if sessionSymbols.Contains(s.Symbol) {
-			DiscordWebhook("Symbol exists in open grids, Skip")
+			Discordf("Symbol exists in open grids, Skip")
 			continue
 		}
 		if bl, till := SIDBlacklisted(s.SID); bl {
-			DiscordWebhook(fmt.Sprintf("Strategy blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05")))
+			Discordf("Strategy blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
 			continue
 		}
 		if bl, till := SymbolDirectionBlacklisted(s.Symbol, DirectionMap[s.Direction]); bl {
-			DiscordWebhook(fmt.Sprintf("Symbol Direction blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05")))
+			Discordf("Symbol Direction blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
 			continue
 		}
 
@@ -335,8 +335,8 @@ func tick() error {
 			marketPrice, _ := getSessionSymbolPrice(s.Symbol)
 			diff := math.Abs((triggerPrice - marketPrice) / marketPrice)
 			if diff > 0.08 {
-				DiscordWebhook(fmt.Sprintf("Trigger Price difference too high, Skip, Trigger: %f, Market: %f, Diff: %f",
-					triggerPrice, marketPrice, diff))
+				Discordf("Trigger Price difference too high, Skip, Trigger: %f, Market: %f, Diff: %f",
+					triggerPrice, marketPrice, diff)
 				continue
 			}
 		}
@@ -344,12 +344,12 @@ func tick() error {
 		switch s.Direction {
 		case LONG:
 			if TheConfig.MaxLongs >= 0 && gGrids.longs.Cardinality() >= TheConfig.MaxLongs {
-				DiscordWebhook("Max Longs reached, Skip")
+				Discordf("Max Longs reached, Skip")
 				continue
 			}
 		case NEUTRAL:
 			if TheConfig.MaxNeutrals >= 0 && gGrids.shorts.Cardinality() >= TheConfig.MaxNeutrals {
-				DiscordWebhook("Max Neutrals not reached, Skip")
+				Discordf("Max Neutrals not reached, Skip")
 				continue
 			}
 		}
@@ -357,9 +357,9 @@ func tick() error {
 		if TheConfig.Paper {
 
 		} else if errr != nil {
-			DiscordWebhook(fmt.Sprintf("**Error placing grid: %v**", errr))
+			Discordf("**Error placing grid: %v**", errr)
 			if strings.Contains(errr.Error(), "Create grid too frequently") {
-				DiscordWebhook("**Too Frequent Error, Skip Current Run**")
+				Discordf("**Too Frequent Error, Skip Current Run**")
 				break
 			}
 		} else {
@@ -373,7 +373,7 @@ func tick() error {
 	}
 
 	Time("Place/Cancel done")
-	DiscordWebhook("### New Grids:")
+	Discordf("### New Grids:")
 	err = updateOpenGrids(false)
 	if err != nil {
 		return err
@@ -395,9 +395,9 @@ func main() {
 	switch TheConfig.Mode {
 	case "trading":
 		if TheConfig.Paper {
-			DiscordWebhook("Paper Trading")
+			Discordf("Paper Trading")
 		} else {
-			DiscordWebhook("Real Trading")
+			Discordf("Real Trading")
 		}
 		sdk()
 		err := load(&statesOnGridOpen, GridStatesFileName)
@@ -411,7 +411,7 @@ func main() {
 				if err != nil {
 					log.Errorf("Error: %v", err)
 				}
-				DiscordWebhook(fmt.Sprintf("*Run took: %v*", time.Since(t)))
+				Discordf("*Run took: %v*", time.Since(t))
 			},
 		)
 		if err != nil {

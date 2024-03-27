@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -14,7 +13,7 @@ var blacklist = &Blacklist{BySID: make(map[int]time.Time), BySymbolDirection: ma
 
 func addSymbolDirectionToBlacklist(symbol, direction string, d time.Duration) {
 	blacklist.BySymbolDirection[symbol+direction] = time.Now().Add(d)
-	DiscordWebhook(fmt.Sprintf("**Add blacklist:** %s, %s, %s", symbol, direction, d))
+	Discordf("**Add blacklist:** %s, %s, %s", symbol, direction, d)
 }
 
 func SymbolDirectionBlacklisted(symbol, direction string) (bool, time.Time) {
@@ -30,7 +29,7 @@ func SymbolDirectionBlacklisted(symbol, direction string) (bool, time.Time) {
 
 func addSIDToBlacklist(id int, d time.Duration) {
 	blacklist.BySID[id] = time.Now().Add(d)
-	DiscordWebhook(fmt.Sprintf("**Add blacklist:** %d, %s", id, d))
+	Discordf("**Add blacklist:** %d, %s", id, d)
 }
 
 func SIDBlacklisted(id int) (bool, time.Time) {
