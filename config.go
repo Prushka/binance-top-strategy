@@ -23,7 +23,7 @@ type Config struct {
 	LeavingAsset                         float64 `env:"LEAVING_ASSET" envDefault:"10"`
 	CancelNoChangeMinutes                int     `env:"CANCEL_NO_CHANGE_MINUTES" envDefault:"15"`
 	CancelSymbolDirectionShrink          float64 `env:"CANCEL_SYMBOL_DIRECTION_SHRINK" envDefault:"0.8"`
-	TradingBlockMinutesAfterCancel       int     `env:"TRADING_BLOCK_MINUTES_AFTER_CANCEL" envDefault:"4"`
+	TradingBlockMinutesAfterCancel       int     `env:"TRADING_BLOCK_MINUTES_AFTER_CANCEL" envDefault:"3"`
 	GainExitNotGoingUp                   float64 `env:"GAIN_EXIT_NOT_GOING_UP" envDefault:"0.8"`
 	GainExitNotGoingUpMaxLookBackMinutes int     `env:"GAIN_EXIT_MAX_LOOK_BACK" envDefault:"20"`
 	TickEveryMinutes                     int     `env:"TICK_EVERY_MINUTES" envDefault:"2"`

@@ -262,7 +262,7 @@ func tick() error {
 			DiscordWebhookS(display(globalStrategies[grid.SID], grid,
 				fmt.Sprintf("**Cancelled No Change - %s**", time.Since(grid.tracking.timeLastChange).Round(time.Second)),
 				0, 0), ActionWebhook, DefaultWebhook)
-			addSIDToBlacklist(grid.SID, 5*time.Minute)
+			addSIDToBlacklist(grid.SID, 10*time.Minute)
 		}
 	}
 
