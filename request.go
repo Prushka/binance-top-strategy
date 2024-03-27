@@ -46,6 +46,7 @@ func request[T BinanceResponse](url string, payload any, response T) (T, []byte,
 
 func privateRequest[T BinanceResponse](url, method string, payload any, response T) (T, []byte, error) {
 	headers := map[string]string{
+		"Clienttype":         "web",
 		"Cookie":             TheConfig.COOKIE,
 		"Csrftoken":          TheConfig.CSRFToken,
 		"Accept":             "*/*",
@@ -75,7 +76,6 @@ func _request[T BinanceResponse](url, method string, sleep time.Duration,
 	if err != nil {
 		return response, nil, err
 	}
-	req.Header.Set("Clienttype", "web")
 	req.Header.Set("Content-Type", "application/json")
 
 	for k, v := range headers {
@@ -91,17 +91,20 @@ func _request[T BinanceResponse](url, method string, sleep time.Duration,
 	if err != nil {
 		return response, nil, err
 	}
-	log.Infof("Response: %s", body)
+	log.Debugf("Response: %s", body)
 	time.Sleep(sleep)
 	err = json.Unmarshal(body, response)
 	if err != nil {
+		log.Error(response)
 		return response, body, err
 	}
 	if response.code() == "100002001" || response.code() == "100001005" {
+		log.Error(response)
 		DiscordWebhook("Error, login expired")
 		return response, body, fmt.Errorf("login expired")
 	}
 	if !response.success() {
+		log.Error(response)
 		DiscordWebhook(response.message())
 		return response, body, fmt.Errorf("error: %s", response.message())
 	}
