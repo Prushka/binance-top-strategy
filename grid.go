@@ -267,6 +267,7 @@ func placeGrid(strategy Strategy, initialUSDT float64) error {
 	if strategy.StrategyParams.Leverage < leverage {
 		leverage = strategy.StrategyParams.Leverage
 	}
+	leverage = getLeverage(strategy.Symbol, initialUSDT, leverage)
 	payload := &PlaceGridRequest{
 		Symbol:                 strategy.Symbol,
 		Direction:              DirectionMap[strategy.Direction],
