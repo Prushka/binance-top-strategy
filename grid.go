@@ -5,7 +5,6 @@ import (
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
 	log "github.com/sirupsen/logrus"
-	"math"
 	"strconv"
 	"time"
 )
@@ -53,6 +52,8 @@ type Grid struct {
 	lastRoi                float64
 	lowestRoi              *float64
 	highestRoi             *float64
+	timeHighestRoi         time.Time
+	timeLowestRoi          time.Time
 	continuousRoiGrowth    int
 	continuousRoiLoss      int
 	continuousRoiNoChange  int
@@ -151,6 +152,7 @@ func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
 	g.initialValue = initial / float64(g.InitialLeverage)
 	g.totalPnl = profit + fundingFee + position*(marketPrice-entryPrice) // position is negative for short
 	g.lastRoi = g.totalPnl / g.initialValue
+	updateTime := time.Now()
 	oldG, ok := tracked.gridsByUid[g.GID]
 	if ok {
 		tracked.totalGridInitial -= oldG.initialValue
@@ -162,9 +164,17 @@ func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
 		oldG = g
 		g.lowestRoi = Float64Pointer(g.lastRoi)
 		g.highestRoi = Float64Pointer(g.lastRoi)
+		g.timeLowestRoi = updateTime
+		g.timeHighestRoi = updateTime
 	}
-	g.lowestRoi = Float64Pointer(math.Min(g.lastRoi, *oldG.lowestRoi))
-	g.highestRoi = Float64Pointer(math.Max(g.lastRoi, *oldG.highestRoi))
+	if g.lastRoi < *oldG.lowestRoi {
+		g.lowestRoi = Float64Pointer(g.lastRoi)
+		g.timeLowestRoi = updateTime
+	}
+	if g.lastRoi > *oldG.highestRoi {
+		g.highestRoi = Float64Pointer(g.lastRoi)
+		g.timeHighestRoi = updateTime
+	}
 	tracked.totalGridInitial += g.initialValue
 	tracked.totalGridPnl += g.totalPnl
 	if ok && trackContinuous {
@@ -232,12 +242,16 @@ func updateOpenGrids(trackContinuous bool) error {
 
 func (grid *Grid) String() string {
 	extendedProfit := ""
-	extendedProfit = fmt.Sprintf(" [%.2f%%, %.2f%%][+%d, -%d, %d]",
-		*grid.lowestRoi*100, *grid.highestRoi*100, grid.continuousRoiGrowth, grid.continuousRoiLoss, grid.continuousRoiNoChange)
+	extendedProfit = fmt.Sprintf(" [%.2f%% (%s), %.2f%% (%s)][+%d, -%d, %d]",
+		*grid.lowestRoi*100,
+		time.Since(grid.timeLowestRoi).Round(time.Second),
+		*grid.highestRoi*100,
+		time.Since(grid.timeHighestRoi).Round(time.Second),
+		grid.continuousRoiGrowth, grid.continuousRoiLoss, grid.continuousRoiNoChange)
 	d := time.Now().Unix() - grid.BookTime/1000
 	dDuration := time.Duration(d) * time.Second
 	notional := int(grid.initialValue * float64(grid.InitialLeverage))
-	return fmt.Sprintf("In: %.2f %dX, Notional: %d, %s, RealizedPnL: %s, TotalPnL: %f, Profit: %f%%%s, %s-%s",
+	return fmt.Sprintf("%.2fX%d=%d, %s, Realized: %s, Total: %f, Profit: %f%%%s, %s-%s",
 		grid.initialValue, grid.InitialLeverage, notional, dDuration,
 		grid.GridProfit, grid.totalPnl, grid.lastRoi*100, extendedProfit, grid.GridLowerLimit, grid.GridUpperLimit)
 }

@@ -33,6 +33,10 @@ func Float64Pointer(f float64) *float64 {
 	return &f
 }
 
+func Int64Pointer(i int64) *int64 {
+	return &i
+}
+
 func generateRandomNumberUUID() string {
 	const charset = "0123456789"
 	b := make([]byte, 19)
