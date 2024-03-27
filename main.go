@@ -46,12 +46,6 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 		if err != nil {
 			return nil, err
 		}
-		for _, r := range roi {
-			r.Time = r.Time / 1000
-		}
-		sort.Slice(roi, func(i, j int) bool {
-			return roi[i].Time > roi[j].Time
-		})
 		s.Rois = roi
 		s.roi, _ = strconv.ParseFloat(s.Roi, 64)
 		s.roi /= 100
@@ -343,7 +337,7 @@ func main() {
 				if err != nil {
 					log.Errorf("Error: %v", err)
 				}
-				Time("Run")
+				Time("Fetch final grids")
 			},
 		)
 		if err != nil {
