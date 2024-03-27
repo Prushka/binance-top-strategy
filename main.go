@@ -20,6 +20,11 @@ var sessionSymbolPrice = make(map[string]float64)
 var tradingBlock = time.Now()
 var bundle *StrategiesBundle
 
+type SDCountPair struct {
+	SymbolDirection string
+	Count           int
+}
+
 type StrategiesBundle struct {
 	Raw      *TrackedStrategies
 	Filtered *TrackedStrategies
@@ -110,7 +115,26 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 		J := filtered[j]
 		return I.last12HrRoiPerHr > J.last12HrRoiPerHr
 	})
-	bundle := &StrategiesBundle{Raw: strategies, Filtered: filtered.toTrackedStrategies()}
+	filteredBySymbolDirection := make(map[string]Strategies)
+	for _, s := range filtered {
+		sd := s.Symbol + DirectionMap[s.Direction]
+		if _, ok := filteredBySymbolDirection[sd]; !ok {
+			filteredBySymbolDirection[sd] = make(Strategies, 0)
+		}
+		filteredBySymbolDirection[sd] = append(filteredBySymbolDirection[sd], s)
+	}
+	sdLengths := make([]SDCountPair, 0)
+	for sd, s := range filteredBySymbolDirection {
+		sdLengths = append(sdLengths, SDCountPair{SymbolDirection: sd, Count: len(s)})
+	}
+	sort.Slice(sdLengths, func(i, j int) bool {
+		return sdLengths[i].Count > sdLengths[j].Count
+	})
+	sortedBySDCount := make(Strategies, 0)
+	for _, sd := range sdLengths {
+		sortedBySDCount = append(sortedBySDCount, filteredBySymbolDirection[sd.SymbolDirection]...)
+	}
+	bundle := &StrategiesBundle{Raw: strategies, Filtered: sortedBySDCount.toTrackedStrategies()}
 	Discordf("### Strategies")
 	Discordf("Raw: " + bundle.Raw.String())
 	Discordf("Open: " + bundle.Filtered.String())
