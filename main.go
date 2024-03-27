@@ -237,13 +237,14 @@ func tick() error {
 	if invChunk > idealInvChunk {
 		invChunk = idealInvChunk
 	}
+	sessionSymbols := gGrids.existingSymbols.Clone()
 	for c, s := range bundle.Filtered.strategies {
 		DiscordWebhook(display(s, nil, "New", c+1, len(bundle.Filtered.strategies)))
 		if gGrids.existingIds.Contains(s.SID) {
 			DiscordWebhook("Strategy exists in open grids, Skip")
 			continue
 		}
-		if gGrids.existingSymbols.Contains(s.Symbol) {
+		if sessionSymbols.Contains(s.Symbol) {
 			DiscordWebhook("Symbol exists in open grids, Skip")
 			continue
 		}
@@ -267,7 +268,7 @@ func tick() error {
 		} else {
 			DiscordWebhookS(display(s, nil, "**Opened Grid**", c+1, len(bundle.Filtered.strategies)), ActionWebhook, DefaultWebhook)
 			chunksInt -= 1
-			gGrids.existingSymbols.Add(s.Symbol)
+			sessionSymbols.Add(s.Symbol)
 			if chunksInt <= 0 {
 				break
 			}
