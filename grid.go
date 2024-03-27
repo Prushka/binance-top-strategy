@@ -201,6 +201,7 @@ func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
 			timeLowestRoi:  updateTime,
 			timeLastChange: updateTime,
 		}
+		persistStateOnGridOpen(g.GID)
 	}
 	tracked.gridsByUid[g.GID] = g
 }

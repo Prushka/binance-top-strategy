@@ -19,6 +19,28 @@ var gGrids = newTrackedGrids()
 var sessionSymbolPrice = make(map[string]float64)
 var blacklistMap = make(map[int]time.Time)
 var tradingBlock = time.Now()
+var bundle *StrategiesBundle
+
+type StrategiesBundle struct {
+	Raw      *TrackedStrategies
+	Filtered *TrackedStrategies
+}
+
+type StateOnGridOpen struct {
+	SymbolDirectionCount map[string]int
+}
+
+var statesOnGridOpen = make(map[int]*StateOnGridOpen)
+
+func persistStateOnGridOpen(gid int) {
+	if _, ok := statesOnGridOpen[gid]; !ok {
+		statesOnGridOpen[gid] = &StateOnGridOpen{SymbolDirectionCount: bundle.Raw.symbolDirectionCount}
+		err := save(statesOnGridOpen, GridStatesFileName)
+		if err != nil {
+			DiscordWebhook(fmt.Sprintf("Error saving state on grid open: %v", err))
+		}
+	}
+}
 
 func addToBlacklist(id int, d time.Duration) {
 	blacklistMap[id] = time.Now().Add(d)
@@ -45,11 +67,6 @@ func getSessionSymbolPrice(symbol string) (float64, error) {
 		sessionSymbolPrice[symbol] = marketPrice
 	}
 	return sessionSymbolPrice[symbol], nil
-}
-
-type StrategiesBundle struct {
-	Raw      *TrackedStrategies
-	Filtered *TrackedStrategies
 }
 
 func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
@@ -156,11 +173,10 @@ func tick() error {
 	if err != nil {
 		return err
 	}
-	bundle, err := getTopStrategiesWithRoi()
+	bundle, err = getTopStrategiesWithRoi()
 	if err != nil {
 		return err
 	}
-
 	Time("Fetch strategies")
 	clear(sessionSymbolPrice)
 	DiscordWebhook("### Current Grids:")
@@ -378,7 +394,11 @@ func main() {
 			DiscordWebhook("Real Trading")
 		}
 		sdk()
-		_, err := scheduler.SingletonMode().Every(TheConfig.TickEveryMinutes).Minutes().Do(
+		err := load(&statesOnGridOpen, GridStatesFileName)
+		if err != nil {
+			log.Fatalf("Error loading state on grid open: %v", err)
+		}
+		_, err = scheduler.SingletonMode().Every(TheConfig.TickEveryMinutes).Minutes().Do(
 			func() {
 				t := time.Now()
 				err := tick()
