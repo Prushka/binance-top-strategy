@@ -331,7 +331,7 @@ func main() {
 			DiscordWebhook("Real Trading")
 		}
 		sdk()
-		_, err := scheduler.Every(TheConfig.TickEveryMinutes).Minutes().Do(
+		_, err := scheduler.SingletonMode().Every(TheConfig.TickEveryMinutes).Minutes().Do(
 			func() {
 				t := time.Now()
 				err := tick()
