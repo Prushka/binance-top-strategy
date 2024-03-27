@@ -22,7 +22,7 @@ func DiscordJson(chat string) string {
 func Discordf(format string, args ...any) {
 	s := format
 	if len(args) > 0 {
-		s = fmt.Sprintf(format, args)
+		s = fmt.Sprintf(format, args...)
 	}
 	DiscordWebhookS(s, DefaultWebhook)
 }
