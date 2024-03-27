@@ -269,6 +269,7 @@ func tick() error {
 			if diff > 0.08 {
 				DiscordWebhook(fmt.Sprintf("Trigger Price difference too high, Skip, Trigger: %f, Market: %f, Diff: %f",
 					triggerPrice, marketPrice, diff))
+				continue
 			}
 		}
 
@@ -318,6 +319,8 @@ func tick() error {
 // cancel when above n%, then cooldown?
 // perform last 20 min roi (latest - last 20 OR if max roi was reached more than 20 min ago), if not positive and stop gain, cancel then block symbolpairdirection until next hr
 // sort by symbol pair in filtered
+
+// Cancel when 2 strategies with opposite directions r at the very top ranking wise compared to all other directions
 
 func main() {
 	configure()
