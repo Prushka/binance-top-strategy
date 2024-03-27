@@ -5,6 +5,7 @@ import (
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/go-co-op/gocron"
 	log "github.com/sirupsen/logrus"
+	"math"
 	"sort"
 	"strconv"
 	"time"
@@ -15,6 +16,18 @@ var scheduler = gocron.NewScheduler(time.Now().Location())
 var globalStrategies = make(map[int]*Strategy) // StrategyOriginalID -> Strategy
 var gGrids = newTrackedGrids()
 var sessionSymbolPrice = make(map[string]float64)
+
+func getSessionSymbolPrice(symbol string) (float64, error) {
+	marketPrice, ok := sessionSymbolPrice[symbol]
+	if !ok {
+		marketPrice, err := fetchMarketPrice(symbol)
+		if err != nil {
+			return 0, err
+		}
+		sessionSymbolPrice[symbol] = marketPrice
+	}
+	return marketPrice, nil
+}
 
 type StrategiesBundle struct {
 	Raw      *TrackedStrategies
@@ -248,6 +261,17 @@ func tick() error {
 			DiscordWebhook("Symbol exists in open grids, Skip")
 			continue
 		}
+
+		if s.StrategyParams.TriggerPrice != nil {
+			triggerPrice, _ := strconv.ParseFloat(*s.StrategyParams.TriggerPrice, 64)
+			marketPrice, _ := getSessionSymbolPrice(s.Symbol)
+			diff := math.Abs((triggerPrice - marketPrice) / marketPrice)
+			if diff > 0.08 {
+				DiscordWebhook(fmt.Sprintf("Trigger Price difference too high, Skip, Trigger: %f, Market: %f, Diff: %f",
+					triggerPrice, marketPrice, diff))
+			}
+		}
+
 		switch s.Direction {
 		case LONG:
 			if TheConfig.MaxLongs >= 0 && gGrids.longs.Cardinality() >= TheConfig.MaxLongs {
@@ -268,7 +292,8 @@ func tick() error {
 		} else {
 			DiscordWebhookS(display(s, nil, "**Opened Grid**", c+1, len(bundle.Filtered.strategies)), ActionWebhook, DefaultWebhook)
 			chunksInt -= 1
-			sessionSymbols.Add(s.Symbol)
+			//sessionSymbols.Add(s.Symbol)
+			//TODO: there's a max investment? success true doesn't guarantee placed
 			if chunksInt <= 0 {
 				break
 			}

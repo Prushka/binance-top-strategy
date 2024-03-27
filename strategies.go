@@ -251,11 +251,7 @@ type Strategy struct {
 
 func (s Strategy) String() string {
 	runTime := time.Duration(s.RunningTime) * time.Second
-	marketPrice, ok := sessionSymbolPrice[s.Symbol]
-	if !ok {
-		marketPrice, _ = fetchMarketPrice(s.Symbol)
-		sessionSymbolPrice[s.Symbol] = marketPrice
-	}
+	marketPrice, _ := getSessionSymbolPrice(s.Symbol)
 	return fmt.Sprintf("%s-%dX, Copy: %d, Matched: [%d, %d], PnL: %s, PerH: %.1f%%, PerHLastDay: %.1f%%, PerHLast12Hr: %.1f%%, A: %s%%, D: %.1f%%, 3H: %.1f%%, 2H: %.1f%%, 1H: %.1f%%, MinInv: %s, Grids: %d, Price: %s-%s, %f, %.2f%%",
 		runTime, s.StrategyParams.Leverage, s.CopyCount, s.MatchedCount, s.LatestMatchedCount, s.Pnl, s.roiPerHour*100, s.lastDayRoiPerHr*100, s.last12HrRoiPerHr*100, s.Roi,
 		s.lastDayRoiChange*100, s.last3HrRoiChange*100, s.last2HrRoiChange*100, s.lastHrRoiChange*100, s.MinInvestment, s.StrategyParams.GridCount, s.StrategyParams.LowerLimit, s.StrategyParams.UpperLimit, marketPrice, s.priceDifference*100)
