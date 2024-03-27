@@ -63,7 +63,7 @@ func privateRequest[T BinanceResponse](url, method string, payload any, response
 		"Sec-Fetch-Site":     "same-origin",
 		"User-Agent":         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
 	}
-	return _request(url, method, 1*time.Second, payload, headers, response)
+	return _request(url, method, 0, payload, headers, response)
 }
 
 func _request[T BinanceResponse](url, method string, sleep time.Duration,
