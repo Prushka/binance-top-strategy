@@ -147,6 +147,8 @@ func tick() error {
 	if err != nil {
 		return err
 	}
+
+	clear(sessionSymbolPrice)
 	DiscordWebhook("### Current Grids:")
 	err = updateOpenGrids(true)
 	if err != nil {

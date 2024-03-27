@@ -236,8 +236,9 @@ func (grid *Grid) String() string {
 		*grid.lowestRoi*100, *grid.highestRoi*100, grid.continuousRoiGrowth, grid.continuousRoiLoss, grid.continuousRoiNoChange)
 	d := time.Now().Unix() - grid.BookTime/1000
 	dDuration := time.Duration(d) * time.Second
-	return fmt.Sprintf("In: %.2f %dX, %s, RealizedPnL: %s, TotalPnL: %f, Profit: %f%%%s, %s-%s",
-		grid.initialValue, grid.InitialLeverage, dDuration,
+	notional := int(grid.initialValue * float64(grid.InitialLeverage))
+	return fmt.Sprintf("In: %.2f %dX, Notional: %d, %s, RealizedPnL: %s, TotalPnL: %f, Profit: %f%%%s, %s-%s",
+		grid.initialValue, grid.InitialLeverage, notional, dDuration,
 		grid.GridProfit, grid.totalPnl, grid.lastRoi*100, extendedProfit, grid.GridLowerLimit, grid.GridUpperLimit)
 }
 
