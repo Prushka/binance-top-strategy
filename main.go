@@ -23,6 +23,7 @@ var bundle *StrategiesBundle
 type SDCountPair struct {
 	SymbolDirection string
 	Count           int
+	MaxMetric       float64
 }
 
 type StrategiesBundle struct {
@@ -125,9 +126,12 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 	}
 	sdLengths := make([]SDCountPair, 0)
 	for sd, s := range filteredBySymbolDirection {
-		sdLengths = append(sdLengths, SDCountPair{SymbolDirection: sd, Count: len(s)})
+		sdLengths = append(sdLengths, SDCountPair{SymbolDirection: sd, Count: len(s), MaxMetric: s[0].last12HrRoiPerHr})
 	}
 	sort.Slice(sdLengths, func(i, j int) bool {
+		if sdLengths[i].Count == sdLengths[j].Count {
+			return sdLengths[i].MaxMetric > sdLengths[j].MaxMetric
+		}
 		return sdLengths[i].Count > sdLengths[j].Count
 	})
 	sortedBySDCount := make(Strategies, 0)
