@@ -52,6 +52,7 @@ type GridTracking struct {
 	highestRoi            float64
 	timeHighestRoi        time.Time
 	timeLowestRoi         time.Time
+	timeLastChange        time.Time
 	continuousRoiGrowth   int
 	continuousRoiLoss     int
 	continuousRoiNoChange int
@@ -171,9 +172,11 @@ func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
 		if g.lastRoi > tracking.highestRoi {
 			tracking.timeHighestRoi = updateTime
 		}
+		if g.lastRoi != prevG.lastRoi {
+			tracking.timeLastChange = updateTime
+		}
 		tracking.lowestRoi = math.Min(g.lastRoi, tracking.lowestRoi)
 		tracking.highestRoi = math.Max(g.lastRoi, tracking.highestRoi)
-
 		if trackContinuous {
 			if g.lastRoi > prevG.lastRoi {
 				tracking.continuousRoiGrowth += 1
@@ -196,6 +199,7 @@ func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
 			highestRoi:     g.lastRoi,
 			timeHighestRoi: updateTime,
 			timeLowestRoi:  updateTime,
+			timeLastChange: updateTime,
 		}
 	}
 	tracked.gridsByUid[g.GID] = g
@@ -249,12 +253,14 @@ func updateOpenGrids(trackContinuous bool) error {
 func (grid *Grid) String() string {
 	tracking := grid.tracking
 	extendedProfit := ""
-	extendedProfit = fmt.Sprintf(" [%.2f%% (%s), %.2f%% (%s)][+%d, -%d, %d]",
+	extendedProfit = fmt.Sprintf(" [%.2f%% (%s), %.2f%% (%s)][+%d, -%d, %d (%s)]",
 		tracking.lowestRoi*100,
 		time.Since(tracking.timeLowestRoi).Round(time.Second),
 		tracking.highestRoi*100,
 		time.Since(tracking.timeHighestRoi).Round(time.Second),
-		tracking.continuousRoiGrowth, tracking.continuousRoiLoss, tracking.continuousRoiNoChange)
+		tracking.continuousRoiGrowth, tracking.continuousRoiLoss, tracking.continuousRoiNoChange,
+		time.Since(tracking.timeLastChange).Round(time.Second),
+	)
 	d := time.Now().Unix() - grid.BookTime/1000
 	dDuration := time.Duration(d) * time.Second
 	notional := int(grid.initialValue * float64(grid.InitialLeverage))
