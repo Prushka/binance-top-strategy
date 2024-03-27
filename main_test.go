@@ -10,5 +10,7 @@ func TestT(t *testing.T) {
 	log.Infof("Public IP: %s", getPublicIP())
 	DiscordService()
 	sdk()
-	tick()
+	updateOpenGrids(true)
+	updateOpenGrids(true)
+	updateOpenGrids(true)
 }

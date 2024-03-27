@@ -200,7 +200,7 @@ func tick() error {
 		}
 		if grid.lastRoi < maxCancelLoss {
 			reason += " too much loss"
-			DiscordWebhookS(display(att, grid, "Skip Cancel "+reason, c+1, expiredCopiedIds.Cardinality()), ActionWebhook, DefaultWebhook)
+			DiscordWebhookS(display(att, grid, "**Skip Cancel "+reason+"**", c+1, expiredCopiedIds.Cardinality()), ActionWebhook, DefaultWebhook)
 			continue
 		}
 		err := closeGrid(id)
@@ -208,7 +208,7 @@ func tick() error {
 			return err
 		}
 		closedIds.Add(id)
-		DiscordWebhookS(display(att, grid, "Cancelled "+reason, c+1, expiredCopiedIds.Cardinality()), ActionWebhook, DefaultWebhook)
+		DiscordWebhookS(display(att, grid, "**Cancelled "+reason+"**", c+1, expiredCopiedIds.Cardinality()), ActionWebhook, DefaultWebhook)
 	}
 
 	for _, grid := range gGrids.gridsByUid {
@@ -218,8 +218,25 @@ func tick() error {
 				return err
 			}
 			closedIds.Add(grid.GID)
-			DiscordWebhookS(display(globalStrategies[grid.SID], grid, "Cancelled No Change",
+			DiscordWebhookS(display(globalStrategies[grid.SID], grid, "**Cancelled No Change**",
 				0, 0), ActionWebhook, DefaultWebhook)
+		}
+	}
+
+	for _, grid := range gGrids.gridsByUid {
+		if grid.lastRoi >= TheConfig.GainExitNotGoingUp {
+			if time.Since(grid.tracking.timeHighestRoi) > time.Duration(TheConfig.GainExitNotGoingUpMaxLookBackMinutes)*time.Minute {
+				err := closeGrid(grid.GID)
+				if err != nil {
+					return err
+				}
+				closedIds.Add(grid.GID)
+				DiscordWebhookS(display(globalStrategies[grid.SID], grid,
+					fmt.Sprintf("Cancelled, max gain %.2f%%/%.2f%%, reached %s ago",
+						grid.lastRoi*100, grid.tracking.highestRoi*100,
+						time.Since(grid.tracking.timeHighestRoi).Round(time.Second)),
+					0, 0), ActionWebhook, DefaultWebhook)
+			}
 		}
 	}
 

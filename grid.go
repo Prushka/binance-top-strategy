@@ -158,13 +158,13 @@ func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
 	g.totalPnl = profit + fundingFee + position*(marketPrice-entryPrice) // position is negative for short
 	g.lastRoi = g.totalPnl / g.initialValue
 	updateTime := time.Now()
-	oldG, ok := tracked.gridsByUid[g.GID]
+	prevG, ok := tracked.gridsByUid[g.GID]
 	tracked.totalGridInitial += g.initialValue
 	tracked.totalGridPnl += g.totalPnl
 	if ok {
-		tracked.totalGridInitial -= oldG.initialValue
-		tracked.totalGridPnl -= oldG.totalPnl
-		tracking := oldG.tracking
+		tracked.totalGridInitial -= prevG.initialValue
+		tracked.totalGridPnl -= prevG.totalPnl
+		tracking := prevG.tracking
 		if g.lastRoi < tracking.lowestRoi {
 			tracking.timeLowestRoi = updateTime
 		}
@@ -175,11 +175,11 @@ func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
 		tracking.highestRoi = math.Max(g.lastRoi, tracking.highestRoi)
 
 		if trackContinuous {
-			if g.lastRoi > oldG.lastRoi {
+			if g.lastRoi > prevG.lastRoi {
 				tracking.continuousRoiGrowth += 1
 				tracking.continuousRoiLoss = 0
 				tracking.continuousRoiNoChange = 0
-			} else if g.lastRoi < oldG.lastRoi {
+			} else if g.lastRoi < prevG.lastRoi {
 				tracking.continuousRoiLoss += 1
 				tracking.continuousRoiGrowth = 0
 				tracking.continuousRoiNoChange = 0
@@ -259,7 +259,7 @@ func (grid *Grid) String() string {
 	dDuration := time.Duration(d) * time.Second
 	notional := int(grid.initialValue * float64(grid.InitialLeverage))
 	return fmt.Sprintf("%.2fX%d=%d, %s, Realized: %s, Total: %f, Profit: %f%%%s, %s-%s",
-		grid.initialValue, grid.InitialLeverage, notional, dDuration,
+		grid.initialValue, grid.InitialLeverage, notional, dDuration.Round(time.Minute),
 		grid.GridProfit, grid.totalPnl, grid.lastRoi*100, extendedProfit, grid.GridLowerLimit, grid.GridUpperLimit)
 }
 
