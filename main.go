@@ -136,6 +136,7 @@ func NoDip(roi StrategyRoi, t time.Duration) bool {
 }
 
 func tick() error {
+	timing := time.Now()
 	clear(sessionSymbolPrice)
 	DiscordWebhook(fmt.Sprintf("## Run: %v", time.Now().Format("2006-01-02 15:04:05")))
 	usdt, err := getFutureUSDT()
@@ -146,7 +147,8 @@ func tick() error {
 	if err != nil {
 		return err
 	}
-
+	DiscordWebhook(fmt.Sprintf("*Took %v to get strategies*", time.Since(timing)))
+	timing = time.Now()
 	clear(sessionSymbolPrice)
 	DiscordWebhook("### Current Grids:")
 	err = updateOpenGrids(true)
@@ -306,6 +308,8 @@ func tick() error {
 	if err != nil {
 		return err
 	}
+
+	DiscordWebhook(fmt.Sprintf("*Took %v to process grids*", time.Since(timing)))
 	return nil
 }
 
