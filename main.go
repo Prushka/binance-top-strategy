@@ -17,7 +17,6 @@ var scheduler = gocron.NewScheduler(time.Now().Location())
 var globalStrategies = make(map[int]*Strategy) // StrategyOriginalID -> Strategy
 var gGrids = newTrackedGrids()
 var sessionSymbolPrice = make(map[string]float64)
-var blacklistMap = make(map[int]time.Time)
 var tradingBlock = time.Now()
 var bundle *StrategiesBundle
 
@@ -40,22 +39,6 @@ func persistStateOnGridOpen(gid int) {
 			DiscordWebhook(fmt.Sprintf("Error saving state on grid open: %v", err))
 		}
 	}
-}
-
-func addToBlacklist(id int, d time.Duration) {
-	blacklistMap[id] = time.Now().Add(d)
-	DiscordWebhook(fmt.Sprintf("**Add blacklist:** %d, %s", id, d))
-}
-
-func blacklisted(id int) (bool, time.Time) {
-	if t, ok := blacklistMap[id]; ok {
-		if time.Now().Before(t) {
-			return true, t
-		} else {
-			delete(blacklistMap, id)
-		}
-	}
-	return false, time.Time{}
 }
 
 func getSessionSymbolPrice(symbol string) (float64, error) {
@@ -222,6 +205,7 @@ func tick() error {
 			ratio := float64(currentSDCount) / float64(sdCountWhenOpen)
 			if ratio < TheConfig.CancelSymbolDirectionShrink {
 				expiredCopiedIds.Add(grid.SID)
+				addSymbolDirectionToBlacklist(grid.Symbol, grid.Direction, 75*time.Minute)
 				DiscordWebhook(display(globalStrategies[grid.SID], grid,
 					fmt.Sprintf("**Direction shrink: %.2f**", ratio),
 					0, 0))
@@ -268,7 +252,7 @@ func tick() error {
 			DiscordWebhookS(display(globalStrategies[grid.SID], grid,
 				fmt.Sprintf("**Cancelled No Change - %s**", time.Since(grid.tracking.timeLastChange).Round(time.Second)),
 				0, 0), ActionWebhook, DefaultWebhook)
-			addToBlacklist(grid.SID, 5*time.Minute)
+			addSIDToBlacklist(grid.SID, 5*time.Minute)
 		}
 	}
 
@@ -332,7 +316,7 @@ func tick() error {
 			DiscordWebhook("Symbol exists in open grids, Skip")
 			continue
 		}
-		if bl, till := blacklisted(s.SID); bl {
+		if bl, till := SIDBlacklisted(s.SID); bl {
 			DiscordWebhook(fmt.Sprintf("Strategy blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05")))
 			continue
 		}
