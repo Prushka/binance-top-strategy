@@ -10,6 +10,7 @@ type Config struct {
 	SecretKey                            string  `env:"SECRET_KEY"`
 	CSRFToken                            string  `env:"CSRF"`
 	COOKIE                               string  `env:"COOKIE"`
+	MARGIN_TYPE                          string  `env:"MARGIN_TYPE" envDefault:"CROSSED"`
 	StrategiesCount                      int     `env:"STRATEGIES_COUNT" envDefault:"60"`
 	RuntimeMinHours                      int     `env:"RUNTIME_MIN_HOURS" envDefault:"3"`
 	RuntimeMaxHours                      int     `env:"RUNTIME_MAX_HOURS" envDefault:"168"`
@@ -19,6 +20,7 @@ type Config struct {
 	DiscordWebhookOrder                  string  `env:"DISCORD_WEBHOOK_ORDER"`
 	DiscordName                          string  `env:"DISCORD_NAME" envDefault:"BTS"`
 	CancelNoChangeMinutes                int     `env:"CANCEL_NO_CHANGE_MINUTES" envDefault:"15"`
+	TradingBlockMinutesAfterCancel       int     `env:"TRADING_BLOCK_MINUTES_AFTER_CANCEL" envDefault:"4"`
 	GainExitNotGoingUp                   float64 `env:"GAIN_EXIT_NOT_GOING_UP" envDefault:"0.8"`
 	GainExitNotGoingUpMaxLookBackMinutes int     `env:"GAIN_EXIT_MAX_LOOK_BACK" envDefault:"20"`
 	TickEveryMinutes                     int     `env:"TICK_EVERY_MINUTES" envDefault:"2"`

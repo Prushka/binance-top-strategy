@@ -295,7 +295,7 @@ func placeGrid(strategy Strategy, initialUSDT float64) error {
 		Symbol:                 strategy.Symbol,
 		Direction:              DirectionMap[strategy.Direction],
 		Leverage:               leverage,
-		MarginType:             "CROSSED",
+		MarginType:             TheConfig.MARGIN_TYPE,
 		GridType:               strategy.StrategyParams.Type,
 		GridCount:              strategy.StrategyParams.GridCount,
 		GridLowerLimit:         strategy.StrategyParams.LowerLimit,

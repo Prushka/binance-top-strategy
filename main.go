@@ -18,6 +18,7 @@ var globalStrategies = make(map[int]*Strategy) // StrategyOriginalID -> Strategy
 var gGrids = newTrackedGrids()
 var sessionSymbolPrice = make(map[string]float64)
 var blacklistMap = make(map[int]time.Time)
+var tradingBlock = time.Now()
 
 func addToBlacklist(id int, d time.Duration) {
 	blacklistMap[id] = time.Now().Add(d)
@@ -264,7 +265,8 @@ func tick() error {
 	}
 
 	if closedIds.Cardinality() > 0 && !TheConfig.Paper {
-		DiscordWebhook("Cleared expired grids - Skip current run")
+		DiscordWebhook(fmt.Sprintf("Cleared expired grids - Skip current run - Block trading for %d minutes", TheConfig.TradingBlockMinutesAfterCancel))
+		tradingBlock = time.Now().Add(time.Duration(TheConfig.TradingBlockMinutesAfterCancel) * time.Minute)
 		return nil
 	}
 
@@ -275,6 +277,10 @@ func tick() error {
 	}
 	if mapset.NewSetFromMapKeys(bundle.Filtered.symbolCount).Difference(gGrids.existingSymbols).Cardinality() == 0 {
 		DiscordWebhook("All symbols exists in open grids, Skip")
+		return nil
+	}
+	if time.Now().Before(tradingBlock) {
+		DiscordWebhook("Trading Block, Skip")
 		return nil
 	}
 	DiscordWebhook("### Opening new grids:")
