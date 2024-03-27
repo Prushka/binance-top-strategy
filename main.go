@@ -318,7 +318,6 @@ func tick() error {
 //then avoid that sp for how long?
 //if increases again cancel blacklist
 
-// cancel when oppposite direction exists, use better n count, n > original direction n?
 // cancel when above n%, then cooldown?
 // perform last 20 min roi (latest - last 20 OR if max roi was reached more than 20 min ago), if not positive and stop gain, cancel then block symbolpairdirection until next hr
 // sort by symbol pair in filtered
