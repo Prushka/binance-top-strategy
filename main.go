@@ -212,13 +212,14 @@ func tick() error {
 	}
 
 	for _, grid := range gGrids.gridsByUid {
-		if grid.tracking.continuousRoiNoChange > 3 && grid.lastRoi >= 0 {
+		if grid.lastRoi >= 0 && time.Since(grid.tracking.timeLastChange) > time.Duration(TheConfig.CancelNoChangeMinutes)*time.Minute {
 			err := closeGrid(grid.GID)
 			if err != nil {
 				return err
 			}
 			closedIds.Add(grid.GID)
-			DiscordWebhookS(display(globalStrategies[grid.SID], grid, "**Cancelled No Change**",
+			DiscordWebhookS(display(globalStrategies[grid.SID], grid,
+				fmt.Sprintf("**Cancelled No Change - %s**", time.Since(grid.tracking.timeLastChange).Round(time.Second)),
 				0, 0), ActionWebhook, DefaultWebhook)
 		}
 	}
@@ -232,10 +233,14 @@ func tick() error {
 				}
 				closedIds.Add(grid.GID)
 				DiscordWebhookS(display(globalStrategies[grid.SID], grid,
-					fmt.Sprintf("Cancelled, max gain %.2f%%/%.2f%%, reached %s ago",
+					fmt.Sprintf("**Cancelled, max gain %.2f%%/%.2f%%, reached %s ago**",
 						grid.lastRoi*100, grid.tracking.highestRoi*100,
 						time.Since(grid.tracking.timeHighestRoi).Round(time.Second)),
 					0, 0), ActionWebhook, DefaultWebhook)
+				currentMinute := time.Now().Minute()
+				if currentMinute < 15 || currentMinute > 40 { // new data is available
+
+				}
 			}
 		}
 	}

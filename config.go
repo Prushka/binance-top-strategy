@@ -18,6 +18,7 @@ type Config struct {
 	DiscordWebhookAction                 string  `env:"DISCORD_WEBHOOK_ACTION"`
 	DiscordWebhookOrder                  string  `env:"DISCORD_WEBHOOK_ORDER"`
 	DiscordName                          string  `env:"DISCORD_NAME" envDefault:"BTS"`
+	CancelNoChangeMinutes                int     `env:"CANCEL_NO_CHANGE_MINUTES" envDefault:"15"`
 	GainExitNotGoingUp                   float64 `env:"GAIN_EXIT_NOT_GOING_UP" envDefault:"0.8"`
 	GainExitNotGoingUpMaxLookBackMinutes int     `env:"GAIN_EXIT_MAX_LOOK_BACK" envDefault:"20"`
 	TickEveryMinutes                     int     `env:"TICK_EVERY_MINUTES" envDefault:"2"`
