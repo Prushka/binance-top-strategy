@@ -197,6 +197,8 @@ func tick() error {
 	expiredCopiedIds := gGrids.existingIds.Difference(bundle.Filtered.ids)
 	for _, grid := range gGrids.gridsByUid {
 		if !expiredCopiedIds.Contains(grid.SID) {
+			sd := grid.Symbol + grid.Direction
+			// exit signal: outdated direction
 			symbolDifferentDirectionsHigherRanking := 0
 			for _, s := range bundle.Filtered.strategies {
 				if s.Symbol == grid.Symbol {
@@ -211,6 +213,17 @@ func tick() error {
 				expiredCopiedIds.Add(grid.SID)
 				DiscordWebhook(display(globalStrategies[grid.SID], grid,
 					fmt.Sprintf("**Opposite directions at top: %d**", symbolDifferentDirectionsHigherRanking),
+					0, 0))
+			}
+
+			// exit signal: symbol direction shrunk in raw strategies
+			currentSDCount := bundle.Raw.symbolDirectionCount[sd]
+			sdCountWhenOpen := statesOnGridOpen[grid.GID].SymbolDirectionCount[sd]
+			ratio := float64(currentSDCount) / float64(sdCountWhenOpen)
+			if ratio < TheConfig.CancelSymbolDirectionShrink {
+				expiredCopiedIds.Add(grid.SID)
+				DiscordWebhook(display(globalStrategies[grid.SID], grid,
+					fmt.Sprintf("**Direction shrink: %.2f**", ratio),
 					0, 0))
 			}
 		}
