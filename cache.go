@@ -92,9 +92,7 @@ var RoisCache = CreateMapCache[[]*Roi](
 		return roi, nil
 	},
 	func(rois []*Roi) bool {
-		latestTime := time.Unix(rois[0].Time*1000, 0)
-		log.Infof("Latest time: %v", latestTime)
-		log.Infof("Time since latest time: %v", time.Now().Sub(latestTime))
+		latestTime := time.Unix(rois[0].Time, 0)
 		if time.Now().Sub(latestTime) > 1*time.Hour {
 			return true
 		}
