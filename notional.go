@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math"
 	"sort"
 )
 
@@ -40,7 +41,7 @@ func getLeverage(symbol string, initialAsset float64, maxLeverage int) int {
 	}
 	for _, b := range s.RiskBrackets {
 		if float64(b.MinOpenPosLeverage)*initialAsset <= float64(b.BracketNotionalCap) { // fits in this bracket
-			leverage := b.BracketNotionalCap / int(initialAsset)
+			leverage := int(math.Min(float64(b.BracketNotionalCap)/initialAsset, float64(b.MaxOpenPosLeverage)))
 			if leverage > maxLeverage {
 				return maxLeverage
 			}
