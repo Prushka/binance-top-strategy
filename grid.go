@@ -242,7 +242,10 @@ func updateOpenGrids(trackContinuous bool) error {
 	for _, g := range gGrids.gridsByUid {
 		if !currentIds.Contains(g.GID) {
 			gGrids.Remove(g.GID)
-			Discordf(display(globalStrategies[g.SID], g, "Gone", 0, 0))
+			Discordf(display(globalStrategies[g.SID], g,
+				fmt.Sprintf("**Gone - Block for %d Minutes**", TheConfig.TradingBlockMinutesAfterCancel),
+				0, 0))
+			tradingBlock = time.Now().Add(time.Duration(TheConfig.TradingBlockMinutesAfterCancel) * time.Minute)
 		}
 	}
 	Discordf("Open Pairs: %v, Open Ids: %v, Initial: %f, TotalPnL: %f, C: %f, L/S/N: %d/%d/%d",

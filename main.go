@@ -335,8 +335,7 @@ func tick() error {
 	}
 
 	if closedIds.Cardinality() > 0 && !TheConfig.Paper {
-		Discordf("Cleared expired grids - Skip current run - Block trading for %d minutes", TheConfig.TradingBlockMinutesAfterCancel)
-		tradingBlock = time.Now().Add(time.Duration(TheConfig.TradingBlockMinutesAfterCancel) * time.Minute)
+		Discordf("Cleared expired grids - Skip current run")
 		return nil
 	}
 
