@@ -95,7 +95,7 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 			s.lastHrRoiChange = GetRoiChange(s.Rois, 1*time.Hour)
 			s.lastDayRoiPerHr = GetRoiPerHr(s.Rois, 24*time.Hour)
 			s.last12HrRoiPerHr = GetRoiPerHr(s.Rois, 12*time.Hour)
-			s.last6HrNoDip = NoDip(s.Rois, 6*time.Hour)
+			s.lastNHrNoDip = NoDip(s.Rois, time.Duration(TheConfig.LastNHoursNoDips)*time.Hour)
 			s.roiPerHour = (s.roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
 			prefix := ""
 			if s.lastDayRoiChange > 0.1 &&
@@ -106,7 +106,7 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 				s.last12HrRoiPerHr > 0.014 &&
 				s.priceDifference > 0.05 &&
 				// TODO: price difference can shrink with trailing, e.g., 5.xx% -> 4.xx%
-				s.last6HrNoDip {
+				s.lastNHrNoDip {
 				filtered = append(filtered, s)
 				prefix += "Open"
 			}

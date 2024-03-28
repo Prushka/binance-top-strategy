@@ -226,7 +226,7 @@ type Strategy struct {
 	lastHrRoiChange  float64
 	lastDayRoiPerHr  float64
 	last12HrRoiPerHr float64
-	last6HrNoDip     bool
+	lastNHrNoDip     bool
 	roiPerHour       float64
 	priceDifference  float64
 	StrategyParams   struct {
@@ -249,11 +249,26 @@ type Strategy struct {
 	MinInvestment      string `json:"minInvestment"`
 }
 
+func (r StrategyRoi) lastNRecords(n int) string {
+	if len(r) < n {
+		n = len(r)
+	}
+	ss := ""
+	for i := 0; i < n; i++ {
+		ss += fmt.Sprintf("%.2f, ", r[i].Roi)
+	}
+	return ss
+}
+
 func (s Strategy) String() string {
 	runTime := time.Duration(s.RunningTime) * time.Second
 	marketPrice, _ := getSessionSymbolPrice(s.Symbol)
-	return fmt.Sprintf("%s-%dX, Copy: %d, Matched: [%d, %d], PnL: %s, PerH: %.1f%%, PerHLastDay: %.1f%%, PerHLast12Hr: %.1f%%, A: %s%%, D: %.1f%%, 3H: %.1f%%, 2H: %.1f%%, 1H: %.1f%%, MinInv: %s, Grids: %d, Price: %s-%s, %f, %.2f%%",
-		runTime, s.StrategyParams.Leverage, s.CopyCount, s.MatchedCount, s.LatestMatchedCount, s.Pnl, s.roiPerHour*100, s.lastDayRoiPerHr*100, s.last12HrRoiPerHr*100, s.Roi,
+	hrDip := ""
+	if !s.lastNHrNoDip {
+		hrDip = s.Rois.lastNRecords(TheConfig.LastNHoursNoDips) + ", "
+	}
+	return fmt.Sprintf("%s-%dX, Copy: %d, Matched: [%d, %d], PnL: %s, %sPerH: %.1f%%, PerHLastDay: %.1f%%, PerHLast12Hr: %.1f%%, A: %s%%, D: %.1f%%, 3H: %.1f%%, 2H: %.1f%%, 1H: %.1f%%, MinInv: %s, Grids: %d, Price: %s-%s, %f, %.2f%%",
+		runTime, s.StrategyParams.Leverage, s.CopyCount, s.MatchedCount, s.LatestMatchedCount, s.Pnl, hrDip, s.roiPerHour*100, s.lastDayRoiPerHr*100, s.last12HrRoiPerHr*100, s.Roi,
 		s.lastDayRoiChange*100, s.last3HrRoiChange*100, s.last2HrRoiChange*100, s.lastHrRoiChange*100, s.MinInvestment, s.StrategyParams.GridCount, s.StrategyParams.LowerLimit, s.StrategyParams.UpperLimit, marketPrice, s.priceDifference*100)
 }
 
