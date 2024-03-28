@@ -277,8 +277,10 @@ func display(s *Strategy, grid *Grid, action string, index int, length int) stri
 	if grid == nil && s == nil {
 		return "Strategy and Grid are both nil"
 	}
-	if gl, ok := globalStrategies[grid.SID]; s == nil && ok {
-		s = gl
+	if grid != nil {
+		if gl, ok := globalStrategies[grid.SID]; s == nil && ok {
+			s = gl
+		}
 	}
 	ss := ""
 	gg := ""

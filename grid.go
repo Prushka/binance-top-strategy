@@ -113,19 +113,19 @@ func newTrackedGrids() *TrackedGrids {
 		shorts:          mapset.NewSet[int](),
 		longs:           mapset.NewSet[int](),
 		neutrals:        mapset.NewSet[int](),
-		existingIds:     mapset.NewSet[int](),
+		existingSIds:    mapset.NewSet[int](),
 		existingSymbols: mapset.NewSet[string](),
-		gridsByUid:      make(map[int]*Grid),
+		gridsByGid:      make(map[int]*Grid),
 	}
 }
 
 func (tracked *TrackedGrids) Remove(id int) {
-	g, ok := tracked.gridsByUid[id]
+	g, ok := tracked.gridsByGid[id]
 	if !ok {
 		return
 	}
 	tracked.existingSymbols.Remove(g.Symbol)
-	tracked.existingIds.Remove(g.SID)
+	tracked.existingSIds.Remove(g.SID)
 	if g.Direction == DirectionMap[LONG] {
 		tracked.longs.Remove(g.GID)
 	} else if g.Direction == DirectionMap[SHORT] {
@@ -135,12 +135,12 @@ func (tracked *TrackedGrids) Remove(id int) {
 	}
 	tracked.totalGridInitial -= g.initialValue
 	tracked.totalGridPnl -= g.totalPnl
-	delete(tracked.gridsByUid, g.GID)
+	delete(tracked.gridsByGid, g.GID)
 }
 
 func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
 	tracked.existingSymbols.Add(g.Symbol)
-	tracked.existingIds.Add(g.SID)
+	tracked.existingSIds.Add(g.SID)
 
 	if g.Direction == DirectionMap[LONG] {
 		tracked.longs.Add(g.GID)
@@ -159,7 +159,7 @@ func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
 	g.totalPnl = profit + fundingFee + position*(marketPrice-entryPrice) // position is negative for short
 	g.lastRoi = g.totalPnl / g.initialValue
 	updateTime := time.Now()
-	prevG, ok := tracked.gridsByUid[g.GID]
+	prevG, ok := tracked.gridsByGid[g.GID]
 	tracked.totalGridInitial += g.initialValue
 	tracked.totalGridPnl += g.totalPnl
 	if ok {
@@ -203,7 +203,7 @@ func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
 		}
 		persistStateOnGridOpen(g.GID)
 	}
-	tracked.gridsByUid[g.GID] = g
+	tracked.gridsByGid[g.GID] = g
 }
 
 type TrackedGrids struct {
@@ -212,15 +212,15 @@ type TrackedGrids struct {
 	shorts           mapset.Set[int]
 	longs            mapset.Set[int]
 	neutrals         mapset.Set[int]
-	existingIds      mapset.Set[int]
+	existingSIds     mapset.Set[int]
 	existingSymbols  mapset.Set[string]
-	gridsByUid       map[int]*Grid
+	gridsByGid       map[int]*Grid
 }
 
 func (tracked *TrackedGrids) findGridIdsByStrategyId(ids ...int) mapset.Set[int] {
 	gridIds := mapset.NewSet[int]()
 	idsSet := mapset.NewSet[int](ids...)
-	for _, g := range tracked.gridsByUid {
+	for _, g := range tracked.gridsByGid {
 		if idsSet.Contains(g.SID) {
 			gridIds.Add(g.GID)
 		}
@@ -239,7 +239,7 @@ func updateOpenGrids(trackContinuous bool) error {
 		gGrids.Add(grid, trackContinuous)
 		currentIds.Add(grid.GID)
 	}
-	for _, g := range gGrids.gridsByUid {
+	for _, g := range gGrids.gridsByGid {
 		if !currentIds.Contains(g.GID) {
 			gGrids.Remove(g.GID)
 			Discordf(display(nil, g,
@@ -249,7 +249,7 @@ func updateOpenGrids(trackContinuous bool) error {
 		}
 	}
 	Discordf("Open Pairs: %v, Open Ids: %v, Initial: %f, TotalPnL: %f, C: %f, L/S/N: %d/%d/%d",
-		gGrids.existingSymbols, gGrids.existingIds, gGrids.totalGridInitial, gGrids.totalGridPnl, gGrids.totalGridPnl+gGrids.totalGridInitial,
+		gGrids.existingSymbols, gGrids.existingSIds, gGrids.totalGridInitial, gGrids.totalGridPnl, gGrids.totalGridPnl+gGrids.totalGridInitial,
 		gGrids.longs.Cardinality(), gGrids.shorts.Cardinality(), gGrids.neutrals.Cardinality())
 	return nil
 }
