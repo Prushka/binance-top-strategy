@@ -293,7 +293,7 @@ func tick() error {
 		}
 		if grid.lastRoi < maxCancelLoss {
 			reason += " too much loss"
-			DiscordWebhookS(display(att, grid, "**Skip Cancel "+reason+"**", c+1, expiredCopiedIds.Cardinality()), ActionWebhook, DefaultWebhook)
+			Discordf(display(att, grid, "**Skip Cancel "+reason+"**", c+1, expiredCopiedIds.Cardinality()))
 			continue
 		}
 		err := closeGrid(gid)
