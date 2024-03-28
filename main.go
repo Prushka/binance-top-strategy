@@ -308,7 +308,7 @@ func tick() error {
 						grid.lastRoi*100, grid.tracking.highestRoi*100,
 						time.Since(grid.tracking.timeHighestRoi).Round(time.Second)),
 					0, 0), ActionWebhook, DefaultWebhook)
-				addSymbolDirectionToBlacklist(grid.Symbol, grid.Direction, TillNextRefresh())
+				addSymbolToBlacklist(grid.Symbol, 20*time.Minute)
 			}
 		}
 	}
