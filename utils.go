@@ -10,6 +10,11 @@ import (
 	"time"
 )
 
+func TillNextRefresh() time.Duration {
+	minutesTillNextHour := 60 - time.Now().Minute()
+	return time.Duration(minutesTillNextHour+20) * time.Minute
+}
+
 var timing = time.Now()
 
 func Time(s string) {

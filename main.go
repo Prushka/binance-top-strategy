@@ -308,10 +308,7 @@ func tick() error {
 						grid.lastRoi*100, grid.tracking.highestRoi*100,
 						time.Since(grid.tracking.timeHighestRoi).Round(time.Second)),
 					0, 0), ActionWebhook, DefaultWebhook)
-				currentMinute := time.Now().Minute()
-				if currentMinute < 15 || currentMinute > 40 { // new data is available
-
-				}
+				addSymbolDirectionToBlacklist(grid.Symbol, grid.Direction, TillNextRefresh())
 			}
 		}
 	}
