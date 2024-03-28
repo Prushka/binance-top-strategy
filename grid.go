@@ -262,14 +262,12 @@ func (grid *Grid) String() string {
 		tracking.continuousRoiGrowth, tracking.continuousRoiLoss, tracking.continuousRoiNoChange,
 		time.Since(tracking.timeLastChange).Round(time.Second),
 	)
-	d := time.Now().Unix() - grid.BookTime/1000
-	dDuration := time.Duration(d) * time.Second
-	notional := int(grid.initialValue * float64(grid.InitialLeverage))
 	currentSD, sdWhenOpen, ratio := gridSDCount(grid.GID, grid.Symbol, grid.Direction)
-	return fmt.Sprintf("%d, %.2fX%d=%d, %s, Realized: %s, Total: %f, Profit: %f%%%s, %s-%s, SD: %d/%d/%.1f%%",
-		grid.GID, grid.initialValue, grid.InitialLeverage, notional, dDuration.Round(time.Minute),
-		grid.GridProfit, grid.totalPnl, grid.lastRoi*100, extendedProfit,
-		grid.GridLowerLimit, grid.GridUpperLimit, currentSD, sdWhenOpen, ratio*100)
+	realized, _ := strconv.ParseFloat(grid.GridProfit, 64)
+	return fmt.Sprintf("*%d*, Realized: %.2f, Total: %.2f, =%.2f%%%s, SD: %d/%d/%.1f%%",
+		grid.GID,
+		realized, grid.totalPnl, grid.lastRoi*100, extendedProfit,
+		currentSD, sdWhenOpen, ratio*100)
 }
 
 func closeGrid(strategyId int) error {

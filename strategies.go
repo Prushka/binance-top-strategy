@@ -250,26 +250,22 @@ type Strategy struct {
 }
 
 func (r StrategyRoi) lastNRecords(n int) string {
+	n += 1
 	if len(r) < n {
 		n = len(r)
 	}
 	ss := ""
 	for i := 0; i < n; i++ {
-		ss += fmt.Sprintf("%.2f, ", r[i].Roi)
+		ss += fmt.Sprintf("%.2f%%, ", r[i].Roi*100)
 	}
 	return ss
 }
 
 func (s Strategy) String() string {
-	runTime := time.Duration(s.RunningTime) * time.Second
-	marketPrice, _ := getSessionSymbolPrice(s.Symbol)
-	hrDip := ""
-	if !s.lastNHrNoDip {
-		hrDip = s.Rois.lastNRecords(TheConfig.LastNHoursNoDips) + ", "
-	}
-	return fmt.Sprintf("%s-%dX, Copy: %d, Matched: [%d, %d], PnL: %s, %sPerH: %.1f%%, PerHLastDay: %.1f%%, PerHLast12Hr: %.1f%%, A: %s%%, D: %.1f%%, 3H: %.1f%%, 2H: %.1f%%, 1H: %.1f%%, MinInv: %s, Grids: %d, Price: %s-%s, %f, %.2f%%",
-		runTime, s.StrategyParams.Leverage, s.CopyCount, s.MatchedCount, s.LatestMatchedCount, s.Pnl, hrDip, s.roiPerHour*100, s.lastDayRoiPerHr*100, s.last12HrRoiPerHr*100, s.Roi,
-		s.lastDayRoiChange*100, s.last3HrRoiChange*100, s.last2HrRoiChange*100, s.lastHrRoiChange*100, s.MinInvestment, s.StrategyParams.GridCount, s.StrategyParams.LowerLimit, s.StrategyParams.UpperLimit, marketPrice, s.priceDifference*100)
+	pnl, _ := strconv.ParseFloat(s.Pnl, 64)
+	return fmt.Sprintf("Cpy: %d, Mch: [%d, %d], PnL: %.2f, Rois: %s[H%%: A/Day/12Hr|%.1f%%/%.1f%%/%.1f%%], [A/D/3/2/1H: %s%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s",
+		s.CopyCount, s.MatchedCount, s.LatestMatchedCount, pnl, s.Rois.lastNRecords(TheConfig.LastNHoursNoDips), s.roiPerHour*100, s.lastDayRoiPerHr*100, s.last12HrRoiPerHr*100, s.Roi,
+		s.lastDayRoiChange*100, s.last3HrRoiChange*100, s.last2HrRoiChange*100, s.lastHrRoiChange*100, s.MinInvestment)
 }
 
 func display(s *Strategy, grid *Grid, action string, index int, length int) string {
@@ -282,18 +278,57 @@ func display(s *Strategy, grid *Grid, action string, index int, length int) stri
 	direction := ""
 	strategyId := ""
 	symbol := ""
-	if s == nil {
-		direction = grid.Direction
-		symbol = grid.Symbol
-		strategyId = fmt.Sprintf("%d", grid.SID)
-	} else if grid == nil || DirectionMap[s.Direction] == grid.Direction {
+	leverage := ""
+	runTime := ""
+	priceRange := ""
+	grids := ""
+	marketPrice, _ := getSessionSymbolPrice(s.Symbol)
+	formatPriceRange := func(lower, upper string) string {
+		l, _ := strconv.ParseFloat(lower, 64)
+		u, _ := strconv.ParseFloat(upper, 64)
+		diff := (u/l - 1) * 100
+		return fmt.Sprintf("%s-%s, %.2f%%", lower, upper, diff)
+	}
+	formatRunTime := func(rt int64) string {
+		return fmt.Sprintf("%s", shortDur((time.Duration(rt) * time.Second).Round(time.Minute)))
+	}
+	if grid == nil {
 		direction = DirectionMap[s.Direction]
 		symbol = s.Symbol
 		strategyId = fmt.Sprintf("%d", s.SID)
+		leverage = fmt.Sprintf("%dX", s.StrategyParams.Leverage)
+		runTime = formatRunTime(int64(s.RunningTime))
+		priceRange = formatPriceRange(s.StrategyParams.LowerLimit, s.StrategyParams.UpperLimit)
+		grids = fmt.Sprintf("%d", s.StrategyParams.GridCount)
 	} else {
-		direction = fmt.Sprintf("S: %s, G: %s", DirectionMap[s.Direction], grid.Direction)
-		symbol = fmt.Sprintf("S: %s, G: %s", s.Symbol, grid.Symbol)
-		strategyId = fmt.Sprintf("S: %d, G: %d", s.SID, grid.SID)
+		direction = grid.Direction
+		symbol = grid.Symbol
+		strategyId = fmt.Sprintf("%d", grid.SID)
+		leverage = fmt.Sprintf("%.2fX%d=%d", grid.initialValue, grid.InitialLeverage, int(grid.initialValue*float64(grid.InitialLeverage)))
+		runTime = formatRunTime(time.Now().Unix() - grid.BookTime/1000)
+		priceRange = formatPriceRange(grid.GridLowerLimit, grid.GridUpperLimit)
+		grids = fmt.Sprintf("%d", grid.GridCount)
+
+		if s != nil {
+			if DirectionMap[s.Direction] != grid.Direction {
+				direction = fmt.Sprintf("S/G: %s/%s", DirectionMap[s.Direction], grid.Direction)
+			}
+			if s.Symbol != grid.Symbol {
+				symbol = fmt.Sprintf("S/G: %s/%s", s.Symbol, grid.Symbol)
+			}
+			if s.SID != grid.SID {
+				strategyId = fmt.Sprintf("S/G: %d/%d", s.SID, grid.SID)
+			}
+			if s.StrategyParams.GridCount != grid.GridCount {
+				grids = fmt.Sprintf("S/G: %d/%d", s.StrategyParams.GridCount, grid.GridCount)
+			}
+			leverage = fmt.Sprintf("%dX/%.2fX%d=%d", s.StrategyParams.Leverage, grid.initialValue, grid.InitialLeverage, int(grid.initialValue*float64(grid.InitialLeverage)))
+			runTime = fmt.Sprintf("%s/%s", formatRunTime(int64(s.RunningTime)), formatRunTime(time.Now().Unix()-grid.BookTime/1000))
+			if s.StrategyParams.LowerLimit != grid.GridLowerLimit || s.StrategyParams.UpperLimit != grid.GridUpperLimit {
+				priceRange = fmt.Sprintf("S/G: %s/%s", formatPriceRange(s.StrategyParams.LowerLimit, s.StrategyParams.UpperLimit),
+					formatPriceRange(grid.GridLowerLimit, grid.GridUpperLimit))
+			}
+		}
 	}
 	if s != nil {
 		ss = s.String()
@@ -305,7 +340,9 @@ func display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		seq = fmt.Sprintf("%d/%d - ", index, length)
 	}
 
-	return fmt.Sprintf("[%s%s%s, %s] %s: %s%s", seq, symbol, direction, strategyId, action, ss, gg)
+	return fmt.Sprintf("[%s%s%s, %s, %s, %s @ %f, %s Grids, %s] %s:\n%s%s",
+		seq, symbol, direction, leverage, runTime,
+		priceRange, marketPrice, grids, strategyId, action, ss, gg)
 }
 
 const (
