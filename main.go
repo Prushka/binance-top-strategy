@@ -250,7 +250,7 @@ func tick() error {
 				}
 				addSymbolDirectionToBlacklist(grid.Symbol, grid.Direction, blockDuration)
 				if ratio < TheConfig.CancelWithLossSymbolDirectionShrink {
-					suffix = fmt.Sprintf("Accept Max Loss - %f", TheConfig.CancelWithLossSymbolDirectionShrink)
+					suffix = fmt.Sprintf("Accept Max Loss - %f", TheConfig.MaxLossWithSymbolDirectionShrink)
 					gidsAcceptLoss[grid.GID] = TheConfig.MaxLossWithSymbolDirectionShrink
 				}
 				Discordf(display(globalStrategies[grid.SID], grid,
