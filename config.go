@@ -28,7 +28,8 @@ type Config struct {
 	MaxLossWithSymbolDirectionShrink     float64 `env:"MAX_LOSS_WITH_SYMBOL_DIRECTION_SHRINK" envDefault:"-0.2"`
 	TradingBlockMinutesAfterCancel       int     `env:"TRADING_BLOCK_MINUTES_AFTER_CANCEL" envDefault:"3"`
 	GainExitNotGoingUp                   float64 `env:"GAIN_EXIT_NOT_GOING_UP" envDefault:"0.8"`
-	GainExitNotGoingUpMaxLookBackMinutes int     `env:"GAIN_EXIT_MAX_LOOK_BACK" envDefault:"5"`
+	GainExitNotGoingUpMaxLookBackMinutes int     `env:"GAIN_EXIT_MAX_LOOK_BACK" envDefault:"6"`
+	GainExitNotGoingUpBlockMinutes       int     `env:"GAIN_EXIT_NOT_GOING_UP_BLOCK_MINUTES" envDefault:"35"`
 	TickEverySeconds                     int     `env:"TICK_EVERY_SECONDS" envDefault:"60"`
 	AssetSymbol                          string  `env:"ASSET_SYMBOL" envDefault:"USDT"`
 	MaxChunks                            int     `env:"MAX_CHUNKS" envDefault:"4"`
