@@ -252,8 +252,9 @@ func tick() error {
 			if minutesTillNextHour < 30 {
 				blockDuration = time.Duration(minutesTillNextHour+75) * time.Minute
 			}
-			addSymbolDirectionToBlacklist(grid.Symbol, grid.Direction, blockDuration)
-			toCancel.AddGridToCancel(grid, 0, fmt.Sprintf("direction shrink: %.2f", ratio))
+			reason := fmt.Sprintf("direction shrink: %.2f", ratio)
+			addSymbolDirectionToBlacklist(grid.Symbol, grid.Direction, blockDuration, reason)
+			toCancel.AddGridToCancel(grid, 0, reason)
 			if ratio < TheConfig.CancelWithLossSymbolDirectionShrink {
 				toCancel.AddGridToCancel(grid, TheConfig.MaxLossWithSymbolDirectionShrink,
 					fmt.Sprintf("shrink below %f, Accept Loss: %f",
@@ -268,16 +269,18 @@ func tick() error {
 		}
 
 		if time.Since(grid.tracking.timeLastChange) > time.Duration(TheConfig.CancelNoChangeMinutes)*time.Minute {
-			addSIDToBlacklist(grid.SID, 10*time.Minute)
-			toCancel.AddGridToCancel(grid, 0, fmt.Sprintf("no change, %s", shortDur(time.Since(grid.tracking.timeLastChange).Round(time.Second))))
+			reason := fmt.Sprintf("no change, %s", shortDur(time.Since(grid.tracking.timeLastChange).Round(time.Second)))
+			addSIDToBlacklist(grid.SID, 10*time.Minute, reason)
+			toCancel.AddGridToCancel(grid, 0, reason)
 		}
 
 		if grid.lastRoi >= TheConfig.GainExitNotGoingUp {
 			if time.Since(grid.tracking.timeHighestRoi) > time.Duration(TheConfig.GainExitNotGoingUpMaxLookBackMinutes)*time.Minute {
-				toCancel.AddGridToCancel(grid, TheConfig.GainExitNotGoingUp, fmt.Sprintf("max gain %.2f%%/%.2f%%, reached %s ago",
+				reason := fmt.Sprintf("max gain %.2f%%/%.2f%%, reached %s ago",
 					grid.lastRoi*100, grid.tracking.highestRoi*100,
-					time.Since(grid.tracking.timeHighestRoi).Round(time.Second)))
-				addSymbolToBlacklist(grid.Symbol, time.Duration(TheConfig.GainExitNotGoingUpBlockMinutes)*time.Minute)
+					time.Since(grid.tracking.timeHighestRoi).Round(time.Second))
+				toCancel.AddGridToCancel(grid, TheConfig.GainExitNotGoingUp, reason)
+				addSymbolToBlacklist(grid.Symbol, time.Duration(TheConfig.GainExitNotGoingUpBlockMinutes)*time.Minute, reason)
 			}
 		}
 	}

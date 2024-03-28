@@ -4,15 +4,18 @@ import (
 	"time"
 )
 
-type Blacklist struct {
-	BySID             map[int]time.Time
-	BySymbolDirection map[string]time.Time
-	BySymbol          map[string]time.Time
+type Blacklists struct {
+	BySID             map[int]*Blacklist
+	BySymbolDirection map[string]*Blacklist
+	BySymbol          map[string]*Blacklist
 }
 
-var blacklist = &Blacklist{BySID: make(map[int]time.Time),
-	BySymbolDirection: make(map[string]time.Time),
-	BySymbol:          make(map[string]time.Time)}
+type Blacklist struct {
+	Till   time.Time
+	Reason string
+}
+
+var blacklist = &Blacklists{BySID: make(map[int]*Blacklist), BySymbolDirection: make(map[string]*Blacklist), BySymbol: make(map[string]*Blacklist)}
 
 func persistBlacklist() {
 	err := save(blacklist, BlacklistFileName)
@@ -21,28 +24,28 @@ func persistBlacklist() {
 	}
 }
 
-func addSymbolDirectionToBlacklist(symbol, direction string, d time.Duration) {
-	blacklist.BySymbolDirection[symbol+direction] = time.Now().Add(d)
+func addSymbolDirectionToBlacklist(symbol, direction string, d time.Duration, reason string) {
+	blacklist.BySymbolDirection[symbol+direction] = &Blacklist{Till: time.Now().Add(d), Reason: reason}
 	Discordf("**Add blacklist:** %s, %s, %s", symbol, direction, d)
 	persistBlacklist()
 }
 
-func addSIDToBlacklist(id int, d time.Duration) {
-	blacklist.BySID[id] = time.Now().Add(d)
+func addSIDToBlacklist(id int, d time.Duration, reason string) {
+	blacklist.BySID[id] = &Blacklist{Till: time.Now().Add(d), Reason: reason}
 	Discordf("**Add blacklist:** %d, %s", id, d)
 	persistBlacklist()
 }
 
-func addSymbolToBlacklist(symbol string, d time.Duration) {
-	blacklist.BySymbol[symbol] = time.Now().Add(d)
+func addSymbolToBlacklist(symbol string, d time.Duration, reason string) {
+	blacklist.BySymbol[symbol] = &Blacklist{Till: time.Now().Add(d), Reason: reason}
 	Discordf("**Add blacklist:** %s, %s", symbol, d)
 	persistBlacklist()
 }
 
 func SymbolDirectionBlacklisted(symbol, direction string) (bool, time.Time) {
 	if t, ok := blacklist.BySymbolDirection[symbol+direction]; ok {
-		if time.Now().Before(t) {
-			return true, t
+		if time.Now().Before(t.Till) {
+			return true, t.Till
 		} else {
 			delete(blacklist.BySymbolDirection, symbol+direction)
 		}
@@ -52,8 +55,8 @@ func SymbolDirectionBlacklisted(symbol, direction string) (bool, time.Time) {
 
 func SIDBlacklisted(id int) (bool, time.Time) {
 	if t, ok := blacklist.BySID[id]; ok {
-		if time.Now().Before(t) {
-			return true, t
+		if time.Now().Before(t.Till) {
+			return true, t.Till
 		} else {
 			delete(blacklist.BySID, id)
 		}
@@ -63,8 +66,8 @@ func SIDBlacklisted(id int) (bool, time.Time) {
 
 func SymbolBlacklisted(symbol string) (bool, time.Time) {
 	if t, ok := blacklist.BySymbol[symbol]; ok {
-		if time.Now().Before(t) {
-			return true, t
+		if time.Now().Before(t.Till) {
+			return true, t.Till
 		} else {
 			delete(blacklist.BySymbol, symbol)
 		}
