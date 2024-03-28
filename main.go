@@ -246,7 +246,6 @@ func tick() error {
 				fmt.Sprintf("opposite directions at top: %d", symbolDifferentDirectionsHigherRanking))
 		}
 
-		// exit signal: symbol direction shrunk in raw strategies
 		_, _, ratio := gridSDCount(grid.GID, grid.Symbol, grid.Direction)
 		if ratio < TheConfig.CancelSymbolDirectionShrink {
 			minutesTillNextHour := 60 - time.Now().Minute()
@@ -285,8 +284,8 @@ func tick() error {
 	}
 	if !toCancel.Empty() {
 		Discordf("### Expired Strategies: %s", toCancel)
+		toCancel.CancelAll()
 	}
-	toCancel.CancelAll()
 
 	if toCancel.hasCancelled() && !TheConfig.Paper {
 		Discordf("Cleared expired grids - Skip current run")
@@ -318,7 +317,7 @@ func tick() error {
 	sessionSymbols := gGrids.existingSymbols.Clone()
 	for c, s := range bundle.FilteredSortedBySD.strategies {
 		Discordf(display(s, nil, "New", c+1, len(bundle.FilteredSortedBySD.strategies)))
-		if gGrids.existingSIds.Contains(s.SID) {
+		if gGrids.existingSIDs.Contains(s.SID) {
 			Discordf("Strategy exists in open grids, Skip")
 			continue
 		}

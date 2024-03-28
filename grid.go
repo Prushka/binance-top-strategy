@@ -113,7 +113,7 @@ func newTrackedGrids() *TrackedGrids {
 		shorts:          mapset.NewSet[int](),
 		longs:           mapset.NewSet[int](),
 		neutrals:        mapset.NewSet[int](),
-		existingSIds:    mapset.NewSet[int](),
+		existingSIDs:    mapset.NewSet[int](),
 		existingSymbols: mapset.NewSet[string](),
 		gridsByGid:      make(map[int]*Grid),
 	}
@@ -125,7 +125,7 @@ func (tracked *TrackedGrids) Remove(id int) {
 		return
 	}
 	tracked.existingSymbols.Remove(g.Symbol)
-	tracked.existingSIds.Remove(g.SID)
+	tracked.existingSIDs.Remove(g.SID)
 	if g.Direction == DirectionMap[LONG] {
 		tracked.longs.Remove(g.GID)
 	} else if g.Direction == DirectionMap[SHORT] {
@@ -140,7 +140,7 @@ func (tracked *TrackedGrids) Remove(id int) {
 
 func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
 	tracked.existingSymbols.Add(g.Symbol)
-	tracked.existingSIds.Add(g.SID)
+	tracked.existingSIDs.Add(g.SID)
 
 	if g.Direction == DirectionMap[LONG] {
 		tracked.longs.Add(g.GID)
@@ -212,7 +212,7 @@ type TrackedGrids struct {
 	shorts           mapset.Set[int]
 	longs            mapset.Set[int]
 	neutrals         mapset.Set[int]
-	existingSIds     mapset.Set[int]
+	existingSIDs     mapset.Set[int]
 	existingSymbols  mapset.Set[string]
 	gridsByGid       map[int]*Grid
 }
@@ -249,7 +249,7 @@ func updateOpenGrids(trackContinuous bool) error {
 		}
 	}
 	Discordf("Open Pairs: %v, Open Ids: %v, Initial: %f, TotalPnL: %f, C: %f, L/S/N: %d/%d/%d",
-		gGrids.existingSymbols, gGrids.existingSIds, gGrids.totalGridInitial, gGrids.totalGridPnl, gGrids.totalGridPnl+gGrids.totalGridInitial,
+		gGrids.existingSymbols, gGrids.existingSIDs, gGrids.totalGridInitial, gGrids.totalGridPnl, gGrids.totalGridPnl+gGrids.totalGridInitial,
 		gGrids.longs.Cardinality(), gGrids.shorts.Cardinality(), gGrids.neutrals.Cardinality())
 	return nil
 }
