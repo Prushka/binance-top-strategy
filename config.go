@@ -24,6 +24,8 @@ type Config struct {
 	LeavingAsset                         float64 `env:"LEAVING_ASSET" envDefault:"10"`
 	CancelNoChangeMinutes                int     `env:"CANCEL_NO_CHANGE_MINUTES" envDefault:"15"`
 	CancelSymbolDirectionShrink          float64 `env:"CANCEL_SYMBOL_DIRECTION_SHRINK" envDefault:"0.82"`
+	CancelWithLossSymbolDirectionShrink  float64 `env:"CANCEL_WITH_LOSS_SYMBOL_DIRECTION_SHRINK" envDefault:"0.65"`
+	MaxLossWithSymbolDirectionShrink     float64 `env:"MAX_LOSS_WITH_SYMBOL_DIRECTION_SHRINK" envDefault:"-0.2"`
 	TradingBlockMinutesAfterCancel       int     `env:"TRADING_BLOCK_MINUTES_AFTER_CANCEL" envDefault:"3"`
 	GainExitNotGoingUp                   float64 `env:"GAIN_EXIT_NOT_GOING_UP" envDefault:"0.8"`
 	GainExitNotGoingUpMaxLookBackMinutes int     `env:"GAIN_EXIT_MAX_LOOK_BACK" envDefault:"5"`
@@ -33,7 +35,7 @@ type Config struct {
 	MaxLongs                             int     `env:"MAX_LONGS" envDefault:"-1"`
 	MaxNeutrals                          int     `env:"MAX_NEUTRALS" envDefault:"-1"`
 	MaxCancelLoss                        float64 `env:"MAX_CANCEL_LOSS" envDefault:"0"`
-	MaxCancelLostStrategyDeleted         float64 `env:"MAX_CANCEL_LOST_STRATEGY_DELETED" envDefault:"-0.2"`
+	MaxCancelLossStrategyDeleted         float64 `env:"MAX_CANCEL_LOSS_STRATEGY_DELETED" envDefault:"-0.2"`
 	Mode                                 string  `env:"MODE" envDefault:"trading"`
 	MaxLeverage                          int     `env:"LEVERAGE" envDefault:"40"`
 	KeepTopNStrategiesOfSameSymbol       int     `env:"KEEP_TOP_N_STRATEGIES_OF_SAME_SYMBOL" envDefault:"99"`

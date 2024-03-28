@@ -217,6 +217,7 @@ func tick() error {
 		count++
 	}
 	expiredCopiedIds := gGrids.existingIds.Difference(bundle.FilteredSortedBySD.ids)
+	gidsAcceptLoss := make(map[int]float64)
 	for _, grid := range gGrids.gridsByUid {
 		if !expiredCopiedIds.Contains(grid.SID) {
 			// exit signal: outdated direction
@@ -240,6 +241,7 @@ func tick() error {
 			// exit signal: symbol direction shrunk in raw strategies
 			_, _, ratio := gridSDCount(grid.GID, grid.Symbol, grid.Direction)
 			if ratio < TheConfig.CancelSymbolDirectionShrink {
+				suffix := ""
 				expiredCopiedIds.Add(grid.SID)
 				minutesTillNextHour := 60 - time.Now().Minute()
 				blockDuration := 75 * time.Minute
@@ -247,8 +249,12 @@ func tick() error {
 					blockDuration = time.Duration(minutesTillNextHour+75) * time.Minute
 				}
 				addSymbolDirectionToBlacklist(grid.Symbol, grid.Direction, blockDuration)
+				if ratio < TheConfig.CancelWithLossSymbolDirectionShrink {
+					suffix = fmt.Sprintf("Accept Max Loss - %f", TheConfig.CancelWithLossSymbolDirectionShrink)
+					gidsAcceptLoss[grid.GID] = TheConfig.MaxLossWithSymbolDirectionShrink
+				}
 				Discordf(display(globalStrategies[grid.SID], grid,
-					fmt.Sprintf("**Direction shrink: %.2f**", ratio),
+					fmt.Sprintf("**Direction shrink: %.2f %s**", ratio, suffix),
 					0, 0))
 			}
 		}
@@ -266,9 +272,13 @@ func tick() error {
 		maxCancelLoss := TheConfig.MaxCancelLoss
 		if !bundle.Raw.exists(strategyId) {
 			reason += "Strategy not found"
-			maxCancelLoss = TheConfig.MaxCancelLostStrategyDeleted
+			maxCancelLoss = TheConfig.MaxCancelLossStrategyDeleted
 		} else if ok && !bundle.FilteredSortedBySD.exists(strategyId) {
 			reason += "Strategy not picked"
+		}
+		if loss, ok := gidsAcceptLoss[id]; ok {
+			maxCancelLoss = math.Min(maxCancelLoss, loss)
+			reason += " Accept Loss - Predefined"
 		}
 		if grid.lastRoi < maxCancelLoss {
 			reason += " too much loss"
