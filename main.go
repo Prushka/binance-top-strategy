@@ -27,8 +27,9 @@ type SDCountPair struct {
 }
 
 type StrategiesBundle struct {
-	Raw      *TrackedStrategies
-	Filtered *TrackedStrategies
+	Raw                    *TrackedStrategies
+	FilteredSortedBySD     *TrackedStrategies
+	FilteredSortedByMetric *TrackedStrategies
 }
 
 type StateOnGridOpen struct {
@@ -139,10 +140,11 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 	for _, sd := range sdLengths {
 		sortedBySDCount = append(sortedBySDCount, filteredBySymbolDirection[sd.SymbolDirection]...)
 	}
-	bundle := &StrategiesBundle{Raw: strategies, Filtered: sortedBySDCount.toTrackedStrategies()}
+	bundle := &StrategiesBundle{Raw: strategies, FilteredSortedBySD: sortedBySDCount.toTrackedStrategies(),
+		FilteredSortedByMetric: filtered.toTrackedStrategies()}
 	Discordf("### Strategies")
 	Discordf("Raw: " + bundle.Raw.String())
-	Discordf("Open: " + bundle.Filtered.String())
+	Discordf("Open: " + bundle.FilteredSortedBySD.String())
 	return bundle, nil
 }
 
@@ -210,16 +212,16 @@ func tick() error {
 	for _, grid := range gGrids.gridsByUid {
 		sid := grid.SID
 		Discordf(display(globalStrategies[sid], grid,
-			fmt.Sprintf("%d, %d", bundle.Raw.findStrategyRanking(sid), bundle.Filtered.findStrategyRanking(sid)),
+			fmt.Sprintf("%d, %d", bundle.Raw.findStrategyRanking(sid), bundle.FilteredSortedBySD.findStrategyRanking(sid)),
 			count+1, len(gGrids.gridsByUid)))
 		count++
 	}
-	expiredCopiedIds := gGrids.existingIds.Difference(bundle.Filtered.ids)
+	expiredCopiedIds := gGrids.existingIds.Difference(bundle.FilteredSortedBySD.ids)
 	for _, grid := range gGrids.gridsByUid {
 		if !expiredCopiedIds.Contains(grid.SID) {
 			// exit signal: outdated direction
 			symbolDifferentDirectionsHigherRanking := 0
-			for _, s := range bundle.Filtered.strategies {
+			for _, s := range bundle.FilteredSortedByMetric.strategies {
 				if s.Symbol == grid.Symbol {
 					if DirectionMap[s.Direction] != grid.Direction {
 						symbolDifferentDirectionsHigherRanking++
@@ -265,7 +267,7 @@ func tick() error {
 		if !bundle.Raw.exists(strategyId) {
 			reason += "Strategy not found"
 			maxCancelLoss = TheConfig.MaxCancelLostStrategyDeleted
-		} else if ok && !bundle.Filtered.exists(strategyId) {
+		} else if ok && !bundle.FilteredSortedBySD.exists(strategyId) {
 			reason += "Strategy not picked"
 		}
 		if grid.lastRoi < maxCancelLoss {
@@ -324,7 +326,7 @@ func tick() error {
 		Discordf("Max Chunks reached, No cancel - Skip current run")
 		return nil
 	}
-	if mapset.NewSetFromMapKeys(bundle.Filtered.symbolCount).Difference(gGrids.existingSymbols).Cardinality() == 0 && !TheConfig.Paper {
+	if mapset.NewSetFromMapKeys(bundle.FilteredSortedBySD.symbolCount).Difference(gGrids.existingSymbols).Cardinality() == 0 && !TheConfig.Paper {
 		Discordf("All symbols exists in open grids, Skip")
 		return nil
 	}
@@ -342,8 +344,8 @@ func tick() error {
 		invChunk = idealInvChunk
 	}
 	sessionSymbols := gGrids.existingSymbols.Clone()
-	for c, s := range bundle.Filtered.strategies {
-		Discordf(display(s, nil, "New", c+1, len(bundle.Filtered.strategies)))
+	for c, s := range bundle.FilteredSortedBySD.strategies {
+		Discordf(display(s, nil, "New", c+1, len(bundle.FilteredSortedBySD.strategies)))
 		if gGrids.existingIds.Contains(s.SID) {
 			Discordf("Strategy exists in open grids, Skip")
 			continue
@@ -398,7 +400,7 @@ func tick() error {
 				break
 			}
 		} else {
-			DiscordWebhookS(display(s, nil, "**Opened Grid**", c+1, len(bundle.Filtered.strategies)), ActionWebhook, DefaultWebhook)
+			DiscordWebhookS(display(s, nil, "**Opened Grid**", c+1, len(bundle.FilteredSortedBySD.strategies)), ActionWebhook, DefaultWebhook)
 			chunksInt -= 1
 			sessionSymbols.Add(s.Symbol)
 			if chunksInt <= 0 {
@@ -418,6 +420,8 @@ func tick() error {
 
 // percentage of direction in same symbol group in filtered
 // use it to cancel
+
+// strict stop gain then block
 
 // TODO: cancel when above n%, then cooldown?
 // perform last 20 min roi (latest - last 20 OR if max roi was reached more than 20 min ago), if not positive and stop gain, cancel then block symbolpairdirection until next hr
