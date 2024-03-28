@@ -221,53 +221,51 @@ func tick() error {
 	expiredCopiedIds := gGrids.existingIds.Difference(bundle.FilteredSortedBySD.ids)
 	gidsAcceptLoss := make(map[int]float64)
 	for _, grid := range gGrids.gridsByUid {
-		if !expiredCopiedIds.Contains(grid.SID) {
-			// exit signal: outdated direction
-			symbolDifferentDirectionsHigherRanking := 0
-			possibleDirections := mapset.NewSet[string]()
-			for _, s := range bundle.FilteredSortedByMetric.strategies {
-				if s.Symbol == grid.Symbol {
-					if DirectionMap[s.Direction] != grid.Direction {
-						symbolDifferentDirectionsHigherRanking++
-						possibleDirections.Add(DirectionMap[s.Direction])
-					} else {
-						break
-					}
-				}
-			}
-			existsNonBlacklistedOpposite := false
-			for _, d := range possibleDirections.ToSlice() {
-				if bl, _ := SymbolDirectionBlacklisted(grid.Symbol, d); !bl {
-					existsNonBlacklistedOpposite = true
+		// exit signal: outdated direction
+		symbolDifferentDirectionsHigherRanking := 0
+		possibleDirections := mapset.NewSet[string]()
+		for _, s := range bundle.FilteredSortedByMetric.strategies {
+			if s.Symbol == grid.Symbol {
+				if DirectionMap[s.Direction] != grid.Direction {
+					symbolDifferentDirectionsHigherRanking++
+					possibleDirections.Add(DirectionMap[s.Direction])
+				} else {
 					break
 				}
 			}
-			if symbolDifferentDirectionsHigherRanking >= 2 && existsNonBlacklistedOpposite {
-				expiredCopiedIds.Add(grid.SID)
-				Discordf(display(globalStrategies[grid.SID], grid,
-					fmt.Sprintf("**Opposite directions at top: %d**", symbolDifferentDirectionsHigherRanking),
-					0, 0))
+		}
+		existsNonBlacklistedOpposite := false
+		for _, d := range possibleDirections.ToSlice() {
+			if bl, _ := SymbolDirectionBlacklisted(grid.Symbol, d); !bl {
+				existsNonBlacklistedOpposite = true
+				break
 			}
+		}
+		if symbolDifferentDirectionsHigherRanking >= 2 && existsNonBlacklistedOpposite {
+			expiredCopiedIds.Add(grid.SID)
+			Discordf(display(globalStrategies[grid.SID], grid,
+				fmt.Sprintf("**Opposite directions at top: %d**", symbolDifferentDirectionsHigherRanking),
+				0, 0))
+		}
 
-			// exit signal: symbol direction shrunk in raw strategies
-			_, _, ratio := gridSDCount(grid.GID, grid.Symbol, grid.Direction)
-			if ratio < TheConfig.CancelSymbolDirectionShrink {
-				suffix := ""
-				expiredCopiedIds.Add(grid.SID)
-				minutesTillNextHour := 60 - time.Now().Minute()
-				blockDuration := 75 * time.Minute
-				if minutesTillNextHour < 30 {
-					blockDuration = time.Duration(minutesTillNextHour+75) * time.Minute
-				}
-				addSymbolDirectionToBlacklist(grid.Symbol, grid.Direction, blockDuration)
-				if ratio < TheConfig.CancelWithLossSymbolDirectionShrink {
-					suffix = fmt.Sprintf("Accept Max Loss - %f", TheConfig.MaxLossWithSymbolDirectionShrink)
-					gidsAcceptLoss[grid.GID] = TheConfig.MaxLossWithSymbolDirectionShrink
-				}
-				Discordf(display(globalStrategies[grid.SID], grid,
-					fmt.Sprintf("**Direction shrink: %.2f %s**", ratio, suffix),
-					0, 0))
+		// exit signal: symbol direction shrunk in raw strategies
+		_, _, ratio := gridSDCount(grid.GID, grid.Symbol, grid.Direction)
+		if ratio < TheConfig.CancelSymbolDirectionShrink {
+			suffix := ""
+			expiredCopiedIds.Add(grid.SID)
+			minutesTillNextHour := 60 - time.Now().Minute()
+			blockDuration := 75 * time.Minute
+			if minutesTillNextHour < 30 {
+				blockDuration = time.Duration(minutesTillNextHour+75) * time.Minute
 			}
+			addSymbolDirectionToBlacklist(grid.Symbol, grid.Direction, blockDuration)
+			if ratio < TheConfig.CancelWithLossSymbolDirectionShrink {
+				suffix = fmt.Sprintf("Accept Max Loss - %f", TheConfig.MaxLossWithSymbolDirectionShrink)
+				gidsAcceptLoss[grid.GID] = TheConfig.MaxLossWithSymbolDirectionShrink
+			}
+			Discordf(display(globalStrategies[grid.SID], grid,
+				fmt.Sprintf("**Direction shrink: %.2f %s**", ratio, suffix),
+				0, 0))
 		}
 	}
 	if expiredCopiedIds.Cardinality() > 0 {
