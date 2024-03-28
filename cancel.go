@@ -20,6 +20,7 @@ func (tc GridToCancel) CanCancel() bool {
 
 func (tc GridToCancel) Cancel() error {
 	grid := tc.Grid
+	webhooks := []int{DefaultWebhook}
 	if tc.CanCancel() {
 		err := closeGrid(grid.GID)
 		if err != nil {
@@ -27,11 +28,12 @@ func (tc GridToCancel) Cancel() error {
 		}
 		tc.Cancelled = true
 		DiscordWebhookS(display(nil, grid, "**Cancelled**", 0, 0), ActionWebhook, DefaultWebhook)
+		webhooks = append(webhooks, ActionWebhook)
 	} else {
 		Discordf(display(nil, grid, "**Skip Cancel**", 0, 0))
 	}
 	for _, reason := range tc.Reasons {
-		DiscordWebhookS(" * "+reason, ActionWebhook, DefaultWebhook)
+		DiscordWebhookS(" * "+reason, webhooks...)
 	}
 	return nil
 }
