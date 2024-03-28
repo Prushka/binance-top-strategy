@@ -224,16 +224,25 @@ func tick() error {
 		if !expiredCopiedIds.Contains(grid.SID) {
 			// exit signal: outdated direction
 			symbolDifferentDirectionsHigherRanking := 0
+			possibleDirections := mapset.NewSet[string]()
 			for _, s := range bundle.FilteredSortedByMetric.strategies {
 				if s.Symbol == grid.Symbol {
 					if DirectionMap[s.Direction] != grid.Direction {
 						symbolDifferentDirectionsHigherRanking++
+						possibleDirections.Add(DirectionMap[s.Direction])
 					} else {
 						break
 					}
 				}
 			}
-			if symbolDifferentDirectionsHigherRanking >= 2 {
+			existsNonBlacklistedOpposite := false
+			for _, d := range possibleDirections.ToSlice() {
+				if bl, _ := SymbolDirectionBlacklisted(grid.Symbol, d); !bl {
+					existsNonBlacklistedOpposite = true
+					break
+				}
+			}
+			if symbolDifferentDirectionsHigherRanking >= 2 && existsNonBlacklistedOpposite {
 				expiredCopiedIds.Add(grid.SID)
 				Discordf(display(globalStrategies[grid.SID], grid,
 					fmt.Sprintf("**Opposite directions at top: %d**", symbolDifferentDirectionsHigherRanking),
