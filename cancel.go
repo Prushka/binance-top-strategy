@@ -31,7 +31,7 @@ func (tc GridToCancel) Cancel() error {
 		Discordf(display(nil, grid, "**Skip Cancel**", 0, 0))
 	}
 	for _, reason := range tc.Reasons {
-		Discordf("*" + reason)
+		Discordf(" * " + reason)
 	}
 	return nil
 }
@@ -75,7 +75,7 @@ func (g GridsToCancel) hasCancelled() bool {
 func (g GridsToCancel) String() string {
 	var s []string
 	for _, tc := range g {
-		s = append(s, fmt.Sprintf("%d: %s, %.2f%%", tc.Grid.GID, tc.Grid.Symbol, tc.MaxLoss))
+		s = append(s, fmt.Sprintf("%d: %s, %.2f%%", tc.Grid.GID, tc.Grid.Symbol, tc.MaxLoss*100))
 	}
 	return strings.Join(s, " | ")
 }
