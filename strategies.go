@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
+	"slices"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -254,16 +256,17 @@ func (r StrategyRoi) lastNRecords(n int) string {
 	if len(r) < n {
 		n = len(r)
 	}
-	ss := ""
+	var ss []string
 	for i := 0; i < n; i++ {
-		ss += fmt.Sprintf("%.2f%%, ", r[i].Roi*100)
+		ss = append(ss, fmt.Sprintf("%.2f%%", r[i].Roi*100))
 	}
-	return ss
+	slices.Reverse(ss)
+	return strings.Join(ss, ", ")
 }
 
 func (s Strategy) String() string {
 	pnl, _ := strconv.ParseFloat(s.Pnl, 64)
-	return fmt.Sprintf("Cpy: %d, Mch: [%d, %d], PnL: %.2f, Rois: %s[H%%, A/Day/12Hr: %.1f%%/%.1f%%/%.1f%%], [A/D/3/2/1H: %s%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s",
+	return fmt.Sprintf("Cpy: %d, Mch: [%d, %d], PnL: %.2f, Rois: %s, [H%%, A/Day/12Hr: %.1f%%/%.1f%%/%.1f%%], [A/D/3/2/1H: %s%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s",
 		s.CopyCount, s.MatchedCount, s.LatestMatchedCount, pnl, s.Rois.lastNRecords(TheConfig.LastNHoursNoDips), s.roiPerHour*100, s.lastDayRoiPerHr*100, s.last12HrRoiPerHr*100, s.Roi,
 		s.lastDayRoiChange*100, s.last3HrRoiChange*100, s.last2HrRoiChange*100, s.lastHrRoiChange*100, s.MinInvestment)
 }
