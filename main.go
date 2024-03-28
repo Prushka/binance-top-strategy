@@ -104,6 +104,7 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 				s.lastDayRoiPerHr > 0.01 &&
 				s.last12HrRoiPerHr > 0.014 &&
 				s.priceDifference > 0.05 &&
+				// TODO: price difference can shrink with trailing, e.g., 5.xx% -> 4.xx%
 				s.last6HrNoDip {
 				filtered = append(filtered, s)
 				prefix += "Open"
