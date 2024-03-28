@@ -31,7 +31,7 @@ func (tc GridToCancel) Cancel() error {
 		Discordf(display(nil, grid, "**Skip Cancel**", 0, 0))
 	}
 	for _, reason := range tc.Reasons {
-		Discordf(" * " + reason)
+		DiscordWebhookS(" * "+reason, ActionWebhook, DefaultWebhook)
 	}
 	return nil
 }

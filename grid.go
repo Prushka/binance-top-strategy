@@ -242,9 +242,9 @@ func updateOpenGrids(trackContinuous bool) error {
 	for _, g := range gGrids.gridsByGid {
 		if !currentIds.Contains(g.GID) {
 			gGrids.Remove(g.GID)
-			Discordf(display(nil, g,
+			DiscordWebhookS(display(nil, g,
 				fmt.Sprintf("**Gone - Block for %d Minutes**", TheConfig.TradingBlockMinutesAfterCancel),
-				0, 0))
+				0, 0), ActionWebhook, DefaultWebhook)
 			tradingBlock = time.Now().Add(time.Duration(TheConfig.TradingBlockMinutesAfterCancel) * time.Minute)
 		}
 	}
