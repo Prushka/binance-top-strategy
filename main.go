@@ -213,7 +213,7 @@ func tick() error {
 	count := 0
 	for _, grid := range gGrids.gridsByUid {
 		sid := grid.SID
-		Discordf(display(globalStrategies[sid], grid,
+		Discordf(display(nil, grid,
 			fmt.Sprintf("%d, %d", bundle.Raw.findStrategyRanking(sid), bundle.FilteredSortedBySD.findStrategyRanking(sid)),
 			count+1, len(gGrids.gridsByUid)))
 		count++
@@ -243,7 +243,7 @@ func tick() error {
 		}
 		if symbolDifferentDirectionsHigherRanking >= 2 && existsNonBlacklistedOpposite {
 			expiredCopiedIds.Add(grid.SID)
-			Discordf(display(globalStrategies[grid.SID], grid,
+			Discordf(display(nil, grid,
 				fmt.Sprintf("**Opposite directions at top: %d**", symbolDifferentDirectionsHigherRanking),
 				0, 0))
 		}
@@ -263,7 +263,7 @@ func tick() error {
 				suffix = fmt.Sprintf("Accept Max Loss - %f", TheConfig.MaxLossWithSymbolDirectionShrink)
 				gidsAcceptLoss[grid.GID] = TheConfig.MaxLossWithSymbolDirectionShrink
 			}
-			Discordf(display(globalStrategies[grid.SID], grid,
+			Discordf(display(nil, grid,
 				fmt.Sprintf("**Direction shrink: %.2f %s**", ratio, suffix),
 				0, 0))
 		}
@@ -277,12 +277,11 @@ func tick() error {
 		reason := ""
 		grid := gGrids.gridsByUid[gid]
 		strategyId := grid.SID
-		att, ok := globalStrategies[strategyId]
 		maxCancelLoss := TheConfig.MaxCancelLoss
 		if !bundle.Raw.exists(strategyId) {
 			reason += "Strategy not found"
 			maxCancelLoss = TheConfig.MaxCancelLossStrategyDeleted
-		} else if ok && !bundle.FilteredSortedBySD.exists(strategyId) {
+		} else if !bundle.FilteredSortedBySD.exists(strategyId) {
 			reason += "Strategy not picked"
 		}
 		if loss, ok := gidsAcceptLoss[gid]; ok {
@@ -291,7 +290,7 @@ func tick() error {
 		}
 		if grid.lastRoi < maxCancelLoss {
 			reason += " too much loss"
-			Discordf(display(att, grid, "**Skip Cancel "+reason+"**", c+1, expiredCopiedIds.Cardinality()))
+			Discordf(display(nil, grid, "**Skip Cancel "+reason+"**", c+1, expiredCopiedIds.Cardinality()))
 			continue
 		}
 		err := closeGrid(gid)
@@ -299,7 +298,7 @@ func tick() error {
 			return err
 		}
 		closedIds.Add(gid)
-		DiscordWebhookS(display(att, grid, "**Cancelled "+reason+"**", c+1, expiredCopiedIds.Cardinality()), ActionWebhook, DefaultWebhook)
+		DiscordWebhookS(display(nil, grid, "**Cancelled "+reason+"**", c+1, expiredCopiedIds.Cardinality()), ActionWebhook, DefaultWebhook)
 	}
 
 	for _, grid := range gGrids.gridsByUid {
@@ -309,7 +308,7 @@ func tick() error {
 				return err
 			}
 			closedIds.Add(grid.GID)
-			DiscordWebhookS(display(globalStrategies[grid.SID], grid,
+			DiscordWebhookS(display(nil, grid,
 				fmt.Sprintf("**Cancelled No Change - %s**", time.Since(grid.tracking.timeLastChange).Round(time.Second)),
 				0, 0), ActionWebhook, DefaultWebhook)
 			addSIDToBlacklist(grid.SID, 10*time.Minute)
@@ -324,7 +323,7 @@ func tick() error {
 					return err
 				}
 				closedIds.Add(grid.GID)
-				DiscordWebhookS(display(globalStrategies[grid.SID], grid,
+				DiscordWebhookS(display(nil, grid,
 					fmt.Sprintf("**Cancelled, max gain %.2f%%/%.2f%%, reached %s ago**",
 						grid.lastRoi*100, grid.tracking.highestRoi*100,
 						time.Since(grid.tracking.timeHighestRoi).Round(time.Second)),
