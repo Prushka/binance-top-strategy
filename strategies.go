@@ -228,6 +228,7 @@ type Strategy struct {
 	lastHrRoiChange  float64
 	lastDayRoiPerHr  float64
 	last12HrRoiPerHr float64
+	last6HrRoiPerHr  float64
 	lastNHrNoDip     bool
 	roiPerHour       float64
 	priceDifference  float64
@@ -266,8 +267,9 @@ func (r StrategyRoi) lastNRecords(n int) string {
 
 func (s Strategy) String() string {
 	pnl, _ := strconv.ParseFloat(s.Pnl, 64)
-	return fmt.Sprintf("Cpy: %d, Mch: [%d, %d], PnL: %.2f, Rois: %s, [H%%, A/Day/12Hr: %.1f%%/%.1f%%/%.1f%%], [A/D/3/2/1H: %s%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s",
-		s.CopyCount, s.MatchedCount, s.LatestMatchedCount, pnl, s.Rois.lastNRecords(TheConfig.LastNHoursNoDips), s.roiPerHour*100, s.lastDayRoiPerHr*100, s.last12HrRoiPerHr*100, s.Roi,
+	return fmt.Sprintf("Cpy: %d, Mch: [%d, %d], PnL: %.2f, Rois: %s, [H%%, A/Day/12H/6H: %.1f%%/%.1f%%/%.1f%%/%.1f%%], [A/D/3/2/1H: %s%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s",
+		s.CopyCount, s.MatchedCount, s.LatestMatchedCount, pnl, s.Rois.lastNRecords(TheConfig.LastNHoursNoDips),
+		s.roiPerHour*100, s.lastDayRoiPerHr*100, s.last12HrRoiPerHr*100, s.last6HrRoiPerHr*100, s.Roi,
 		s.lastDayRoiChange*100, s.last3HrRoiChange*100, s.last2HrRoiChange*100, s.lastHrRoiChange*100, s.MinInvestment)
 }
 
@@ -285,7 +287,7 @@ func display(s *Strategy, grid *Grid, action string, index int, length int) stri
 	runTime := ""
 	priceRange := ""
 	grids := ""
-	marketPrice, _ := getSessionSymbolPrice(s.Symbol)
+	marketPrice := 0.0
 	formatPriceRange := func(lower, upper string) string {
 		l, _ := strconv.ParseFloat(lower, 64)
 		u, _ := strconv.ParseFloat(upper, 64)
@@ -296,6 +298,7 @@ func display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		return fmt.Sprintf("%s", shortDur((time.Duration(rt) * time.Second).Round(time.Minute)))
 	}
 	if grid == nil {
+		marketPrice, _ = getSessionSymbolPrice(s.Symbol)
 		direction = DirectionMap[s.Direction]
 		symbol = s.Symbol
 		strategyId = fmt.Sprintf("%d", s.SID)
@@ -304,6 +307,7 @@ func display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		priceRange = formatPriceRange(s.StrategyParams.LowerLimit, s.StrategyParams.UpperLimit)
 		grids = fmt.Sprintf("%d", s.StrategyParams.GridCount)
 	} else {
+		marketPrice, _ = fetchMarketPrice(grid.Symbol)
 		direction = grid.Direction
 		symbol = grid.Symbol
 		strategyId = fmt.Sprintf("%d", grid.SID)

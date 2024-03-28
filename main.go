@@ -95,6 +95,7 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 			s.lastHrRoiChange = GetRoiChange(s.Rois, 1*time.Hour)
 			s.lastDayRoiPerHr = GetRoiPerHr(s.Rois, 24*time.Hour)
 			s.last12HrRoiPerHr = GetRoiPerHr(s.Rois, 12*time.Hour)
+			s.last6HrRoiPerHr = GetRoiPerHr(s.Rois, 6*time.Hour)
 			s.lastNHrNoDip = NoDip(s.Rois, time.Duration(TheConfig.LastNHoursNoDips)*time.Hour)
 			s.roiPerHour = (s.roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
 			prefix := ""
@@ -104,6 +105,7 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 				s.last2HrRoiChange > s.lastHrRoiChange &&
 				s.lastDayRoiPerHr > 0.01 &&
 				s.last12HrRoiPerHr > 0.014 &&
+				s.last6HrRoiPerHr > 0.014 &&
 				s.priceDifference > 0.05 &&
 				// TODO: price difference can shrink with trailing, e.g., 5.xx% -> 4.xx%
 				s.lastNHrNoDip {
@@ -116,7 +118,7 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 	sort.Slice(filtered, func(i, j int) bool {
 		I := filtered[i]
 		J := filtered[j]
-		return I.last12HrRoiPerHr > J.last12HrRoiPerHr
+		return I.last6HrRoiPerHr > J.last6HrRoiPerHr
 	})
 	filteredBySymbolDirection := make(map[string]Strategies)
 	for _, s := range filtered {
@@ -128,7 +130,7 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 	}
 	sdLengths := make([]SDCountPair, 0)
 	for sd, s := range filteredBySymbolDirection {
-		sdLengths = append(sdLengths, SDCountPair{SymbolDirection: sd, Count: len(s), MaxMetric: s[0].last12HrRoiPerHr})
+		sdLengths = append(sdLengths, SDCountPair{SymbolDirection: sd, Count: len(s), MaxMetric: s[0].last6HrRoiPerHr})
 	}
 	sort.Slice(sdLengths, func(i, j int) bool {
 		if sdLengths[i].Count == sdLengths[j].Count {
