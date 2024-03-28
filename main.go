@@ -218,7 +218,6 @@ func tick() error {
 			count+1, len(gGrids.gridsByGid)))
 		count++
 	}
-	//expiredCopiedIds := gGrids.existingSIds.Difference(bundle.FilteredSortedBySD.ids)
 	toCancel := make(GridsToCancel)
 	for _, grid := range gGrids.gridsByGid {
 		// exit signal: outdated direction
