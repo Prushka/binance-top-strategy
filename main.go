@@ -452,9 +452,10 @@ func main() {
 			log.Errorf("Error: %v", err)
 			return
 		}
-		scheduler.StartBlocking()
 
 	case "extract-cookies":
 
 	}
+
+	scheduler.StartBlocking()
 }

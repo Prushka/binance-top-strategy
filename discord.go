@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gtuk/discordwebhook"
 	log "github.com/sirupsen/logrus"
+	"sync"
 	"time"
 )
 
@@ -13,7 +14,8 @@ type DiscordMessagePayload struct {
 	WebhookType int    `json:"webhookType"`
 }
 
-var discordMessageChan = make(chan DiscordMessagePayload, 5000)
+var discordMessages = make(map[int][]string)
+var discordMessagesMutex sync.RWMutex
 
 func DiscordJson(chat string) string {
 	return "```json\n" + chat + "\n```"
@@ -29,20 +31,45 @@ func Discordf(format string, args ...any) {
 
 func DiscordWebhookS(chat string, webhookTypes ...int) {
 	log.Info(chat)
+	discordMessagesMutex.Lock()
+	defer discordMessagesMutex.Unlock()
 	for _, webhookType := range webhookTypes {
-		discordMessageChan <- DiscordMessagePayload{Content: chat, WebhookType: webhookType}
+		discordMessages[webhookType] = append(discordMessages[webhookType], chat)
 	}
 }
 
 func DiscordService() {
-	go func() {
-		for {
-			select {
-			case chat := <-discordMessageChan:
-				DiscordSend(chat)
+	_, err := scheduler.SingletonMode().Every(5).Seconds().Do(func() {
+		discordMessagesMutex.Lock()
+		currentMessages := make(map[int][]string)
+		for k, v := range discordMessages {
+			currentMessages[k] = v
+		}
+		clear(discordMessages)
+		discordMessagesMutex.Unlock()
+		for webhookType, messages := range currentMessages {
+			if len(messages) > 0 {
+				chunks := make([]string, 0)
+				for _, message := range messages {
+					if len(chunks) == 0 {
+						chunks = append(chunks, message)
+						continue
+					}
+					if len(chunks[len(chunks)-1])+len(message) > 2000 {
+						chunks = append(chunks, message)
+					} else {
+						chunks[len(chunks)-1] = chunks[len(chunks)-1] + "\n" + message
+					}
+				}
+				for _, chunk := range chunks {
+					DiscordSend(DiscordMessagePayload{Content: chunk, WebhookType: webhookType})
+				}
 			}
 		}
-	}()
+	})
+	if err != nil {
+		log.Fatalf("error scheduling discord service: %v", err)
+	}
 }
 
 type DiscordError struct {
@@ -92,6 +119,8 @@ func DiscordSend(payload DiscordMessagePayload) {
 		if de.RetryAfter > 0 {
 			time.Sleep(time.Duration(de.RetryAfter) * time.Second)
 			DiscordSend(payload)
+		} else {
+			log.Errorf("error sending message to discord: %v", err)
 		}
 	}
 }
