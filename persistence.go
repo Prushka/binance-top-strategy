@@ -7,6 +7,7 @@ import (
 
 const (
 	GridStatesFileName = "grid_states.json"
+	BlacklistFileName  = "blacklist.json"
 )
 
 func getFullPath(fileName string) string {

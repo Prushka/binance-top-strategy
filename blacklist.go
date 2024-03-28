@@ -14,9 +14,29 @@ var blacklist = &Blacklist{BySID: make(map[int]time.Time),
 	BySymbolDirection: make(map[string]time.Time),
 	BySymbol:          make(map[string]time.Time)}
 
+func persistBlacklist() {
+	err := save(blacklist, BlacklistFileName)
+	if err != nil {
+		Discordf("Error saving blacklist: %v", err)
+	}
+}
+
 func addSymbolDirectionToBlacklist(symbol, direction string, d time.Duration) {
 	blacklist.BySymbolDirection[symbol+direction] = time.Now().Add(d)
 	Discordf("**Add blacklist:** %s, %s, %s", symbol, direction, d)
+	persistBlacklist()
+}
+
+func addSIDToBlacklist(id int, d time.Duration) {
+	blacklist.BySID[id] = time.Now().Add(d)
+	Discordf("**Add blacklist:** %d, %s", id, d)
+	persistBlacklist()
+}
+
+func addSymbolToBlacklist(symbol string, d time.Duration) {
+	blacklist.BySymbol[symbol] = time.Now().Add(d)
+	Discordf("**Add blacklist:** %s, %s", symbol, d)
+	persistBlacklist()
 }
 
 func SymbolDirectionBlacklisted(symbol, direction string) (bool, time.Time) {
@@ -30,11 +50,6 @@ func SymbolDirectionBlacklisted(symbol, direction string) (bool, time.Time) {
 	return false, time.Time{}
 }
 
-func addSIDToBlacklist(id int, d time.Duration) {
-	blacklist.BySID[id] = time.Now().Add(d)
-	Discordf("**Add blacklist:** %d, %s", id, d)
-}
-
 func SIDBlacklisted(id int) (bool, time.Time) {
 	if t, ok := blacklist.BySID[id]; ok {
 		if time.Now().Before(t) {
@@ -44,11 +59,6 @@ func SIDBlacklisted(id int) (bool, time.Time) {
 		}
 	}
 	return false, time.Time{}
-}
-
-func addSymbolToBlacklist(symbol string, d time.Duration) {
-	blacklist.BySymbol[symbol] = time.Now().Add(d)
-	Discordf("**Add blacklist:** %s, %s", symbol, d)
 }
 
 func SymbolBlacklisted(symbol string) (bool, time.Time) {
