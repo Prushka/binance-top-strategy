@@ -143,8 +143,8 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 	bundle := &StrategiesBundle{Raw: strategies, FilteredSortedBySD: sortedBySDCount.toTrackedStrategies(),
 		FilteredSortedByMetric: filtered.toTrackedStrategies()}
 	Discordf("### Strategies")
-	Discordf("Raw: " + bundle.Raw.String())
-	Discordf("Open: " + bundle.FilteredSortedBySD.String())
+	Discordf("* Raw: " + bundle.Raw.String())
+	Discordf("* Open: " + bundle.FilteredSortedBySD.String())
 	return bundle, nil
 }
 

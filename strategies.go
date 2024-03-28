@@ -263,7 +263,7 @@ func (r StrategyRoi) lastNRecords(n int) string {
 
 func (s Strategy) String() string {
 	pnl, _ := strconv.ParseFloat(s.Pnl, 64)
-	return fmt.Sprintf("Cpy: %d, Mch: [%d, %d], PnL: %.2f, Rois: %s[H%%: A/Day/12Hr|%.1f%%/%.1f%%/%.1f%%], [A/D/3/2/1H: %s%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s",
+	return fmt.Sprintf("Cpy: %d, Mch: [%d, %d], PnL: %.2f, Rois: %s[H%%, A/Day/12Hr: %.1f%%/%.1f%%/%.1f%%], [A/D/3/2/1H: %s%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s",
 		s.CopyCount, s.MatchedCount, s.LatestMatchedCount, pnl, s.Rois.lastNRecords(TheConfig.LastNHoursNoDips), s.roiPerHour*100, s.lastDayRoiPerHr*100, s.last12HrRoiPerHr*100, s.Roi,
 		s.lastDayRoiChange*100, s.last3HrRoiChange*100, s.last2HrRoiChange*100, s.lastHrRoiChange*100, s.MinInvestment)
 }
@@ -340,7 +340,7 @@ func display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		seq = fmt.Sprintf("%d/%d - ", index, length)
 	}
 
-	return fmt.Sprintf("[%s%s%s, %s, %s, %s @ %f, %s Grids, %s] %s:\n%s%s",
+	return fmt.Sprintf("* [%s%s%s, %s, %s, %s @ %f, %s Grids, %s] %s:%s%s",
 		seq, symbol, direction, leverage, runTime,
 		priceRange, marketPrice, grids, strategyId, action, ss, gg)
 }
