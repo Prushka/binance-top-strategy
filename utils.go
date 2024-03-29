@@ -24,7 +24,10 @@ func shortDur(d time.Duration) string {
 
 func TillNextRefresh() time.Duration {
 	minutesTillNextHour := 60 - time.Now().Minute()
-	return time.Duration(minutesTillNextHour+20) * time.Minute
+	if minutesTillNextHour >= 30 {
+		return time.Duration(minutesTillNextHour+15) * time.Minute
+	}
+	return time.Duration(minutesTillNextHour+75) * time.Minute
 }
 
 var timing = time.Now()

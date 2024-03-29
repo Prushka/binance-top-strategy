@@ -217,7 +217,6 @@ func tick() error {
 	}
 	toCancel := make(GridsToCancel)
 	for _, grid := range gGrids.gridsByGid {
-		// exit signal: outdated direction
 		symbolDifferentDirectionsHigherRanking := 0
 		possibleDirections := mapset.NewSet[string]()
 		for _, s := range bundle.FilteredSortedByMetric.strategies {
@@ -240,17 +239,13 @@ func tick() error {
 		if symbolDifferentDirectionsHigherRanking >= 2 && existsNonBlacklistedOpposite {
 			toCancel.AddGridToCancel(grid, 0,
 				fmt.Sprintf("opposite directions at top: %d", symbolDifferentDirectionsHigherRanking))
+			addSymbolDirectionToBlacklist(grid.Symbol, grid.Direction, 10*time.Minute, "opposite directions at top")
 		}
 
 		currentSDCount, sdCountWhenOpen, ratio := gridSDCount(grid.GID, grid.Symbol, grid.Direction)
 		if ratio < TheConfig.CancelSymbolDirectionShrink && sdCountWhenOpen-currentSDCount >= TheConfig.CancelSymbolDirectionShrinkMinConstant {
-			minutesTillNextHour := 60 - time.Now().Minute()
-			blockDuration := 75 * time.Minute
-			if minutesTillNextHour < 30 {
-				blockDuration = time.Duration(minutesTillNextHour+75) * time.Minute
-			}
 			reason := fmt.Sprintf("direction shrink: %.2f", ratio)
-			addSymbolDirectionToBlacklist(grid.Symbol, grid.Direction, blockDuration, reason)
+			addSymbolDirectionToBlacklist(grid.Symbol, grid.Direction, TillNextRefresh(), reason)
 			toCancel.AddGridToCancel(grid, 0, reason)
 			if ratio < TheConfig.CancelWithLossSymbolDirectionShrink {
 				toCancel.AddGridToCancel(grid, TheConfig.MaxLossWithSymbolDirectionShrink,
@@ -261,6 +256,9 @@ func tick() error {
 
 		if !bundle.Raw.exists(grid.SID) {
 			toCancel.AddGridToCancel(grid, TheConfig.MaxCancelLossStrategyDeleted, "strategy not found")
+			if grid.lastRoi < 0 {
+				addSymbolDirectionToBlacklist(grid.Symbol, grid.Direction, TillNextRefresh(), "strategy not found, lastRoi loss")
+			}
 		} else if !bundle.FilteredSortedBySD.exists(grid.SID) {
 			toCancel.AddGridToCancel(grid, 0, "strategy not picked")
 		}
@@ -271,13 +269,17 @@ func tick() error {
 			toCancel.AddGridToCancel(grid, 0, reason)
 		}
 
-		if grid.lastRoi >= TheConfig.GainExitNotGoingUp {
-			if time.Since(grid.tracking.timeHighestRoi) > time.Duration(TheConfig.GainExitNotGoingUpMaxLookBackMinutes)*time.Minute {
-				reason := fmt.Sprintf("max gain %.2f%%/%.2f%%, reached %s ago",
-					grid.lastRoi*100, grid.tracking.highestRoi*100,
-					time.Since(grid.tracking.timeHighestRoi).Round(time.Second))
-				toCancel.AddGridToCancel(grid, TheConfig.GainExitNotGoingUp, reason)
-				addSymbolToBlacklist(grid.Symbol, time.Duration(TheConfig.GainExitNotGoingUpBlockMinutes)*time.Minute, reason)
+		for c, gpMax := range TheConfig.GainExitNotGoingUp {
+			if grid.lastRoi >= gpMax {
+				gpLookBack := time.Duration(TheConfig.GainExitNotGoingUpMaxLookBackMinutes[c]) * time.Minute
+				gpBlock := time.Duration(TheConfig.GainExitNotGoingUpBlockMinutes[c]) * time.Minute
+				if time.Since(grid.tracking.timeHighestRoi) > gpLookBack {
+					reason := fmt.Sprintf("max gain %.2f%%/%.2f%%, reached %s ago",
+						grid.lastRoi*100, grid.tracking.highestRoi*100,
+						time.Since(grid.tracking.timeHighestRoi).Round(time.Second))
+					toCancel.AddGridToCancel(grid, gpMax, reason)
+					addSymbolToBlacklist(grid.Symbol, gpBlock, reason)
+				}
 			}
 		}
 	}
