@@ -10,7 +10,7 @@ import (
 )
 
 func TestT(t *testing.T) {
-	config.configure()
+	config.Init()
 	log.Infof("Public IP: %s", utils.GetPublicIP())
 	discord.Init()
 	sdk.Init()

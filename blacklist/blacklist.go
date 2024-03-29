@@ -8,18 +8,18 @@ import (
 	"time"
 )
 
-type Blacklists struct {
-	BySID             map[int]*Blacklist
-	BySymbolDirection map[string]*Blacklist
-	BySymbol          map[string]*Blacklist
+type blacklists struct {
+	BySID             map[int]*content
+	BySymbolDirection map[string]*content
+	BySymbol          map[string]*content
 }
 
-type Blacklist struct {
+type content struct {
 	Till   time.Time
 	Reason string
 }
 
-var blacklist = &Blacklists{BySID: make(map[int]*Blacklist), BySymbolDirection: make(map[string]*Blacklist), BySymbol: make(map[string]*Blacklist)}
+var blacklist = &blacklists{BySID: make(map[int]*content), BySymbolDirection: make(map[string]*content), BySymbol: make(map[string]*content)}
 
 func persistBlacklist() {
 	err := persistence.Save(blacklist, persistence.BlacklistFileName)
@@ -36,19 +36,19 @@ func Init() {
 }
 
 func AddSymbolDirection(symbol, direction string, d time.Duration, reason string) {
-	blacklist.BySymbolDirection[symbol+direction] = &Blacklist{Till: time.Now().Add(d), Reason: reason}
+	blacklist.BySymbolDirection[symbol+direction] = &content{Till: time.Now().Add(d), Reason: reason}
 	discord.Infof(fmt.Sprintf("**Add blacklist:** %s, %s, %s, %s", symbol, direction, d, reason))
 	persistBlacklist()
 }
 
 func AddSID(id int, d time.Duration, reason string) {
-	blacklist.BySID[id] = &Blacklist{Till: time.Now().Add(d), Reason: reason}
+	blacklist.BySID[id] = &content{Till: time.Now().Add(d), Reason: reason}
 	discord.Infof(fmt.Sprintf("**Add blacklist:** %d, %s, %s", id, d, reason), discord.DefaultWebhook)
 	persistBlacklist()
 }
 
 func AddSymbol(symbol string, d time.Duration, reason string) {
-	blacklist.BySymbol[symbol] = &Blacklist{Till: time.Now().Add(d), Reason: reason}
+	blacklist.BySymbol[symbol] = &content{Till: time.Now().Add(d), Reason: reason}
 	discord.Infof(fmt.Sprintf("**Add blacklist:** %s, %s, %s", symbol, d, reason), discord.DefaultWebhook)
 	persistBlacklist()
 }

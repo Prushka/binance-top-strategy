@@ -9,13 +9,13 @@ import (
 	"time"
 )
 
-var BracketsCache = cache.CreateCache[*Response](20*time.Minute,
-	func() (*Response, error) {
+var bracketsCache = cache.CreateCache[*response](20*time.Minute,
+	func() (*response, error) {
 		return getBrackets()
 	},
 )
 
-type Bracket struct {
+type bracket struct {
 	BracketSeq                   int     `json:"bracketSeq"`
 	BracketNotionalFloor         int     `json:"bracketNotionalFloor"`
 	BracketNotionalCap           int     `json:"bracketNotionalCap"`
@@ -25,23 +25,23 @@ type Bracket struct {
 	MaxOpenPosLeverage           int     `json:"maxOpenPosLeverage"`
 }
 
-type Symbol struct {
+type symbol struct {
 	Symbol        string     `json:"symbol"`
 	UpdateTime    int64      `json:"updateTime"`
 	NotionalLimit int        `json:"notionalLimit"`
-	RiskBrackets  []*Bracket `json:"riskBrackets"`
+	RiskBrackets  []*bracket `json:"riskBrackets"`
 }
 
-type Response struct {
+type response struct {
 	Symbols struct {
-		Brackets []*Symbol `json:"brackets"`
+		Brackets []*symbol `json:"brackets"`
 	} `json:"data"`
-	SymbolMap map[string]*Symbol
+	SymbolMap map[string]*symbol
 	request.BinanceBaseResponse
 }
 
 func GetLeverage(symbol string, initialAsset float64, maxLeverage int) int {
-	brackets, err := BracketsCache.Get()
+	brackets, err := bracketsCache.Get()
 	if err != nil {
 		return maxLeverage
 	}
@@ -62,9 +62,9 @@ func GetLeverage(symbol string, initialAsset float64, maxLeverage int) int {
 	return maxLeverage
 }
 
-func getBrackets() (*Response, error) {
+func getBrackets() (*response, error) {
 	resp, _, err := request.Request("https://www.binance.com/bapi/futures/v1/friendly/future/common/brackets",
-		"{}", &Response{})
+		"{}", &response{})
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func getBrackets() (*Response, error) {
 			return s.RiskBrackets[i].BracketSeq < s.RiskBrackets[j].BracketSeq
 		})
 	}
-	resp.SymbolMap = make(map[string]*Symbol)
+	resp.SymbolMap = make(map[string]*symbol)
 	for _, s := range resp.Symbols.Brackets {
 		existing, ok := resp.SymbolMap[s.Symbol]
 		if !ok {
