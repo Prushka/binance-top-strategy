@@ -1,6 +1,13 @@
 package main
 
 import (
+	"BinanceTopStrategies/config"
+	"BinanceTopStrategies/discord"
+	"BinanceTopStrategies/notional"
+	"BinanceTopStrategies/persistence"
+	"BinanceTopStrategies/request"
+	"BinanceTopStrategies/sdk"
+	"BinanceTopStrategies/utils"
 	"encoding/json"
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
@@ -9,6 +16,12 @@ import (
 	"strconv"
 	"time"
 )
+
+type StateOnGridOpen struct {
+	SDCountRaw          map[string]int
+	SDCountFiltered     map[string]int
+	SDCountPairSpecific map[string]int
+}
 
 type PlaceGridRequest struct {
 	Symbol                 string `json:"symbol"`
@@ -44,7 +57,7 @@ type PlaceGridResponse struct {
 		StrategyStatus   string `json:"strategyStatus"`
 		UpdateTime       int64  `json:"updateTime"`
 	} `json:"data"`
-	BinanceBaseResponse
+	request.BinanceBaseResponse
 }
 
 type GridTracking struct {
@@ -105,7 +118,7 @@ type Grid struct {
 
 type OpenGridResponse struct {
 	Grids []*Grid `json:"data"`
-	BinanceBaseResponse
+	request.BinanceBaseResponse
 }
 
 func newTrackedGrids() *TrackedGrids {
@@ -124,9 +137,9 @@ func persistStateOnGridOpen(gid int) {
 		statesOnGridOpen[gid] = &StateOnGridOpen{SDCountRaw: bundle.Raw.symbolDirectionCount,
 			SDCountFiltered:     bundle.FilteredSortedBySD.symbolDirectionCount,
 			SDCountPairSpecific: bundle.SDCountPairSpecific}
-		err := save(statesOnGridOpen, GridStatesFileName)
+		err := persistence.Save(statesOnGridOpen, persistence.GridStatesFileName)
 		if err != nil {
-			Discordf("Error saving state on grid open: %v", err)
+			discord.Infof("Error saving state on grid open: %v", err)
 		}
 	}
 }
@@ -185,7 +198,7 @@ func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
 	fundingFee, _ := strconv.ParseFloat(g.FundingFee, 64)
 	position, _ := strconv.ParseFloat(g.GridPosition, 64)
 	entryPrice, _ := strconv.ParseFloat(g.GridEntryPrice, 64)
-	marketPrice, _ := getSessionSymbolPrice(g.Symbol)
+	marketPrice, _ := sdk.GetSessionSymbolPrice(g.Symbol)
 	g.initialValue = initial / float64(g.InitialLeverage)
 	g.totalPnl = profit + fundingFee + position*(marketPrice-entryPrice) // position is negative for short
 	g.lastRoi = g.totalPnl / g.initialValue
@@ -261,7 +274,7 @@ func (tracked *TrackedGrids) findGridIdsByStrategyId(ids ...int) mapset.Set[int]
 
 func getOpenGrids() (*OpenGridResponse, error) {
 	url := "https://www.binance.com/bapi/futures/v2/private/future/grid/query-open-grids"
-	res, _, err := privateRequest(url, "POST", nil, &OpenGridResponse{})
+	res, _, err := request.PrivateRequest(url, "POST", nil, &OpenGridResponse{})
 	if err != nil {
 		return nil, err
 	}
@@ -293,13 +306,13 @@ func updateOpenGrids(trackContinuous bool) error {
 	for _, g := range gGrids.gridsByGid {
 		if !currentIds.Contains(g.GID) {
 			gGrids.Remove(g.GID)
-			DiscordWebhookS(display(nil, g,
-				fmt.Sprintf("**Gone - Block for %d Minutes**", TheConfig.TradingBlockMinutesAfterCancel),
-				0, 0), ActionWebhook, DefaultWebhook)
-			tradingBlock = time.Now().Add(time.Duration(TheConfig.TradingBlockMinutesAfterCancel) * time.Minute)
+			discord.Info(display(nil, g,
+				fmt.Sprintf("**Gone - Block for %d Minutes**", config.TheConfig.TradingBlockMinutesAfterCancel),
+				0, 0), discord.ActionWebhook, discord.DefaultWebhook)
+			tradingBlock = time.Now().Add(time.Duration(config.TheConfig.TradingBlockMinutesAfterCancel) * time.Minute)
 		}
 	}
-	Discordf("Open Pairs: %v, Open Ids: %v, Initial: %f, TotalPnL: %f, C: %f, L/S/N: %d/%d/%d",
+	discord.Infof("Open Pairs: %v, Open Ids: %v, Initial: %f, TotalPnL: %f, C: %f, L/S/N: %d/%d/%d",
 		gGrids.existingSymbols, gGrids.existingSIDs, gGrids.totalGridInitial, gGrids.totalGridPnl, gGrids.totalGridPnl+gGrids.totalGridInitial,
 		gGrids.longs.Cardinality(), gGrids.shorts.Cardinality(), gGrids.neutrals.Cardinality())
 	return nil
@@ -328,7 +341,7 @@ func (grid *Grid) String() string {
 }
 
 func closeGrid(strategyId int) error {
-	if TheConfig.Paper {
+	if config.TheConfig.Paper {
 		log.Infof("Paper mode, not closing grid")
 		return nil
 	}
@@ -336,7 +349,7 @@ func closeGrid(strategyId int) error {
 	payload := map[string]interface{}{
 		"strategyId": strategyId,
 	}
-	_, _, err := privateRequest(url, "POST", payload, &BinanceBaseResponse{})
+	_, _, err := request.PrivateRequest(url, "POST", payload, &request.BinanceBaseResponse{})
 	return err
 }
 
@@ -344,16 +357,16 @@ func placeGrid(strategy Strategy, initialUSDT float64) error {
 	if _, ok := DirectionMap[strategy.Direction]; !ok {
 		return fmt.Errorf("invalid direction: %d", strategy.Direction)
 	}
-	leverage := TheConfig.MaxLeverage
+	leverage := config.TheConfig.MaxLeverage
 	if strategy.StrategyParams.Leverage < leverage {
 		leverage = strategy.StrategyParams.Leverage
 	}
-	leverage = getLeverage(strategy.Symbol, initialUSDT, leverage)
+	leverage = notional.GetLeverage(strategy.Symbol, initialUSDT, leverage)
 	payload := &PlaceGridRequest{
 		Symbol:                 strategy.Symbol,
 		Direction:              DirectionMap[strategy.Direction],
 		Leverage:               leverage,
-		MarginType:             TheConfig.MarginType,
+		MarginType:             config.TheConfig.MarginType,
 		GridType:               strategy.StrategyParams.Type,
 		GridCount:              strategy.StrategyParams.GridCount,
 		GridLowerLimit:         strategy.StrategyParams.LowerLimit,
@@ -364,7 +377,7 @@ func placeGrid(strategy Strategy, initialUSDT float64) error {
 		TrailingUp:             strategy.StrategyParams.TrailingUp,
 		TrailingDown:           strategy.StrategyParams.TrailingDown,
 		OrderCurrency:          "BASE",
-		ClientStrategyID:       "ctrc_web_" + generateRandomNumberUUID(),
+		ClientStrategyID:       "ctrc_web_" + utils.GenerateRandomNumberUUID(),
 		CopiedStrategyID:       strategy.SID,
 		TrailingStopLowerLimit: false, // !!t[E.w2.stopLowerLimit]
 		TrailingStopUpperLimit: false, // !1 in js
@@ -388,11 +401,11 @@ func placeGrid(strategy Strategy, initialUSDT float64) error {
 		payload.StopTriggerType = "MARK_PRICE"
 	}
 	s, _ := json.Marshal(payload)
-	DiscordWebhookS(DiscordJson(string(s)), OrderWebhook)
-	if TheConfig.Paper {
+	discord.Info(discord.Json(string(s)), discord.OrderWebhook)
+	if config.TheConfig.Paper {
 		log.Infof("Paper mode, not placing grid")
 		return nil
 	}
-	_, _, err := privateRequest("https://www.binance.com/bapi/futures/v2/private/future/grid/place-grid", "POST", payload, &PlaceGridResponse{})
+	_, _, err := request.PrivateRequest("https://www.binance.com/bapi/futures/v2/private/future/grid/place-grid", "POST", payload, &PlaceGridResponse{})
 	return err
 }

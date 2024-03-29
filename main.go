@@ -1,6 +1,12 @@
 package main
 
 import (
+	"BinanceTopStrategies/blacklist"
+	"BinanceTopStrategies/config"
+	"BinanceTopStrategies/discord"
+	"BinanceTopStrategies/persistence"
+	"BinanceTopStrategies/sdk"
+	"BinanceTopStrategies/utils"
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/go-co-op/gocron"
@@ -31,12 +37,6 @@ type StrategiesBundle struct {
 	FilteredSortedBySD     *TrackedStrategies
 	FilteredSortedByMetric *TrackedStrategies
 	SDCountPairSpecific    map[string]int
-}
-
-type StateOnGridOpen struct {
-	SDCountRaw          map[string]int
-	SDCountFiltered     map[string]int
-	SDCountPairSpecific map[string]int
 }
 
 const (
@@ -74,7 +74,7 @@ func updateTopStrategiesWithRoi() error {
 			s.lastDayRoiPerHr = GetRoiPerHr(s.Rois, 24*time.Hour)
 			s.last12HrRoiPerHr = GetRoiPerHr(s.Rois, 12*time.Hour)
 			s.last6HrRoiPerHr = GetRoiPerHr(s.Rois, 6*time.Hour)
-			s.lastNHrNoDip = NoDip(s.Rois, time.Duration(TheConfig.LastNHoursNoDips)*time.Hour)
+			s.lastNHrNoDip = NoDip(s.Rois, time.Duration(config.TheConfig.LastNHoursNoDips)*time.Hour)
 			s.roiPerHour = (s.roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
 			prefix := ""
 			if s.lastDayRoiChange > 0.1 &&
@@ -124,9 +124,9 @@ func updateTopStrategiesWithRoi() error {
 		FilteredSortedBySD:     sortedBySDCount.toTrackedStrategies(),
 		FilteredSortedByMetric: filtered.toTrackedStrategies(),
 		SDCountPairSpecific:    make(map[string]int)}
-	Discordf("### Strategies")
-	Discordf("* Raw: " + bundle.Raw.String())
-	Discordf("* Open: " + bundle.FilteredSortedBySD.String())
+	discord.Infof("### Strategies")
+	discord.Infof("* Raw: " + bundle.Raw.String())
+	discord.Infof("* Open: " + bundle.FilteredSortedBySD.String())
 	filteredSymbols := mapset.NewSetFromMapKeys(bundle.FilteredSortedBySD.symbolCount)
 	var gridSymbols mapset.Set[string]
 	if gGrids.existingSymbols.Cardinality() > 0 {
@@ -145,6 +145,7 @@ func updateTopStrategiesWithRoi() error {
 }
 
 func updateSDCountPairSpecific(symbols mapset.Set[string]) error {
+	log.Infof("Strategy with Symbol Specifics: %v", symbols)
 	for _, symbol := range symbols.ToSlice() {
 		strategies, err := getTopStrategies(FUTURE, symbol)
 		if err != nil {
@@ -156,15 +157,15 @@ func updateSDCountPairSpecific(symbols mapset.Set[string]) error {
 			}
 		}
 	}
-	Discordf("* SDSpecific: %v", bundle.SDCountPairSpecific)
+	discord.Infof("* SDSpecific: %v", bundle.SDCountPairSpecific)
 	return nil
 }
 
 func tick() error {
-	ResetTime()
-	clear(sessionSymbolPrice)
-	Discordf("## Run: %v", time.Now().Format("2006-01-02 15:04:05"))
-	usdt, err := getFutureUSDT()
+	utils.ResetTime()
+	sdk.ClearSessionSymbolPrice()
+	discord.Infof("## Run: %v", time.Now().Format("2006-01-02 15:04:05"))
+	usdt, err := sdk.GetFutureUSDT()
 	if err != nil {
 		return err
 	}
@@ -172,18 +173,18 @@ func tick() error {
 	if err != nil {
 		return err
 	}
-	Time("Fetch strategies")
-	clear(sessionSymbolPrice)
-	Discordf("### Current Grids:")
+	utils.Time("Fetch strategies")
+	sdk.ClearSessionSymbolPrice()
+	discord.Infof("### Current Grids:")
 	err = updateOpenGrids(true)
 	if err != nil {
 		return err
 	}
 
-	Time("Fetch grids")
+	utils.Time("Fetch grids")
 	count := 0
 	for _, grid := range gGrids.gridsByGid {
-		Discordf(display(nil, grid, "", count+1, len(gGrids.gridsByGid)))
+		discord.Infof(display(nil, grid, "", count+1, len(gGrids.gridsByGid)))
 		count++
 	}
 	toCancel := make(GridsToCancel)
@@ -202,7 +203,7 @@ func tick() error {
 		}
 		existsNonBlacklistedOpposite := false
 		for _, d := range possibleDirections.ToSlice() {
-			if bl, _ := SymbolDirectionBlacklisted(grid.Symbol, d); !bl {
+			if bl, _ := blacklist.SymbolDirectionBlacklisted(grid.Symbol, d); !bl {
 				existsNonBlacklistedOpposite = true
 				break
 			}
@@ -210,116 +211,116 @@ func tick() error {
 		if symbolDifferentDirectionsHigherRanking >= 2 && existsNonBlacklistedOpposite {
 			toCancel.AddGridToCancel(grid, 0,
 				fmt.Sprintf("opposite directions at top: %d", symbolDifferentDirectionsHigherRanking))
-			addSymbolDirectionToBlacklist(grid.Symbol, grid.Direction, 10*time.Minute, "opposite directions at top")
+			blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, 10*time.Minute, "opposite directions at top")
 		}
 
 		currentSDCount, sdCountWhenOpen, ratio := gridSDCount(grid.GID, grid.Symbol, grid.Direction, SDRaw)
-		if ratio < TheConfig.CancelSymbolDirectionShrink && sdCountWhenOpen-currentSDCount >= TheConfig.CancelSymbolDirectionShrinkMinConstant {
+		if ratio < config.TheConfig.CancelSymbolDirectionShrink && sdCountWhenOpen-currentSDCount >= config.TheConfig.CancelSymbolDirectionShrinkMinConstant {
 			reason := fmt.Sprintf("direction shrink: %.2f", ratio)
-			addSymbolDirectionToBlacklist(grid.Symbol, grid.Direction, TillNextRefresh(), reason)
+			blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), reason)
 			toCancel.AddGridToCancel(grid, 0, reason)
-			if ratio < TheConfig.CancelWithLossSymbolDirectionShrink {
-				toCancel.AddGridToCancel(grid, TheConfig.MaxLossWithSymbolDirectionShrink,
+			if ratio < config.TheConfig.CancelWithLossSymbolDirectionShrink {
+				toCancel.AddGridToCancel(grid, config.TheConfig.MaxLossWithSymbolDirectionShrink,
 					fmt.Sprintf("shrink below %f, Accept Loss: %f",
-						TheConfig.CancelWithLossSymbolDirectionShrink, TheConfig.MaxLossWithSymbolDirectionShrink))
+						config.TheConfig.CancelWithLossSymbolDirectionShrink, config.TheConfig.MaxLossWithSymbolDirectionShrink))
 			}
 		}
 
 		if !bundle.Raw.exists(grid.SID) {
-			toCancel.AddGridToCancel(grid, TheConfig.MaxCancelLossStrategyDeleted, "strategy not found")
+			toCancel.AddGridToCancel(grid, config.TheConfig.MaxCancelLossStrategyDeleted, "strategy not found")
 			if grid.lastRoi < 0 {
-				addSymbolDirectionToBlacklist(grid.Symbol, grid.Direction, TillNextRefresh(), "strategy not found, lastRoi loss")
+				blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), "strategy not found, lastRoi loss")
 			}
 		} else if !bundle.FilteredSortedBySD.exists(grid.SID) {
 			toCancel.AddGridToCancel(grid, 0, "strategy not picked")
 		}
 
-		if time.Since(grid.tracking.timeLastChange) > time.Duration(TheConfig.CancelNoChangeMinutes)*time.Minute {
-			reason := fmt.Sprintf("no change, %s", shortDur(time.Since(grid.tracking.timeLastChange).Round(time.Second)))
-			addSIDToBlacklist(grid.SID, 10*time.Minute, reason)
+		if time.Since(grid.tracking.timeLastChange) > time.Duration(config.TheConfig.CancelNoChangeMinutes)*time.Minute {
+			reason := fmt.Sprintf("no change, %s", utils.ShortDur(time.Since(grid.tracking.timeLastChange).Round(time.Second)))
+			blacklist.AddSID(grid.SID, 10*time.Minute, reason)
 			toCancel.AddGridToCancel(grid, 0, reason)
 		}
 
-		for c, gpMax := range TheConfig.TakeProfits {
+		for c, gpMax := range config.TheConfig.TakeProfits {
 			if grid.lastRoi >= gpMax {
-				gpLookBack := time.Duration(TheConfig.TakeProfitsMaxLookbackMinutes[c]) * time.Minute
-				gpBlock := time.Duration(TheConfig.TakeProfitsBlockMinutes[c]) * time.Minute
+				gpLookBack := time.Duration(config.TheConfig.TakeProfitsMaxLookbackMinutes[c]) * time.Minute
+				gpBlock := time.Duration(config.TheConfig.TakeProfitsBlockMinutes[c]) * time.Minute
 				if time.Since(grid.tracking.timeHighestRoi) > gpLookBack {
 					reason := fmt.Sprintf("max gain %.2f%%/%.2f%%, reached %s ago",
 						grid.lastRoi*100, grid.tracking.highestRoi*100,
 						time.Since(grid.tracking.timeHighestRoi).Round(time.Second))
 					toCancel.AddGridToCancel(grid, gpMax, reason)
 					if gpBlock < 0 {
-						addSymbolToBlacklist(grid.Symbol, TillNextRefresh(), reason)
+						blacklist.AddSymbol(grid.Symbol, utils.TillNextRefresh(), reason)
 					} else {
-						addSymbolToBlacklist(grid.Symbol, gpBlock, reason)
+						blacklist.AddSymbol(grid.Symbol, gpBlock, reason)
 					}
 				}
 			}
 		}
 	}
 	if !toCancel.Empty() {
-		Discordf("### Expired Strategies: %s", toCancel)
+		discord.Infof("### Expired Strategies: %s", toCancel)
 		toCancel.CancelAll()
 	}
 
-	if toCancel.hasCancelled() && !TheConfig.Paper {
-		Discordf("Cleared expired grids - Skip current run")
+	if toCancel.hasCancelled() && !config.TheConfig.Paper {
+		discord.Infof("Cleared expired grids - Skip current run")
 		return nil
 	}
 
 	gridsOpen := len(gGrids.gridsByGid)
-	if TheConfig.MaxChunks-gridsOpen <= 0 && !TheConfig.Paper {
-		Discordf("Max Chunks reached, No cancel - Skip current run")
+	if config.TheConfig.MaxChunks-gridsOpen <= 0 && !config.TheConfig.Paper {
+		discord.Infof("Max Chunks reached, No cancel - Skip current run")
 		return nil
 	}
-	if mapset.NewSetFromMapKeys(bundle.FilteredSortedBySD.symbolCount).Difference(gGrids.existingSymbols).Cardinality() == 0 && !TheConfig.Paper {
-		Discordf("All symbols exists in open grids, Skip")
+	if mapset.NewSetFromMapKeys(bundle.FilteredSortedBySD.symbolCount).Difference(gGrids.existingSymbols).Cardinality() == 0 && !config.TheConfig.Paper {
+		discord.Infof("All symbols exists in open grids, Skip")
 		return nil
 	}
-	if time.Now().Before(tradingBlock) && !TheConfig.Paper {
-		Discordf("Trading Block, Skip")
+	if time.Now().Before(tradingBlock) && !config.TheConfig.Paper {
+		discord.Infof("Trading Block, Skip")
 		return nil
 	}
-	Discordf("### Opening new grids:")
-	chunksInt := TheConfig.MaxChunks - gridsOpen
-	chunks := float64(TheConfig.MaxChunks - gridsOpen)
-	invChunk := (usdt - TheConfig.LeavingAsset) / chunks
-	idealInvChunk := (usdt + gGrids.totalGridPnl + gGrids.totalGridInitial) / float64(TheConfig.MaxChunks)
+	discord.Infof("### Opening new grids:")
+	chunksInt := config.TheConfig.MaxChunks - gridsOpen
+	chunks := float64(config.TheConfig.MaxChunks - gridsOpen)
+	invChunk := (usdt - config.TheConfig.LeavingAsset) / chunks
+	idealInvChunk := (usdt + gGrids.totalGridPnl + gGrids.totalGridInitial) / float64(config.TheConfig.MaxChunks)
 	log.Infof("Ideal Investment: %f, allowed Investment: %f, missing %f chunks", idealInvChunk, invChunk, chunks)
 	if invChunk > idealInvChunk {
 		invChunk = idealInvChunk
 	}
 	sessionSymbols := gGrids.existingSymbols.Clone()
 	for c, s := range bundle.FilteredSortedBySD.strategies {
-		Discordf(display(s, nil, "New", c+1, len(bundle.FilteredSortedBySD.strategies)))
+		discord.Infof(display(s, nil, "New", c+1, len(bundle.FilteredSortedBySD.strategies)))
 		if gGrids.existingSIDs.Contains(s.SID) {
-			Discordf("Strategy exists in open grids, Skip")
+			discord.Infof("Strategy exists in open grids, Skip")
 			continue
 		}
 		if sessionSymbols.Contains(s.Symbol) {
-			Discordf("Symbol exists in open grids, Skip")
+			discord.Infof("Symbol exists in open grids, Skip")
 			continue
 		}
-		if bl, till := SIDBlacklisted(s.SID); bl {
-			Discordf("Strategy blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
+		if bl, till := blacklist.SIDBlacklisted(s.SID); bl {
+			discord.Infof("Strategy blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
 			continue
 		}
-		if bl, till := SymbolDirectionBlacklisted(s.Symbol, DirectionMap[s.Direction]); bl {
-			Discordf("Symbol Direction blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
+		if bl, till := blacklist.SymbolDirectionBlacklisted(s.Symbol, DirectionMap[s.Direction]); bl {
+			discord.Infof("Symbol Direction blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
 			continue
 		}
-		if bl, till := SymbolBlacklisted(s.Symbol); bl {
-			Discordf("Symbol blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
+		if bl, till := blacklist.SymbolBlacklisted(s.Symbol); bl {
+			discord.Infof("Symbol blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
 			continue
 		}
 
 		if s.StrategyParams.TriggerPrice != nil {
 			triggerPrice, _ := strconv.ParseFloat(*s.StrategyParams.TriggerPrice, 64)
-			marketPrice, _ := getSessionSymbolPrice(s.Symbol)
+			marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)
 			diff := math.Abs((triggerPrice - marketPrice) / marketPrice)
 			if diff > 0.08 {
-				Discordf("Trigger Price difference too high, Skip, Trigger: %f, Market: %f, Diff: %f",
+				discord.Infof("Trigger Price difference too high, Skip, Trigger: %f, Market: %f, Diff: %f",
 					triggerPrice, marketPrice, diff)
 				continue
 			}
@@ -327,27 +328,27 @@ func tick() error {
 
 		switch s.Direction {
 		case LONG:
-			if TheConfig.MaxLongs >= 0 && gGrids.longs.Cardinality() >= TheConfig.MaxLongs {
-				Discordf("Max Longs reached, Skip")
+			if config.TheConfig.MaxLongs >= 0 && gGrids.longs.Cardinality() >= config.TheConfig.MaxLongs {
+				discord.Infof("Max Longs reached, Skip")
 				continue
 			}
 		case NEUTRAL:
-			if TheConfig.MaxNeutrals >= 0 && gGrids.shorts.Cardinality() >= TheConfig.MaxNeutrals {
-				Discordf("Max Neutrals not reached, Skip")
+			if config.TheConfig.MaxNeutrals >= 0 && gGrids.shorts.Cardinality() >= config.TheConfig.MaxNeutrals {
+				discord.Infof("Max Neutrals not reached, Skip")
 				continue
 			}
 		}
 		errr := placeGrid(*s, invChunk)
-		if TheConfig.Paper {
+		if config.TheConfig.Paper {
 
 		} else if errr != nil {
-			Discordf("**Error placing grid: %v**", errr)
+			discord.Infof("**Error placing grid: %v**", errr)
 			if strings.Contains(errr.Error(), "Create grid too frequently") {
-				Discordf("**Too Frequent Error, Skip Current Run**")
+				discord.Infof("**Too Frequent Error, Skip Current Run**")
 				break
 			}
 		} else {
-			DiscordWebhookS(display(s, nil, "**Opened Grid**", c+1, len(bundle.FilteredSortedBySD.strategies)), ActionWebhook, DefaultWebhook)
+			discord.Info(display(s, nil, "**Opened Grid**", c+1, len(bundle.FilteredSortedBySD.strategies)), discord.ActionWebhook, discord.DefaultWebhook)
 			chunksInt -= 1
 			sessionSymbols.Add(s.Symbol)
 			if chunksInt <= 0 {
@@ -356,8 +357,8 @@ func tick() error {
 		}
 	}
 
-	Time("Place/Cancel done")
-	Discordf("### New Grids:")
+	utils.Time("Place/Cancel done")
+	discord.Infof("### New Grids:")
 	err = updateOpenGrids(false)
 	if err != nil {
 		return err
@@ -378,43 +379,36 @@ func tick() error {
 // perform last 20 min roi (latest - last 20 OR if max roi was reached more than 20 min ago), if not positive and stop gain, cancel then block symbolpairdirection until next hr
 
 func main() {
-	configure()
-	log.Infof("Public IP: %s", getPublicIP())
-	DiscordService()
-	switch TheConfig.Mode {
+	config.Init()
+	log.Infof("Public IP: %s", utils.GetPublicIP())
+	discord.Init()
+	switch config.TheConfig.Mode {
 	case "trading":
-		if TheConfig.Paper {
-			Discordf("Paper Trading")
+		if config.TheConfig.Paper {
+			discord.Infof("Paper Trading")
 		} else {
-			Discordf("Real Trading")
+			discord.Infof("Real Trading")
 		}
-		sdk()
-		err := load(&statesOnGridOpen, GridStatesFileName)
+		sdk.Init()
+		err := persistence.Load(&statesOnGridOpen, persistence.GridStatesFileName)
 		if err != nil {
 			log.Fatalf("Error loading state on grid open: %v", err)
 		}
-		err = load(blacklist, BlacklistFileName)
-		if err != nil {
-			log.Fatalf("Error loading blacklist: %v", err)
-		}
-		_, err = scheduler.SingletonMode().Every(TheConfig.TickEverySeconds).Seconds().Do(
+		blacklist.Init()
+		_, err = scheduler.SingletonMode().Every(config.TheConfig.TickEverySeconds).Seconds().Do(
 			func() {
 				t := time.Now()
 				err := tick()
 				if err != nil {
 					log.Errorf("Error: %v", err)
 				}
-				Discordf("*Run took: %v*", time.Since(t))
+				discord.Infof("*Run took: %v*", time.Since(t))
 			},
 		)
 		if err != nil {
 			log.Errorf("Error: %v", err)
 			return
 		}
-
-	case "extract-cookies":
-
 	}
-
 	scheduler.StartBlocking()
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"BinanceTopStrategies/discord"
 	"fmt"
 	"strings"
 )
@@ -20,20 +21,20 @@ func (tc *GridToCancel) CanCancel() bool {
 
 func (tc *GridToCancel) Cancel() error {
 	grid := tc.Grid
-	webhooks := []int{DefaultWebhook}
+	webhooks := []int{discord.DefaultWebhook}
 	if tc.CanCancel() {
 		err := closeGrid(grid.GID)
 		if err != nil {
 			return err
 		}
 		tc.Cancelled = true
-		DiscordWebhookS(display(nil, grid, "**Cancelled**", 0, 0), ActionWebhook, DefaultWebhook)
-		webhooks = append(webhooks, ActionWebhook)
+		discord.Info(display(nil, grid, "**Cancelled**", 0, 0), discord.ActionWebhook, discord.DefaultWebhook)
+		webhooks = append(webhooks, discord.ActionWebhook)
 	} else {
-		Discordf(display(nil, grid, "**Skip Cancel**", 0, 0))
+		discord.Info(display(nil, grid, "**Skip Cancel**", 0, 0))
 	}
 	for _, reason := range tc.Reasons {
-		DiscordWebhookS(" * "+reason, webhooks...)
+		discord.Info(" * "+reason, webhooks...)
 	}
 	return nil
 }
@@ -42,7 +43,7 @@ func (g GridsToCancel) CancelAll() {
 	for _, tc := range g {
 		err := tc.Cancel()
 		if err != nil {
-			Discordf("Error cancelling grid: %v", err)
+			discord.Infof("Error cancelling grid: %v", err)
 		}
 	}
 }

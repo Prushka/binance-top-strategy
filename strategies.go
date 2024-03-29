@@ -1,6 +1,11 @@
 package main
 
 import (
+	"BinanceTopStrategies/config"
+	"BinanceTopStrategies/discord"
+	"BinanceTopStrategies/request"
+	"BinanceTopStrategies/sdk"
+	"BinanceTopStrategies/utils"
 	"encoding/json"
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
@@ -33,7 +38,7 @@ type StrategyMetrics struct {
 type StrategiesResponse struct {
 	Data  Strategies `json:"data"`
 	Total int        `json:"total"`
-	BinanceBaseResponse
+	request.BinanceBaseResponse
 }
 
 type Strategy struct {
@@ -186,10 +191,10 @@ func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 		sss.strategies = append(sss.strategies, s)
 	}
 	if sss.highest.runningTime != nil {
-		sss.highest.RunningTime = StringPointer(fmt.Sprintf("%s", time.Duration(*sss.highest.runningTime)*time.Second))
+		sss.highest.RunningTime = utils.StringPointer(fmt.Sprintf("%s", time.Duration(*sss.highest.runningTime)*time.Second))
 	}
 	if sss.lowest.runningTime != nil {
-		sss.lowest.RunningTime = StringPointer(fmt.Sprintf("%s", time.Duration(*sss.lowest.runningTime)*time.Second))
+		sss.lowest.RunningTime = utils.StringPointer(fmt.Sprintf("%s", time.Duration(*sss.lowest.runningTime)*time.Second))
 	}
 	for userId, count := range sss.userRankings {
 		if count > 1 {
@@ -225,7 +230,7 @@ func (t *TrackedStrategies) String() string {
 	return fmt.Sprintf("%d, Symbols: %d, L/S/N: %d/%d/%d, SymbolDirections: %v, H: %v, L: %v",
 		len(t.strategiesById), len(t.symbolCount),
 		t.longs.Cardinality(), t.shorts.Cardinality(), t.neutrals.Cardinality(),
-		asJson(t.symbolDirectionCount), asJson(t.highest), asJson(t.lowest))
+		utils.AsJson(t.symbolDirectionCount), utils.AsJson(t.highest), utils.AsJson(t.lowest))
 }
 
 func (t *TrackedStrategies) exists(id int) bool {
@@ -252,7 +257,7 @@ func (s Strategy) String() string {
 		ranking = fmt.Sprintf(", Rank: Raw: %d, FilterdSD: %d", bundle.Raw.findStrategyRanking(s), bundle.FilteredSortedBySD.findStrategyRanking(s))
 	}
 	return fmt.Sprintf("Cpy: %d, Mch: [%d, %d], PnL: %.2f, Rois: %s, [H%%, A/Day/12H/6H: %.1f%%/%.1f%%/%.1f%%/%.1f%%], [A/D/3/2/1H: %s%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s%s",
-		s.CopyCount, s.MatchedCount, s.LatestMatchedCount, pnl, s.Rois.lastNRecords(TheConfig.LastNHoursNoDips),
+		s.CopyCount, s.MatchedCount, s.LatestMatchedCount, pnl, s.Rois.lastNRecords(config.TheConfig.LastNHoursNoDips),
 		s.roiPerHour*100, s.lastDayRoiPerHr*100, s.last12HrRoiPerHr*100, s.last6HrRoiPerHr*100, s.Roi,
 		s.lastDayRoiChange*100, s.last3HrRoiChange*100, s.last2HrRoiChange*100, s.lastHrRoiChange*100, s.MinInvestment, ranking)
 }
@@ -284,10 +289,10 @@ func display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		return fmt.Sprintf("%s-%s, %.2f%%", lower, upper, diff)
 	}
 	formatRunTime := func(rt int64) string {
-		return fmt.Sprintf("%s", shortDur((time.Duration(rt) * time.Second).Round(time.Minute)))
+		return fmt.Sprintf("%s", utils.ShortDur((time.Duration(rt) * time.Second).Round(time.Minute)))
 	}
 	if grid == nil {
-		marketPrice, _ = getSessionSymbolPrice(s.Symbol)
+		marketPrice, _ = sdk.GetSessionSymbolPrice(s.Symbol)
 		direction = DirectionMap[s.Direction]
 		symbol = s.Symbol
 		strategyId = fmt.Sprintf("%d", s.SID)
@@ -296,7 +301,7 @@ func display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		priceRange = formatPriceRange(s.StrategyParams.LowerLimit, s.StrategyParams.UpperLimit)
 		grids = fmt.Sprintf("%d", s.StrategyParams.GridCount)
 	} else {
-		marketPrice, _ = getSessionSymbolPrice(grid.Symbol)
+		marketPrice, _ = sdk.GetSessionSymbolPrice(grid.Symbol)
 		direction = grid.Direction
 		symbol = grid.Symbol
 		strategyId = fmt.Sprintf("%d", grid.SID)
@@ -366,13 +371,13 @@ func mergeStrategies(strategyType int, sps ...StrategyQuery) (*TrackedStrategies
 	sss := make(Strategies, 0)
 	for _, sp := range sps {
 		if sp.Count == 0 {
-			sp.Count = TheConfig.StrategiesCount
+			sp.Count = config.TheConfig.StrategiesCount
 		}
 		if sp.RuntimeMin == 0 {
-			sp.RuntimeMin = time.Duration(TheConfig.RuntimeMinHours) * time.Hour
+			sp.RuntimeMin = time.Duration(config.TheConfig.RuntimeMinHours) * time.Hour
 		}
 		if sp.RuntimeMax == 0 {
-			sp.RuntimeMax = time.Duration(TheConfig.RuntimeMaxHours) * time.Hour
+			sp.RuntimeMax = time.Duration(config.TheConfig.RuntimeMaxHours) * time.Hour
 		}
 		by, err := _getTopStrategies(sp.Sort, sp.Direction, strategyType, sp.RuntimeMin, sp.RuntimeMax, sp.Count, sp.Symbol)
 		if err != nil {
@@ -416,7 +421,7 @@ func _getTopStrategies(sort string, direction *int, strategyType int, runningTim
 		Direction:      direction,
 		Symbol:         symbol,
 	}
-	strategies, res, err := privateRequest(
+	strategies, res, err := request.PrivateRequest(
 		"https://www.binance.com/bapi/futures/v1/public/future/common/strategy/landing-page/queryTopStrategy", "POST",
 		query, &StrategiesResponse{})
 	// this API returns different results based on if user agents or another header is passed to it
@@ -430,12 +435,12 @@ func _getTopStrategies(sort string, direction *int, strategyType int, runningTim
 		return nil, err
 	}
 	if len(generic) != 6 {
-		Discordf("Error, strategies root response has length %d: %+v", len(generic),
+		discord.Infof("Error, strategies root response has length %d: %+v", len(generic),
 			generic)
 	}
 	for _, v := range generic["data"].([]interface{}) {
 		if len(v.(map[string]interface{})) != 14 {
-			Discordf("Error, strategy response has length %d: %+v", len(v.(map[string]interface{})),
+			discord.Infof("Error, strategy response has length %d: %+v", len(v.(map[string]interface{})),
 				v)
 		}
 	}

@@ -1,7 +1,10 @@
-package main
+package blacklist
 
 import (
+	"BinanceTopStrategies/discord"
+	"BinanceTopStrategies/persistence"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -19,27 +22,34 @@ type Blacklist struct {
 var blacklist = &Blacklists{BySID: make(map[int]*Blacklist), BySymbolDirection: make(map[string]*Blacklist), BySymbol: make(map[string]*Blacklist)}
 
 func persistBlacklist() {
-	err := save(blacklist, BlacklistFileName)
+	err := persistence.Save(blacklist, persistence.BlacklistFileName)
 	if err != nil {
-		Discordf("Error saving blacklist: %v", err)
+		discord.Infof("Error saving blacklist: %v", err)
 	}
 }
 
-func addSymbolDirectionToBlacklist(symbol, direction string, d time.Duration, reason string) {
+func Init() {
+	err := persistence.Load(blacklist, persistence.BlacklistFileName)
+	if err != nil {
+		log.Fatalf("Error loading blacklist: %v", err)
+	}
+}
+
+func AddSymbolDirection(symbol, direction string, d time.Duration, reason string) {
 	blacklist.BySymbolDirection[symbol+direction] = &Blacklist{Till: time.Now().Add(d), Reason: reason}
-	DiscordWebhookS(fmt.Sprintf("**Add blacklist:** %s, %s, %s, %s", symbol, direction, d, reason), DefaultWebhook)
+	discord.Infof(fmt.Sprintf("**Add blacklist:** %s, %s, %s, %s", symbol, direction, d, reason))
 	persistBlacklist()
 }
 
-func addSIDToBlacklist(id int, d time.Duration, reason string) {
+func AddSID(id int, d time.Duration, reason string) {
 	blacklist.BySID[id] = &Blacklist{Till: time.Now().Add(d), Reason: reason}
-	DiscordWebhookS(fmt.Sprintf("**Add blacklist:** %d, %s, %s", id, d, reason), DefaultWebhook)
+	discord.Infof(fmt.Sprintf("**Add blacklist:** %d, %s, %s", id, d, reason), discord.DefaultWebhook)
 	persistBlacklist()
 }
 
-func addSymbolToBlacklist(symbol string, d time.Duration, reason string) {
+func AddSymbol(symbol string, d time.Duration, reason string) {
 	blacklist.BySymbol[symbol] = &Blacklist{Till: time.Now().Add(d), Reason: reason}
-	DiscordWebhookS(fmt.Sprintf("**Add blacklist:** %s, %s, %s", symbol, d, reason), DefaultWebhook)
+	discord.Infof(fmt.Sprintf("**Add blacklist:** %s, %s, %s", symbol, d, reason), discord.DefaultWebhook)
 	persistBlacklist()
 }
 

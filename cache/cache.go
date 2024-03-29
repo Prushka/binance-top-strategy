@@ -1,9 +1,6 @@
-package main
+package cache
 
 import (
-	"sort"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -73,35 +70,3 @@ func CreateMapCache[T any](fetchMethod func(key string) (T, error),
 	}
 	return cache
 }
-
-var RoisCache = CreateMapCache[[]*Roi](
-	func(key string) ([]*Roi, error) {
-		split := strings.Split(key, "-")
-		SID, _ := strconv.Atoi(split[0])
-		UserId, _ := strconv.Atoi(split[1])
-		roi, err := getStrategyRois(SID, UserId)
-		if err != nil {
-			return nil, err
-		}
-		for _, r := range roi {
-			r.Time = r.Time / 1000
-		}
-		sort.Slice(roi, func(i, j int) bool {
-			return roi[i].Time > roi[j].Time
-		})
-		return roi, nil
-	},
-	func(rois []*Roi) bool {
-		latestTime := time.Unix(rois[0].Time, 0)
-		if time.Now().Sub(latestTime) > 75*time.Minute {
-			return true
-		}
-		return false
-	},
-)
-
-var BracketsCache = CreateCache[*NotionalResponse](20*time.Minute,
-	func() (*NotionalResponse, error) {
-		return getBrackets()
-	},
-)

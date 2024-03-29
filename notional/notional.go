@@ -1,11 +1,21 @@
-package main
+package notional
 
 import (
+	"BinanceTopStrategies/cache"
+	"BinanceTopStrategies/discord"
+	"BinanceTopStrategies/request"
 	"math"
 	"sort"
+	"time"
 )
 
-type NotionalBracket struct {
+var BracketsCache = cache.CreateCache[*Response](20*time.Minute,
+	func() (*Response, error) {
+		return getBrackets()
+	},
+)
+
+type Bracket struct {
 	BracketSeq                   int     `json:"bracketSeq"`
 	BracketNotionalFloor         int     `json:"bracketNotionalFloor"`
 	BracketNotionalCap           int     `json:"bracketNotionalCap"`
@@ -15,22 +25,22 @@ type NotionalBracket struct {
 	MaxOpenPosLeverage           int     `json:"maxOpenPosLeverage"`
 }
 
-type NotionalSymbol struct {
-	Symbol        string             `json:"symbol"`
-	UpdateTime    int64              `json:"updateTime"`
-	NotionalLimit int                `json:"notionalLimit"`
-	RiskBrackets  []*NotionalBracket `json:"riskBrackets"`
+type Symbol struct {
+	Symbol        string     `json:"symbol"`
+	UpdateTime    int64      `json:"updateTime"`
+	NotionalLimit int        `json:"notionalLimit"`
+	RiskBrackets  []*Bracket `json:"riskBrackets"`
 }
 
-type NotionalResponse struct {
+type Response struct {
 	Symbols struct {
-		Brackets []*NotionalSymbol `json:"brackets"`
+		Brackets []*Symbol `json:"brackets"`
 	} `json:"data"`
-	SymbolMap map[string]*NotionalSymbol
-	BinanceBaseResponse
+	SymbolMap map[string]*Symbol
+	request.BinanceBaseResponse
 }
 
-func getLeverage(symbol string, initialAsset float64, maxLeverage int) int {
+func GetLeverage(symbol string, initialAsset float64, maxLeverage int) int {
 	brackets, err := BracketsCache.Get()
 	if err != nil {
 		return maxLeverage
@@ -42,7 +52,7 @@ func getLeverage(symbol string, initialAsset float64, maxLeverage int) int {
 	for _, b := range s.RiskBrackets {
 		if float64(b.MinOpenPosLeverage)*initialAsset <= float64(b.BracketNotionalCap) { // fits in this bracket
 			leverage := int(math.Min(float64(b.BracketNotionalCap)/initialAsset, float64(b.MaxOpenPosLeverage)))
-			Discordf("Notional Leverage: %d, Initial: %f, Max Leverage: %d", leverage, initialAsset, maxLeverage)
+			discord.Infof("Notional Leverage: %d, Initial: %f, Max Leverage: %d", leverage, initialAsset, maxLeverage)
 			if leverage > maxLeverage {
 				return maxLeverage
 			}
@@ -52,9 +62,9 @@ func getLeverage(symbol string, initialAsset float64, maxLeverage int) int {
 	return maxLeverage
 }
 
-func getBrackets() (*NotionalResponse, error) {
-	resp, _, err := request("https://www.binance.com/bapi/futures/v1/friendly/future/common/brackets",
-		"{}", &NotionalResponse{})
+func getBrackets() (*Response, error) {
+	resp, _, err := request.Request("https://www.binance.com/bapi/futures/v1/friendly/future/common/brackets",
+		"{}", &Response{})
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +73,7 @@ func getBrackets() (*NotionalResponse, error) {
 			return s.RiskBrackets[i].BracketSeq < s.RiskBrackets[j].BracketSeq
 		})
 	}
-	resp.SymbolMap = make(map[string]*NotionalSymbol)
+	resp.SymbolMap = make(map[string]*Symbol)
 	for _, s := range resp.Symbols.Brackets {
 		existing, ok := resp.SymbolMap[s.Symbol]
 		if !ok {

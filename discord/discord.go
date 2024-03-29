@@ -1,52 +1,55 @@
-package main
+package discord
 
 import (
+	"BinanceTopStrategies/config"
 	"encoding/json"
 	"fmt"
+	"github.com/go-co-op/gocron"
 	"github.com/gtuk/discordwebhook"
 	log "github.com/sirupsen/logrus"
 	"sync"
 	"time"
 )
 
-type DiscordMessagePayload struct {
+type messagePayload struct {
 	Content     string `json:"content"`
 	WebhookType int    `json:"webhookType"`
 }
 
-var discordMessages = make(map[int][]string)
-var discordMessagesMutex sync.RWMutex
+var messages = make(map[int][]string)
+var mutex sync.RWMutex
 
-func DiscordJson(chat string) string {
+func Json(chat string) string {
 	return "```json\n" + chat + "\n```"
 }
 
-func Discordf(format string, args ...any) {
+func Infof(format string, args ...any) {
 	s := format
 	if len(args) > 0 {
 		s = fmt.Sprintf(format, args...)
 	}
-	DiscordWebhookS(s, DefaultWebhook)
+	Info(s, DefaultWebhook)
 }
 
-func DiscordWebhookS(chat string, webhookTypes ...int) {
+func Info(chat string, webhookTypes ...int) {
 	log.Info(chat)
-	discordMessagesMutex.Lock()
-	defer discordMessagesMutex.Unlock()
+	mutex.Lock()
+	defer mutex.Unlock()
 	for _, webhookType := range webhookTypes {
-		discordMessages[webhookType] = append(discordMessages[webhookType], chat)
+		messages[webhookType] = append(messages[webhookType], chat)
 	}
 }
 
-func DiscordService() {
+func Init() {
+	scheduler := gocron.NewScheduler(time.Now().Location())
 	_, err := scheduler.SingletonMode().Every(5).Seconds().Do(func() {
-		discordMessagesMutex.Lock()
+		mutex.Lock()
 		currentMessages := make(map[int][]string)
-		for k, v := range discordMessages {
+		for k, v := range messages {
 			currentMessages[k] = v
 		}
-		clear(discordMessages)
-		discordMessagesMutex.Unlock()
+		clear(messages)
+		mutex.Unlock()
 		for webhookType, messages := range currentMessages {
 			if len(messages) > 0 {
 				chunks := make([]string, 0)
@@ -62,7 +65,7 @@ func DiscordService() {
 					}
 				}
 				for _, chunk := range chunks {
-					DiscordSend(DiscordMessagePayload{Content: chunk, WebhookType: webhookType})
+					send(messagePayload{Content: chunk, WebhookType: webhookType})
 				}
 			}
 		}
@@ -72,7 +75,7 @@ func DiscordService() {
 	}
 }
 
-type DiscordError struct {
+type errorResponse struct {
 	Message    string  `json:"message"`
 	RetryAfter float64 `json:"retry_after"`
 	Global     bool    `json:"global"`
@@ -84,11 +87,11 @@ const (
 	OrderWebhook
 )
 
-func DiscordSend(payload DiscordMessagePayload) {
-	if TheConfig.DiscordWebhook == "" {
+func send(payload messagePayload) {
+	if config.TheConfig.DiscordWebhook == "" {
 		return
 	}
-	name := TheConfig.DiscordName
+	name := config.TheConfig.DiscordName
 	message := discordwebhook.Message{
 		Username: &name,
 		Content:  &payload.Content,
@@ -96,21 +99,21 @@ func DiscordSend(payload DiscordMessagePayload) {
 	var err error
 	switch payload.WebhookType {
 	case ActionWebhook:
-		if TheConfig.DiscordWebhookAction == "" {
+		if config.TheConfig.DiscordWebhookAction == "" {
 			return
 		}
-		err = discordwebhook.SendMessage(TheConfig.DiscordWebhookAction, message)
+		err = discordwebhook.SendMessage(config.TheConfig.DiscordWebhookAction, message)
 	case OrderWebhook:
-		if TheConfig.DiscordWebhookOrder == "" {
+		if config.TheConfig.DiscordWebhookOrder == "" {
 			return
 		}
-		err = discordwebhook.SendMessage(TheConfig.DiscordWebhookOrder, message)
+		err = discordwebhook.SendMessage(config.TheConfig.DiscordWebhookOrder, message)
 	default:
-		err = discordwebhook.SendMessage(TheConfig.DiscordWebhook, message)
+		err = discordwebhook.SendMessage(config.TheConfig.DiscordWebhook, message)
 	}
 
 	if err != nil {
-		de := &DiscordError{}
+		de := &errorResponse{}
 		jsonErr := json.Unmarshal([]byte(err.Error()), de)
 		if jsonErr != nil {
 			log.Errorf("error sending message to discord: %v", err)
@@ -118,7 +121,7 @@ func DiscordSend(payload DiscordMessagePayload) {
 		}
 		if de.RetryAfter > 0 {
 			time.Sleep(time.Duration(de.RetryAfter) * time.Second)
-			DiscordSend(payload)
+			send(payload)
 		} else {
 			log.Errorf("error sending message to discord: %v", err)
 		}

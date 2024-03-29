@@ -1,6 +1,8 @@
-package main
+package request
 
 import (
+	"BinanceTopStrategies/config"
+	"BinanceTopStrategies/discord"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -44,15 +46,15 @@ func (b BinanceBaseResponse) messageDetail() map[string]interface{} {
 	return b.MessageDetail
 }
 
-func request[T BinanceResponse](url string, payload any, response T) (T, []byte, error) {
+func Request[T BinanceResponse](url string, payload any, response T) (T, []byte, error) {
 	return _request(url, "POST", 0, payload, nil, response)
 }
 
-func privateRequest[T BinanceResponse](url, method string, payload any, response T) (T, []byte, error) {
+func PrivateRequest[T BinanceResponse](url, method string, payload any, response T) (T, []byte, error) {
 	headers := map[string]string{
 		"Clienttype":         "web",
-		"Cookie":             TheConfig.COOKIE,
-		"Csrftoken":          TheConfig.CSRFToken,
+		"Cookie":             config.TheConfig.COOKIE,
+		"Csrftoken":          config.TheConfig.CSRFToken,
 		"Accept":             "*/*",
 		"Accept-Language":    "en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
 		"Sec-Ch-Ua":          "\\\"Chromium\\\";v=\\\"122\\\", \\\"Not(A:Brand\\\";v=\\\"24\\\", \\\"Google Chrome\\\";v=\\\"122\\\"",
@@ -113,12 +115,12 @@ func _request[T BinanceResponse](url, method string, sleep time.Duration,
 	}
 	if response.code() == "100002001" || response.code() == "100001005" {
 		log.Errorf("Response: %s", body)
-		Discordf("Error, login expired")
+		discord.Infof("Error, login expired")
 		return response, body, fmt.Errorf("login expired")
 	}
 	if !response.success() {
 		log.Errorf("Response: %s", body)
-		Discordf(response.message())
+		discord.Infof(response.message())
 		return response, body, fmt.Errorf("error: %s", response.message())
 	}
 	return response, body, err

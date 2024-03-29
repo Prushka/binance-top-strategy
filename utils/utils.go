@@ -1,6 +1,7 @@
-package main
+package utils
 
 import (
+	"BinanceTopStrategies/discord"
 	"encoding/json"
 	"fmt"
 	log "github.com/sirupsen/logrus"
@@ -11,7 +12,7 @@ import (
 	"time"
 )
 
-func shortDur(d time.Duration) string {
+func ShortDur(d time.Duration) string {
 	s := d.String()
 	if strings.HasSuffix(s, "m0s") {
 		s = s[:len(s)-2]
@@ -33,7 +34,7 @@ func TillNextRefresh() time.Duration {
 var timing = time.Now()
 
 func Time(s string) {
-	Discordf("*%s took: %v*", s, time.Since(timing))
+	discord.Infof("*%s took: %v*", s, time.Since(timing))
 	timing = time.Now()
 }
 
@@ -57,7 +58,7 @@ func Int64Pointer(i int64) *int64 {
 	return &i
 }
 
-func generateRandomNumberUUID() string {
+func GenerateRandomNumberUUID() string {
 	const charset = "0123456789"
 	b := make([]byte, 19)
 	for i := range b {
@@ -66,7 +67,7 @@ func generateRandomNumberUUID() string {
 	return string(b)
 }
 
-func asJson(v interface{}) string {
+func AsJson(v interface{}) string {
 	b, err := json.Marshal(v)
 	if err != nil {
 		log.Error(err)
@@ -74,7 +75,7 @@ func asJson(v interface{}) string {
 	return string(b)
 }
 
-func getPublicIP() string {
+func GetPublicIP() string {
 	url := "http://api.ipify.org"
 	resp, err := http.Get(url)
 	if err != nil {

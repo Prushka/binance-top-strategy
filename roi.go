@@ -1,6 +1,39 @@
 package main
 
-import "time"
+import (
+	"BinanceTopStrategies/cache"
+	"BinanceTopStrategies/request"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+)
+
+var RoisCache = cache.CreateMapCache[[]*Roi](
+	func(key string) ([]*Roi, error) {
+		split := strings.Split(key, "-")
+		SID, _ := strconv.Atoi(split[0])
+		UserId, _ := strconv.Atoi(split[1])
+		roi, err := getStrategyRois(SID, UserId)
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range roi {
+			r.Time = r.Time / 1000
+		}
+		sort.Slice(roi, func(i, j int) bool {
+			return roi[i].Time > roi[j].Time
+		})
+		return roi, nil
+	},
+	func(rois []*Roi) bool {
+		latestTime := time.Unix(rois[0].Time, 0)
+		if time.Now().Sub(latestTime) > 75*time.Minute {
+			return true
+		}
+		return false
+	},
+)
 
 type StrategyRoi []*Roi
 
@@ -14,7 +47,7 @@ type Roi struct {
 
 type StrategyRoiResponse struct {
 	Data StrategyRoi `json:"data"`
-	BinanceBaseResponse
+	request.BinanceBaseResponse
 }
 
 type QueryStrategyRoi struct {
@@ -29,7 +62,7 @@ func getStrategyRois(strategyID int, rootUserId int) (StrategyRoi, error) {
 		StrategyID:           strategyID,
 		StreamerStrategyType: "UM_GRID",
 	}
-	roi, _, err := request(
+	roi, _, err := request.Request(
 		"https://www.binance.com/bapi/futures/v1/public/future/common/strategy/landing-page/queryRoiChart",
 		query, &StrategyRoiResponse{})
 	if err != nil {

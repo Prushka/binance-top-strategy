@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"github.com/caarlos0/env"
@@ -48,7 +48,7 @@ type Config struct {
 
 var TheConfig = &Config{}
 
-func configure() {
+func Init() {
 	err := env.Parse(TheConfig)
 	if err != nil {
 		log.Fatalf("error parsing config: %v", err)

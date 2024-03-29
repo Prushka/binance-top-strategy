@@ -1,6 +1,7 @@
-package main
+package persistence
 
 import (
+	"BinanceTopStrategies/config"
 	"encoding/json"
 	"os"
 )
@@ -11,10 +12,10 @@ const (
 )
 
 func getFullPath(fileName string) string {
-	return TheConfig.DataFolder + "/" + fileName
+	return config.TheConfig.DataFolder + "/" + fileName
 }
 
-func save(t any, fileName string) error {
+func Save(t any, fileName string) error {
 	b, err := json.MarshalIndent(t, "", "  ")
 	if err != nil {
 		return err
@@ -22,7 +23,7 @@ func save(t any, fileName string) error {
 	return os.WriteFile(getFullPath(fileName), b, 0666)
 }
 
-func load(dataPointer any, fileName string) error {
+func Load(dataPointer any, fileName string) error {
 	if _, err := os.Stat(getFullPath(fileName)); os.IsNotExist(err) {
 		return nil
 	}
