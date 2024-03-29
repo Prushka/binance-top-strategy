@@ -245,8 +245,8 @@ func tick() error {
 				fmt.Sprintf("opposite directions at top: %d", symbolDifferentDirectionsHigherRanking))
 		}
 
-		_, _, ratio := gridSDCount(grid.GID, grid.Symbol, grid.Direction)
-		if ratio < TheConfig.CancelSymbolDirectionShrink {
+		currentSDCount, sdCountWhenOpen, ratio := gridSDCount(grid.GID, grid.Symbol, grid.Direction)
+		if ratio < TheConfig.CancelSymbolDirectionShrink && sdCountWhenOpen-currentSDCount >= TheConfig.CancelSymbolDirectionShrinkMinConstant {
 			minutesTillNextHour := 60 - time.Now().Minute()
 			blockDuration := 75 * time.Minute
 			if minutesTillNextHour < 30 {
