@@ -69,7 +69,7 @@ func gridSDCount(gid int, symbol, direction string, setType string) (int, int, f
 func persistStateOnGridOpen(gid int) {
 	if _, ok := statesOnGridOpen[gid]; !ok {
 		statesOnGridOpen[gid] = &StateOnGridOpen{SDCountRaw: bundle.Raw.symbolDirectionCount,
-			SDCountFiltered:     bundle.FilteredSortedBySD.symbolCount,
+			SDCountFiltered:     bundle.FilteredSortedBySD.symbolDirectionCount,
 			SDCountPairSpecific: bundle.SDCountPairSpecific}
 		err := save(statesOnGridOpen, GridStatesFileName)
 		if err != nil {
