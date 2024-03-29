@@ -228,9 +228,29 @@ func (tracked *TrackedGrids) findGridIdsByStrategyId(ids ...int) mapset.Set[int]
 	return gridIds
 }
 
-func updateOpenGrids(trackContinuous bool) error {
+func getOpenGrids() (*OpenGridResponse, error) {
 	url := "https://www.binance.com/bapi/futures/v2/private/future/grid/query-open-grids"
 	res, _, err := privateRequest(url, "POST", nil, &OpenGridResponse{})
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func getGridSymbols() (mapset.Set[string], error) {
+	res, err := getOpenGrids()
+	if err != nil {
+		return nil, err
+	}
+	symbols := mapset.NewSet[string]()
+	for _, grid := range res.Grids {
+		symbols.Add(grid.Symbol)
+	}
+	return symbols, nil
+}
+
+func updateOpenGrids(trackContinuous bool) error {
+	res, err := getOpenGrids()
 	if err != nil {
 		return err
 	}
@@ -265,12 +285,15 @@ func (grid *Grid) String() string {
 		tracking.continuousRoiGrowth, tracking.continuousRoiLoss, tracking.continuousRoiNoChange,
 		time.Since(tracking.timeLastChange).Round(time.Second),
 	)
-	currentSD, sdWhenOpen, ratio := gridSDCount(grid.GID, grid.Symbol, grid.Direction)
+	formatSDRatio := func(setType string) string {
+		currentSD, sdWhenOpen, ratio := gridSDCount(grid.GID, grid.Symbol, grid.Direction, setType)
+		return fmt.Sprintf("%s: %d/%d/%.1f%%", setType, currentSD, sdWhenOpen, ratio*100)
+	}
 	realized, _ := strconv.ParseFloat(grid.GridProfit, 64)
-	return fmt.Sprintf("*%d*, Realized: %.2f, Total: %.2f, =%.2f%%%s, SD: %d/%d/%.1f%%",
+	return fmt.Sprintf("*%d*, Realized: %.2f, Total: %.2f, =%.2f%%%s, %s, %s, %s",
 		grid.GID,
 		realized, grid.totalPnl, grid.lastRoi*100, extendedProfit,
-		currentSD, sdWhenOpen, ratio*100)
+		formatSDRatio(SDRaw), formatSDRatio(SDFiltered), formatSDRatio(SDPairSpecific))
 }
 
 func closeGrid(strategyId int) error {

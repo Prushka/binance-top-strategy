@@ -30,25 +30,47 @@ type StrategiesBundle struct {
 	Raw                    *TrackedStrategies
 	FilteredSortedBySD     *TrackedStrategies
 	FilteredSortedByMetric *TrackedStrategies
+	SDCountPairSpecific    map[string]int
 }
 
 type StateOnGridOpen struct {
-	SymbolDirectionCount map[string]int
+	SDCountRaw          map[string]int
+	SDCountFiltered     map[string]int
+	SDCountPairSpecific map[string]int
 }
+
+const (
+	SDRaw          = "SDRaw"
+	SDFiltered     = "SDFiltered"
+	SDPairSpecific = "SDPairSpecific"
+)
 
 var statesOnGridOpen = make(map[int]*StateOnGridOpen)
 
-func gridSDCount(gid int, symbol, direction string) (int, int, float64) {
+func gridSDCount(gid int, symbol, direction string, setType string) (int, int, float64) {
 	sd := symbol + direction
-	currentSDCount := bundle.Raw.symbolDirectionCount[sd]
-	sdCountWhenOpen := statesOnGridOpen[gid].SymbolDirectionCount[sd]
+	var currentSDCount int
+	var sdCountWhenOpen int
+	switch setType {
+	case SDRaw:
+		currentSDCount = bundle.Raw.symbolDirectionCount[sd]
+		sdCountWhenOpen = statesOnGridOpen[gid].SDCountRaw[sd]
+	case SDFiltered:
+		currentSDCount = bundle.FilteredSortedBySD.symbolCount[sd]
+		sdCountWhenOpen = statesOnGridOpen[gid].SDCountFiltered[sd]
+	case SDPairSpecific:
+		currentSDCount = bundle.SDCountPairSpecific[sd]
+		sdCountWhenOpen = statesOnGridOpen[gid].SDCountPairSpecific[sd]
+	}
 	ratio := float64(currentSDCount) / float64(sdCountWhenOpen)
 	return currentSDCount, sdCountWhenOpen, ratio
 }
 
 func persistStateOnGridOpen(gid int) {
 	if _, ok := statesOnGridOpen[gid]; !ok {
-		statesOnGridOpen[gid] = &StateOnGridOpen{SymbolDirectionCount: bundle.Raw.symbolDirectionCount}
+		statesOnGridOpen[gid] = &StateOnGridOpen{SDCountRaw: bundle.Raw.symbolDirectionCount,
+			SDCountFiltered:     bundle.FilteredSortedBySD.symbolCount,
+			SDCountPairSpecific: bundle.SDCountPairSpecific}
 		err := save(statesOnGridOpen, GridStatesFileName)
 		if err != nil {
 			Discordf("Error saving state on grid open: %v", err)
@@ -67,17 +89,17 @@ func getSessionSymbolPrice(symbol string) (float64, error) {
 	return sessionSymbolPrice[symbol], nil
 }
 
-func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
-	strategies, err := getTopStrategies(FUTURE)
+func updateTopStrategiesWithRoi() error {
+	strategies, err := getTopStrategies(FUTURE, "")
 	if err != nil {
-		return nil, err
+		return err
 	}
 	filtered := make(Strategies, 0)
 	for c, s := range strategies.strategies {
 		id := s.SID
 		roi, err := RoisCache.Get(fmt.Sprintf("%d-%d", id, s.UserID))
 		if err != nil {
-			return nil, err
+			return err
 		}
 		s.Rois = roi
 		s.roi, _ = strconv.ParseFloat(s.Roi, 64)
@@ -142,12 +164,43 @@ func getTopStrategiesWithRoi() (*StrategiesBundle, error) {
 	for _, sd := range sdLengths {
 		sortedBySDCount = append(sortedBySDCount, filteredBySymbolDirection[sd.SymbolDirection]...)
 	}
-	bundle := &StrategiesBundle{Raw: strategies, FilteredSortedBySD: sortedBySDCount.toTrackedStrategies(),
-		FilteredSortedByMetric: filtered.toTrackedStrategies()}
+	bundle = &StrategiesBundle{Raw: strategies, FilteredSortedBySD: sortedBySDCount.toTrackedStrategies(),
+		FilteredSortedByMetric: filtered.toTrackedStrategies(),
+		SDCountPairSpecific:    make(map[string]int)}
 	Discordf("### Strategies")
 	Discordf("* Raw: " + bundle.Raw.String())
 	Discordf("* Open: " + bundle.FilteredSortedBySD.String())
-	return bundle, nil
+	filteredSymbols := mapset.NewSetFromMapKeys(bundle.FilteredSortedBySD.symbolCount)
+	var gridSymbols mapset.Set[string]
+	if gGrids.existingSymbols.Cardinality() > 0 {
+		gridSymbols = gGrids.existingSymbols
+	} else {
+		gridSymbols, err = getGridSymbols()
+		if err != nil {
+			return err
+		}
+	}
+	err = updateSDCountPairSpecific(filteredSymbols.Union(gridSymbols))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func updateSDCountPairSpecific(symbols mapset.Set[string]) error {
+	for _, symbol := range symbols.ToSlice() {
+		strategies, err := getTopStrategies(FUTURE, symbol)
+		if err != nil {
+			return err
+		}
+		for sd, count := range strategies.symbolDirectionCount {
+			if _, ok := bundle.SDCountPairSpecific[sd]; !ok {
+				bundle.SDCountPairSpecific[sd] = count
+			}
+		}
+	}
+	Discordf("* SDSpecific: %v", bundle.SDCountPairSpecific)
+	return nil
 }
 
 func GetRoiChange(roi StrategyRoi, t time.Duration) float64 {
@@ -197,7 +250,7 @@ func tick() error {
 	if err != nil {
 		return err
 	}
-	bundle, err = getTopStrategiesWithRoi()
+	err = updateTopStrategiesWithRoi()
 	if err != nil {
 		return err
 	}
@@ -242,7 +295,7 @@ func tick() error {
 			addSymbolDirectionToBlacklist(grid.Symbol, grid.Direction, 10*time.Minute, "opposite directions at top")
 		}
 
-		currentSDCount, sdCountWhenOpen, ratio := gridSDCount(grid.GID, grid.Symbol, grid.Direction)
+		currentSDCount, sdCountWhenOpen, ratio := gridSDCount(grid.GID, grid.Symbol, grid.Direction, SDRaw)
 		if ratio < TheConfig.CancelSymbolDirectionShrink && sdCountWhenOpen-currentSDCount >= TheConfig.CancelSymbolDirectionShrinkMinConstant {
 			reason := fmt.Sprintf("direction shrink: %.2f", ratio)
 			addSymbolDirectionToBlacklist(grid.Symbol, grid.Direction, TillNextRefresh(), reason)
@@ -398,6 +451,8 @@ func tick() error {
 // use it to cancel
 
 // strict stop gain then block
+
+// Detect move out of range
 
 // strict stop loss or other conditions then block
 

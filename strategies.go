@@ -22,7 +22,7 @@ type QueryTopStrategy struct {
 	Rows           int    `json:"rows"`
 	Direction      *int   `json:"direction"`
 	StrategyType   int    `json:"strategyType"`
-	Symbol         string `json:"symbol"`
+	Symbol         string `json:"symbol,omitempty"`
 	Zone           string `json:"zone"`
 	RunningTimeMin int    `json:"runningTimeMin"`
 	RunningTimeMax int    `json:"runningTimeMax"`
@@ -161,7 +161,8 @@ func (t *TrackedStrategies) findStrategyRanking(s Strategy) int {
 }
 
 func (t *TrackedStrategies) String() string {
-	return fmt.Sprintf("%d, Symbols: %d, L/S/N: %d/%d/%d, SymbolDirections: %v, H: %v, L: %v", len(t.strategiesById), len(t.symbolCount),
+	return fmt.Sprintf("%d, Symbols: %d, L/S/N: %d/%d/%d, SymbolDirections: %v, H: %v, L: %v",
+		len(t.strategiesById), len(t.symbolCount),
 		t.longs.Cardinality(), t.shorts.Cardinality(), t.neutrals.Cardinality(),
 		asJson(t.symbolDirectionCount), asJson(t.highest), asJson(t.lowest))
 }
@@ -388,15 +389,16 @@ func getStrategyRois(strategyID int, rootUserId int) (StrategyRoi, error) {
 	return roi.Data, nil
 }
 
-type SortPair struct {
+type StrategyQuery struct {
 	Sort       string
 	Direction  *int
 	Count      int
 	RuntimeMax time.Duration
 	RuntimeMin time.Duration
+	Symbol     string
 }
 
-func mergeStrategies(strategyType int, sps ...SortPair) (*TrackedStrategies, error) {
+func mergeStrategies(strategyType int, sps ...StrategyQuery) (*TrackedStrategies, error) {
 	sss := make(Strategies, 0)
 	for _, sp := range sps {
 		if sp.Count == 0 {
@@ -408,7 +410,7 @@ func mergeStrategies(strategyType int, sps ...SortPair) (*TrackedStrategies, err
 		if sp.RuntimeMax == 0 {
 			sp.RuntimeMax = time.Duration(TheConfig.RuntimeMaxHours) * time.Hour
 		}
-		by, err := _getTopStrategies(sp.Sort, sp.Direction, strategyType, sp.RuntimeMin, sp.RuntimeMax, sp.Count)
+		by, err := _getTopStrategies(sp.Sort, sp.Direction, strategyType, sp.RuntimeMin, sp.RuntimeMax, sp.Count, sp.Symbol)
 		if err != nil {
 			return nil, err
 		}
@@ -422,11 +424,11 @@ func mergeStrategies(strategyType int, sps ...SortPair) (*TrackedStrategies, err
 	return sss.toTrackedStrategies(), nil
 }
 
-func getTopStrategies(strategyType int) (*TrackedStrategies, error) {
+func getTopStrategies(strategyType int, symbol string) (*TrackedStrategies, error) {
 	merged, err := mergeStrategies(strategyType,
-		SortPair{Sort: SortByRoi, RuntimeMin: 3 * time.Hour, RuntimeMax: 48 * time.Hour},
-		SortPair{Sort: SortByRoi, RuntimeMin: 48 * time.Hour, RuntimeMax: 168 * time.Hour},
-		SortPair{Sort: SortByRoi, RuntimeMin: 168 * time.Hour, RuntimeMax: 360 * time.Hour, Count: 20},
+		StrategyQuery{Sort: SortByRoi, RuntimeMin: 3 * time.Hour, RuntimeMax: 48 * time.Hour, Symbol: symbol},
+		StrategyQuery{Sort: SortByRoi, RuntimeMin: 48 * time.Hour, RuntimeMax: 168 * time.Hour, Symbol: symbol},
+		StrategyQuery{Sort: SortByRoi, RuntimeMin: 168 * time.Hour, RuntimeMax: 360 * time.Hour, Count: 20, Symbol: symbol},
 		//SortPair{Sort: SortByRoi, Direction: IntPointer(SHORT), Count: 15},
 		//SortPair{Sort: SortByRoi, Direction: IntPointer(NEUTRAL), Count: 15},
 		//SortPair{Sort: SortByMatched},
@@ -439,7 +441,7 @@ func getTopStrategies(strategyType int) (*TrackedStrategies, error) {
 	return merged, nil
 }
 
-func _getTopStrategies(sort string, direction *int, strategyType int, runningTimeMin time.Duration, runningTimeMax time.Duration, strategyCount int) (Strategies, error) {
+func _getTopStrategies(sort string, direction *int, strategyType int, runningTimeMin time.Duration, runningTimeMax time.Duration, strategyCount int, symbol string) (Strategies, error) {
 	query := &QueryTopStrategy{
 		Page:           1,
 		Rows:           strategyCount,
@@ -448,6 +450,7 @@ func _getTopStrategies(sort string, direction *int, strategyType int, runningTim
 		RunningTimeMin: int(runningTimeMin.Seconds()),
 		Sort:           sort,
 		Direction:      direction,
+		Symbol:         symbol,
 	}
 	strategies, res, err := privateRequest(
 		"https://www.binance.com/bapi/futures/v1/public/future/common/strategy/landing-page/queryTopStrategy", "POST",
