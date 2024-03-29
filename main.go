@@ -278,7 +278,11 @@ func tick() error {
 						grid.lastRoi*100, grid.tracking.highestRoi*100,
 						time.Since(grid.tracking.timeHighestRoi).Round(time.Second))
 					toCancel.AddGridToCancel(grid, gpMax, reason)
-					addSymbolToBlacklist(grid.Symbol, gpBlock, reason)
+					if gpBlock < 0 {
+						addSymbolToBlacklist(grid.Symbol, TillNextRefresh(), reason)
+					} else {
+						addSymbolToBlacklist(grid.Symbol, gpBlock, reason)
+					}
 				}
 			}
 		}
