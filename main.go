@@ -32,8 +32,8 @@ func tick() error {
 		return err
 	}
 	utils.Time("Fetch strategies")
-	sdk.ClearSessionSymbolPrice()
 	discord.Infof("### Current Grids:")
+	sdk.ClearSessionSymbolPrice()
 	err = gsp.UpdateOpenGrids(true)
 	if err != nil {
 		return err
@@ -79,7 +79,7 @@ func tick() error {
 			toCancel.AddGridToCancel(grid, 0, reason)
 			if ratio < config.TheConfig.CancelWithLossSymbolDirectionShrink {
 				toCancel.AddGridToCancel(grid, config.TheConfig.MaxLossWithSymbolDirectionShrink,
-					fmt.Sprintf("shrink below %f, Accept Loss: %f",
+					fmt.Sprintf("shrink below %f, accept loss: %f",
 						config.TheConfig.CancelWithLossSymbolDirectionShrink, config.TheConfig.MaxLossWithSymbolDirectionShrink))
 			}
 		}
@@ -184,18 +184,6 @@ func tick() error {
 			}
 		}
 
-		switch s.Direction {
-		case gsp.LONG:
-			if config.TheConfig.MaxLongs >= 0 && gsp.GlobalGrids.Longs.Cardinality() >= config.TheConfig.MaxLongs {
-				discord.Infof("Max Longs reached, Skip")
-				continue
-			}
-		case gsp.NEUTRAL:
-			if config.TheConfig.MaxNeutrals >= 0 && gsp.GlobalGrids.Shorts.Cardinality() >= config.TheConfig.MaxNeutrals {
-				discord.Infof("Max Neutrals not reached, Skip")
-				continue
-			}
-		}
 		errr := gsp.PlaceGrid(*s, invChunk)
 		if config.TheConfig.Paper {
 

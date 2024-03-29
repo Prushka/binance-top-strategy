@@ -5,6 +5,7 @@ import (
 	"BinanceTopStrategies/persistence"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"strings"
 	"time"
 )
 
@@ -37,27 +38,39 @@ func Init() {
 }
 
 func BlockTrading(d time.Duration, reason string) {
-	blacklist.Global = &content{Till: time.Now().Add(d), Reason: reason}
+	blacklist.Global = newContent(blacklist.Global, d, reason)
 	discord.Infof(fmt.Sprintf("**Global block:** %s, %s", d, reason))
 	persistBlacklist()
 }
 
 func AddSymbolDirection(symbol, direction string, d time.Duration, reason string) {
-	blacklist.BySymbolDirection[symbol+direction] = &content{Till: time.Now().Add(d), Reason: reason}
+	blacklist.BySymbolDirection[symbol+direction] = newContent(blacklist.BySymbolDirection[symbol+direction], d, reason)
 	discord.Infof(fmt.Sprintf("**Add blacklist:** %s, %s, %s, %s", symbol, direction, d, reason))
 	persistBlacklist()
 }
 
 func AddSID(id int, d time.Duration, reason string) {
-	blacklist.BySID[id] = &content{Till: time.Now().Add(d), Reason: reason}
+	blacklist.BySID[id] = newContent(blacklist.BySID[id], d, reason)
 	discord.Infof(fmt.Sprintf("**Add blacklist:** %d, %s, %s", id, d, reason), discord.DefaultWebhook)
 	persistBlacklist()
 }
 
 func AddSymbol(symbol string, d time.Duration, reason string) {
-	blacklist.BySymbol[symbol] = &content{Till: time.Now().Add(d), Reason: reason}
+	blacklist.BySymbol[symbol] = newContent(blacklist.BySymbol[symbol], d, reason)
 	discord.Infof(fmt.Sprintf("**Add blacklist:** %s, %s, %s", symbol, d, reason), discord.DefaultWebhook)
 	persistBlacklist()
+}
+
+func newContent(c *content, d time.Duration, reason string) *content {
+	curr := time.Now().Add(d)
+	var reasonR []string
+	if c != nil {
+		if curr.Before(c.Till) {
+			curr = c.Till
+		}
+		reasonR = append(reasonR, c.Reason)
+	}
+	return &content{Till: curr, Reason: strings.Join(append(reasonR, reason), ", ")}
 }
 
 func IsTradingBlocked() (bool, time.Time) {

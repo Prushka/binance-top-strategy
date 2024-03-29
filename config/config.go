@@ -34,8 +34,6 @@ type Config struct {
 	TickEverySeconds                       int       `env:"TICK_EVERY_SECONDS" envDefault:"60"`
 	AssetSymbol                            string    `env:"ASSET_SYMBOL" envDefault:"USDT"`
 	MaxChunks                              int       `env:"MAX_CHUNKS" envDefault:"4"`
-	MaxLongs                               int       `env:"MAX_LONGS" envDefault:"-1"`
-	MaxNeutrals                            int       `env:"MAX_NEUTRALS" envDefault:"-1"`
 	MaxCancelLoss                          float64   `env:"MAX_CANCEL_LOSS" envDefault:"0"`
 	MaxCancelLossStrategyDeleted           float64   `env:"MAX_CANCEL_LOSS_STRATEGY_DELETED" envDefault:"-0.2"`
 	Mode                                   string    `env:"MODE" envDefault:"trading"`
