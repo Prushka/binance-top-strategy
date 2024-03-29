@@ -14,11 +14,11 @@ import (
 
 var scheduler = gocron.NewScheduler(time.Now().Location())
 
-var globalStrategies = make(map[int]*Strategy) // StrategyOriginalID -> Strategy
+var globalStrategies = make(map[int]*Strategy)
 var gGrids = newTrackedGrids()
-var sessionSymbolPrice = make(map[string]float64)
 var tradingBlock = time.Now()
 var bundle *StrategiesBundle
+var statesOnGridOpen = make(map[int]*StateOnGridOpen)
 
 type SDCountPair struct {
 	SymbolDirection string
@@ -44,50 +44,6 @@ const (
 	SDFiltered     = "SDFiltered"
 	SDPairSpecific = "SDPairSpecific"
 )
-
-var statesOnGridOpen = make(map[int]*StateOnGridOpen)
-
-func gridSDCount(gid int, symbol, direction string, setType string) (int, int, float64) {
-	sd := symbol + direction
-	var currentSDCount int
-	var sdCountWhenOpen int
-	switch setType {
-	case SDRaw:
-		currentSDCount = bundle.Raw.symbolDirectionCount[sd]
-		sdCountWhenOpen = statesOnGridOpen[gid].SDCountRaw[sd]
-	case SDFiltered:
-		currentSDCount = bundle.FilteredSortedBySD.symbolDirectionCount[sd]
-		sdCountWhenOpen = statesOnGridOpen[gid].SDCountFiltered[sd]
-	case SDPairSpecific:
-		currentSDCount = bundle.SDCountPairSpecific[sd]
-		sdCountWhenOpen = statesOnGridOpen[gid].SDCountPairSpecific[sd]
-	}
-	ratio := float64(currentSDCount) / float64(sdCountWhenOpen)
-	return currentSDCount, sdCountWhenOpen, ratio
-}
-
-func persistStateOnGridOpen(gid int) {
-	if _, ok := statesOnGridOpen[gid]; !ok {
-		statesOnGridOpen[gid] = &StateOnGridOpen{SDCountRaw: bundle.Raw.symbolDirectionCount,
-			SDCountFiltered:     bundle.FilteredSortedBySD.symbolDirectionCount,
-			SDCountPairSpecific: bundle.SDCountPairSpecific}
-		err := save(statesOnGridOpen, GridStatesFileName)
-		if err != nil {
-			Discordf("Error saving state on grid open: %v", err)
-		}
-	}
-}
-
-func getSessionSymbolPrice(symbol string) (float64, error) {
-	if _, ok := sessionSymbolPrice[symbol]; !ok {
-		marketPrice, err := fetchMarketPrice(symbol)
-		if err != nil {
-			return 0, err
-		}
-		sessionSymbolPrice[symbol] = marketPrice
-	}
-	return sessionSymbolPrice[symbol], nil
-}
 
 func updateTopStrategiesWithRoi() error {
 	strategies, err := getTopStrategies(FUTURE, "")
@@ -202,45 +158,6 @@ func updateSDCountPairSpecific(symbols mapset.Set[string]) error {
 	}
 	Discordf("* SDSpecific: %v", bundle.SDCountPairSpecific)
 	return nil
-}
-
-func GetRoiChange(roi StrategyRoi, t time.Duration) float64 {
-	latestTimestamp := roi[0].Time
-	latestRoi := roi[0].Roi
-	l := latestTimestamp - int64(t.Seconds())
-	for _, r := range roi {
-		if r.Time <= l {
-			return latestRoi - r.Roi
-		}
-	}
-	return latestRoi - roi[len(roi)-1].Roi
-}
-
-func GetRoiPerHr(roi StrategyRoi, t time.Duration) float64 {
-	latestTimestamp := roi[0].Time
-	latestRoi := roi[0].Roi
-	l := latestTimestamp - int64(t.Seconds())
-	hrs := float64(t.Seconds()) / 3600
-	for _, r := range roi {
-		if r.Time <= l {
-			return (latestRoi - r.Roi) / hrs
-		}
-	}
-	return (latestRoi - roi[len(roi)-1].Roi) / (float64(roi[0].Time-roi[len(roi)-1].Time) / 3600)
-}
-
-func NoDip(roi StrategyRoi, t time.Duration) bool {
-	latestTimestamp := roi[0].Time
-	l := latestTimestamp - int64(t.Seconds())
-	for c, r := range roi {
-		if r.Time < l {
-			return true
-		}
-		if c > 0 && roi[c-1].Roi-r.Roi < 0 {
-			return false
-		}
-	}
-	return true
 }
 
 func tick() error {

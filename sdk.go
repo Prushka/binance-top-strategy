@@ -10,6 +10,18 @@ import (
 )
 
 var futuresClient *futures.Client
+var sessionSymbolPrice = make(map[string]float64)
+
+func getSessionSymbolPrice(symbol string) (float64, error) {
+	if _, ok := sessionSymbolPrice[symbol]; !ok {
+		marketPrice, err := fetchMarketPrice(symbol)
+		if err != nil {
+			return 0, err
+		}
+		sessionSymbolPrice[symbol] = marketPrice
+	}
+	return sessionSymbolPrice[symbol], nil
+}
 
 func sdk() {
 	futuresClient = binance.NewFuturesClient(TheConfig.ApiKey, TheConfig.SecretKey) // USDT-M Futures

@@ -119,6 +119,37 @@ func newTrackedGrids() *TrackedGrids {
 	}
 }
 
+func persistStateOnGridOpen(gid int) {
+	if _, ok := statesOnGridOpen[gid]; !ok {
+		statesOnGridOpen[gid] = &StateOnGridOpen{SDCountRaw: bundle.Raw.symbolDirectionCount,
+			SDCountFiltered:     bundle.FilteredSortedBySD.symbolDirectionCount,
+			SDCountPairSpecific: bundle.SDCountPairSpecific}
+		err := save(statesOnGridOpen, GridStatesFileName)
+		if err != nil {
+			Discordf("Error saving state on grid open: %v", err)
+		}
+	}
+}
+
+func gridSDCount(gid int, symbol, direction string, setType string) (int, int, float64) {
+	sd := symbol + direction
+	var currentSDCount int
+	var sdCountWhenOpen int
+	switch setType {
+	case SDRaw:
+		currentSDCount = bundle.Raw.symbolDirectionCount[sd]
+		sdCountWhenOpen = statesOnGridOpen[gid].SDCountRaw[sd]
+	case SDFiltered:
+		currentSDCount = bundle.FilteredSortedBySD.symbolDirectionCount[sd]
+		sdCountWhenOpen = statesOnGridOpen[gid].SDCountFiltered[sd]
+	case SDPairSpecific:
+		currentSDCount = bundle.SDCountPairSpecific[sd]
+		sdCountWhenOpen = statesOnGridOpen[gid].SDCountPairSpecific[sd]
+	}
+	ratio := float64(currentSDCount) / float64(sdCountWhenOpen)
+	return currentSDCount, sdCountWhenOpen, ratio
+}
+
 func (tracked *TrackedGrids) Remove(id int) {
 	g, ok := tracked.gridsByGid[id]
 	if !ok {
@@ -154,7 +185,7 @@ func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
 	fundingFee, _ := strconv.ParseFloat(g.FundingFee, 64)
 	position, _ := strconv.ParseFloat(g.GridPosition, 64)
 	entryPrice, _ := strconv.ParseFloat(g.GridEntryPrice, 64)
-	marketPrice, _ := fetchMarketPrice(g.Symbol)
+	marketPrice, _ := getSessionSymbolPrice(g.Symbol)
 	g.initialValue = initial / float64(g.InitialLeverage)
 	g.totalPnl = profit + fundingFee + position*(marketPrice-entryPrice) // position is negative for short
 	g.lastRoi = g.totalPnl / g.initialValue

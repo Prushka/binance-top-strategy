@@ -11,10 +11,92 @@ import (
 	"time"
 )
 
-type QueryStrategyRoi struct {
-	RootUserID           int    `json:"rootUserId"`
-	StrategyID           int    `json:"strategyId"`
-	StreamerStrategyType string `json:"streamerStrategyType"`
+type StrategyQuery struct {
+	Sort       string
+	Direction  *int
+	Count      int
+	RuntimeMax time.Duration
+	RuntimeMin time.Duration
+	Symbol     string
+}
+
+type StrategyMetrics struct {
+	CopyCount          *int     `json:"copyCount"`
+	Roi                *float64 `json:"roi"`
+	Pnl                *float64 `json:"pnl"`
+	runningTime        *int
+	RunningTime        *string `json:"runningTime"`
+	LatestMatchedCount *int    `json:"latestMatchedCount"`
+	MatchedCount       *int    `json:"matchedCount"`
+}
+
+type StrategiesResponse struct {
+	Data  Strategies `json:"data"`
+	Total int        `json:"total"`
+	BinanceBaseResponse
+}
+
+type Strategy struct {
+	Rois             StrategyRoi
+	Symbol           string `json:"symbol"`
+	CopyCount        int    `json:"copyCount"`
+	Roi              string `json:"roi"`
+	Pnl              string `json:"pnl"`
+	RunningTime      int    `json:"runningTime"`
+	SID              int    `json:"strategyId"`
+	StrategyType     int    `json:"strategyType"`
+	Direction        int    `json:"direction"`
+	UserID           int    `json:"userId"`
+	roi              float64
+	lastDayRoiChange float64
+	last3HrRoiChange float64
+	last2HrRoiChange float64
+	lastHrRoiChange  float64
+	lastDayRoiPerHr  float64
+	last12HrRoiPerHr float64
+	last6HrRoiPerHr  float64
+	lastNHrNoDip     bool
+	roiPerHour       float64
+	priceDifference  float64
+	StrategyParams   struct {
+		Type           string  `json:"type"`
+		LowerLimit     string  `json:"lowerLimit"`
+		UpperLimit     string  `json:"upperLimit"`
+		GridCount      int     `json:"gridCount"`
+		TriggerPrice   *string `json:"triggerPrice"`
+		StopLowerLimit *string `json:"stopLowerLimit"`
+		StopUpperLimit *string `json:"stopUpperLimit"`
+		BaseAsset      any     `json:"baseAsset"`
+		QuoteAsset     any     `json:"quoteAsset"`
+		Leverage       int     `json:"leverage"`
+		TrailingUp     bool    `json:"trailingUp"`
+		TrailingDown   bool    `json:"trailingDown"`
+	} `json:"strategyParams"`
+	TrailingType       string `json:"trailingType"`
+	LatestMatchedCount int    `json:"latestMatchedCount"`
+	MatchedCount       int    `json:"matchedCount"`
+	MinInvestment      string `json:"minInvestment"`
+}
+
+type UserPair struct {
+	Id    int
+	Count int
+}
+
+type TrackedStrategies struct {
+	strategiesById             map[int]*Strategy
+	strategiesByUserId         map[int]Strategies
+	strategies                 Strategies
+	userRankings               map[int]int
+	usersWithMoreThan1Strategy []UserPair
+	symbolCount                map[string]int
+	symbolDirectionCount       map[string]int
+	longs                      mapset.Set[int]
+	shorts                     mapset.Set[int]
+	neutrals                   mapset.Set[int]
+	highest                    StrategyMetrics
+	lowest                     StrategyMetrics
+	ids                        mapset.Set[int]
 }
 
 type QueryTopStrategy struct {
@@ -121,27 +203,6 @@ func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 	return sss
 }
 
-type UserPair struct {
-	Id    int
-	Count int
-}
-
-type TrackedStrategies struct {
-	strategiesById             map[int]*Strategy
-	strategiesByUserId         map[int]Strategies
-	strategies                 Strategies
-	userRankings               map[int]int
-	usersWithMoreThan1Strategy []UserPair
-	symbolCount                map[string]int
-	symbolDirectionCount       map[string]int
-	longs                      mapset.Set[int]
-	shorts                     mapset.Set[int]
-	neutrals                   mapset.Set[int]
-	highest                    StrategyMetrics
-	lowest                     StrategyMetrics
-	ids                        mapset.Set[int]
-}
-
 func (t *TrackedStrategies) findStrategyRanking(s Strategy) int {
 	symbolDirection := mapset.NewSet[string]()
 	counter := 0
@@ -169,79 +230,6 @@ func (t *TrackedStrategies) String() string {
 
 func (t *TrackedStrategies) exists(id int) bool {
 	return t.ids.Contains(id)
-}
-
-type StrategyMetrics struct {
-	CopyCount          *int     `json:"copyCount"`
-	Roi                *float64 `json:"roi"`
-	Pnl                *float64 `json:"pnl"`
-	runningTime        *int
-	RunningTime        *string `json:"runningTime"`
-	LatestMatchedCount *int    `json:"latestMatchedCount"`
-	MatchedCount       *int    `json:"matchedCount"`
-}
-
-type StrategyRoi []*Roi
-
-type Roi struct {
-	RootUserID int     `json:"rootUserId"`
-	StrategyID int     `json:"strategyId"`
-	Roi        float64 `json:"roi"`
-	Pnl        float64 `json:"pnl"`
-	Time       int64   `json:"time"`
-}
-
-type StrategyRoiResponse struct {
-	Data StrategyRoi `json:"data"`
-	BinanceBaseResponse
-}
-
-type StrategiesResponse struct {
-	Data  Strategies `json:"data"`
-	Total int        `json:"total"`
-	BinanceBaseResponse
-}
-
-type Strategy struct {
-	Rois             StrategyRoi
-	Symbol           string `json:"symbol"`
-	CopyCount        int    `json:"copyCount"`
-	Roi              string `json:"roi"`
-	Pnl              string `json:"pnl"`
-	RunningTime      int    `json:"runningTime"`
-	SID              int    `json:"strategyId"`
-	StrategyType     int    `json:"strategyType"`
-	Direction        int    `json:"direction"`
-	UserID           int    `json:"userId"`
-	roi              float64
-	lastDayRoiChange float64
-	last3HrRoiChange float64
-	last2HrRoiChange float64
-	lastHrRoiChange  float64
-	lastDayRoiPerHr  float64
-	last12HrRoiPerHr float64
-	last6HrRoiPerHr  float64
-	lastNHrNoDip     bool
-	roiPerHour       float64
-	priceDifference  float64
-	StrategyParams   struct {
-		Type           string  `json:"type"`
-		LowerLimit     string  `json:"lowerLimit"`
-		UpperLimit     string  `json:"upperLimit"`
-		GridCount      int     `json:"gridCount"`
-		TriggerPrice   *string `json:"triggerPrice"`
-		StopLowerLimit *string `json:"stopLowerLimit"`
-		StopUpperLimit *string `json:"stopUpperLimit"`
-		BaseAsset      any     `json:"baseAsset"`
-		QuoteAsset     any     `json:"quoteAsset"`
-		Leverage       int     `json:"leverage"`
-		TrailingUp     bool    `json:"trailingUp"`
-		TrailingDown   bool    `json:"trailingDown"`
-	} `json:"strategyParams"`
-	TrailingType       string `json:"trailingType"`
-	LatestMatchedCount int    `json:"latestMatchedCount"`
-	MatchedCount       int    `json:"matchedCount"`
-	MinInvestment      string `json:"minInvestment"`
 }
 
 func (r StrategyRoi) lastNRecords(n int) string {
@@ -308,7 +296,7 @@ func display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		priceRange = formatPriceRange(s.StrategyParams.LowerLimit, s.StrategyParams.UpperLimit)
 		grids = fmt.Sprintf("%d", s.StrategyParams.GridCount)
 	} else {
-		marketPrice, _ = fetchMarketPrice(grid.Symbol)
+		marketPrice, _ = getSessionSymbolPrice(grid.Symbol)
 		direction = grid.Direction
 		symbol = grid.Symbol
 		strategyId = fmt.Sprintf("%d", grid.SID)
@@ -372,30 +360,6 @@ var DirectionMap = map[int]string{
 	NEUTRAL: "NEUTRAL",
 	LONG:    "LONG",
 	SHORT:   "SHORT",
-}
-
-func getStrategyRois(strategyID int, rootUserId int) (StrategyRoi, error) {
-	query := &QueryStrategyRoi{
-		RootUserID:           rootUserId,
-		StrategyID:           strategyID,
-		StreamerStrategyType: "UM_GRID",
-	}
-	roi, _, err := request(
-		"https://www.binance.com/bapi/futures/v1/public/future/common/strategy/landing-page/queryRoiChart",
-		query, &StrategyRoiResponse{})
-	if err != nil {
-		return nil, err
-	}
-	return roi.Data, nil
-}
-
-type StrategyQuery struct {
-	Sort       string
-	Direction  *int
-	Count      int
-	RuntimeMax time.Duration
-	RuntimeMin time.Duration
-	Symbol     string
 }
 
 func mergeStrategies(strategyType int, sps ...StrategyQuery) (*TrackedStrategies, error) {
