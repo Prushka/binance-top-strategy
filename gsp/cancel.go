@@ -1,4 +1,4 @@
-package main
+package gsp
 
 import (
 	"BinanceTopStrategies/discord"
@@ -6,32 +6,32 @@ import (
 	"strings"
 )
 
-type GridToCancel struct {
+type gridToCancel struct {
 	MaxLoss   float64
 	Reasons   []string
 	Grid      *Grid
 	Cancelled bool
 }
 
-type GridsToCancel map[int]*GridToCancel
+type GridsToCancel map[int]*gridToCancel
 
-func (tc *GridToCancel) CanCancel() bool {
-	return tc.Grid.lastRoi >= tc.MaxLoss
+func (tc *gridToCancel) canCancel() bool {
+	return tc.Grid.LastRoi >= tc.MaxLoss
 }
 
-func (tc *GridToCancel) Cancel() error {
+func (tc *gridToCancel) Cancel() error {
 	grid := tc.Grid
 	webhooks := []int{discord.DefaultWebhook}
-	if tc.CanCancel() {
+	if tc.canCancel() {
 		err := closeGrid(grid.GID)
 		if err != nil {
 			return err
 		}
 		tc.Cancelled = true
-		discord.Info(display(nil, grid, "**Cancelled**", 0, 0), discord.ActionWebhook, discord.DefaultWebhook)
+		discord.Info(Display(nil, grid, "**Cancelled**", 0, 0), discord.ActionWebhook, discord.DefaultWebhook)
 		webhooks = append(webhooks, discord.ActionWebhook)
 	} else {
-		discord.Info(display(nil, grid, "**Skip Cancel**", 0, 0))
+		discord.Info(Display(nil, grid, "**Skip Cancel**", 0, 0))
 	}
 	for _, reason := range tc.Reasons {
 		discord.Info(" * "+reason, webhooks...)
@@ -51,7 +51,7 @@ func (g GridsToCancel) CancelAll() {
 func (g GridsToCancel) AddGridToCancel(grid *Grid, maxLoss float64, reason string) {
 	tc, ok := g[grid.GID]
 	if !ok {
-		tc = &GridToCancel{
+		tc = &gridToCancel{
 			MaxLoss: maxLoss,
 			Grid:    grid,
 		}
@@ -62,11 +62,11 @@ func (g GridsToCancel) AddGridToCancel(grid *Grid, maxLoss float64, reason strin
 	tc.Reasons = append(tc.Reasons, reason)
 }
 
-func (g GridsToCancel) Empty() bool {
+func (g GridsToCancel) IsEmpty() bool {
 	return len(g) == 0
 }
 
-func (g GridsToCancel) hasCancelled() bool {
+func (g GridsToCancel) HasCancelled() bool {
 	for _, tc := range g {
 		if tc.Cancelled {
 			return true

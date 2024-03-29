@@ -1,4 +1,4 @@
-package main
+package gsp
 
 import (
 	"BinanceTopStrategies/cache"

@@ -1,6 +1,7 @@
-package main
+package gsp
 
 import (
+	"BinanceTopStrategies/blacklist"
 	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/notional"
@@ -16,6 +17,15 @@ import (
 	"strconv"
 	"time"
 )
+
+func Init() {
+	err := persistence.Load(&statesOnGridOpen, persistence.GridStatesFileName)
+	if err != nil {
+		log.Fatalf("Error loading state on grid open: %v", err)
+	}
+}
+
+var statesOnGridOpen = make(map[int]*StateOnGridOpen)
 
 type StateOnGridOpen struct {
 	SDCountRaw          map[string]int
@@ -61,21 +71,21 @@ type PlaceGridResponse struct {
 }
 
 type GridTracking struct {
-	lowestRoi             float64
-	highestRoi            float64
-	timeHighestRoi        time.Time
-	timeLowestRoi         time.Time
-	timeLastChange        time.Time
-	continuousRoiGrowth   int
-	continuousRoiLoss     int
-	continuousRoiNoChange int
+	LowestRoi             float64
+	HighestRoi            float64
+	TimeHighestRoi        time.Time
+	TimeLowestRoi         time.Time
+	TimeLastChange        time.Time
+	ContinuousRoiGrowth   int
+	ContinuousRoiLoss     int
+	ContinuousRoiNoChange int
 }
 
 type Grid struct {
 	totalPnl               float64
 	initialValue           float64
-	lastRoi                float64
-	tracking               *GridTracking
+	LastRoi                float64
+	Tracking               *GridTracking
 	GID                    int    `json:"strategyId"`
 	RootUserID             int    `json:"rootUserId"`
 	StrategyUserID         int    `json:"strategyUserId"`
@@ -123,20 +133,20 @@ type OpenGridResponse struct {
 
 func newTrackedGrids() *TrackedGrids {
 	return &TrackedGrids{
-		shorts:          mapset.NewSet[int](),
-		longs:           mapset.NewSet[int](),
-		neutrals:        mapset.NewSet[int](),
-		existingSIDs:    mapset.NewSet[int](),
-		existingSymbols: mapset.NewSet[string](),
-		gridsByGid:      make(map[int]*Grid),
+		Shorts:          mapset.NewSet[int](),
+		Longs:           mapset.NewSet[int](),
+		Neutrals:        mapset.NewSet[int](),
+		ExistingSIDs:    mapset.NewSet[int](),
+		ExistingSymbols: mapset.NewSet[string](),
+		GridsByGid:      make(map[int]*Grid),
 	}
 }
 
 func persistStateOnGridOpen(gid int) {
 	if _, ok := statesOnGridOpen[gid]; !ok {
-		statesOnGridOpen[gid] = &StateOnGridOpen{SDCountRaw: bundle.Raw.symbolDirectionCount,
-			SDCountFiltered:     bundle.FilteredSortedBySD.symbolDirectionCount,
-			SDCountPairSpecific: bundle.SDCountPairSpecific}
+		statesOnGridOpen[gid] = &StateOnGridOpen{SDCountRaw: Bundle.Raw.SymbolDirectionCount,
+			SDCountFiltered:     Bundle.FilteredSortedBySD.SymbolDirectionCount,
+			SDCountPairSpecific: Bundle.SDCountPairSpecific}
 		err := persistence.Save(statesOnGridOpen, persistence.GridStatesFileName)
 		if err != nil {
 			discord.Infof("Error saving state on grid open: %v", err)
@@ -144,19 +154,19 @@ func persistStateOnGridOpen(gid int) {
 	}
 }
 
-func gridSDCount(gid int, symbol, direction string, setType string) (int, int, float64) {
+func GridSDCount(gid int, symbol, direction string, setType string) (int, int, float64) {
 	sd := symbol + direction
 	var currentSDCount int
 	var sdCountWhenOpen int
 	switch setType {
 	case SDRaw:
-		currentSDCount = bundle.Raw.symbolDirectionCount[sd]
+		currentSDCount = Bundle.Raw.SymbolDirectionCount[sd]
 		sdCountWhenOpen = statesOnGridOpen[gid].SDCountRaw[sd]
 	case SDFiltered:
-		currentSDCount = bundle.FilteredSortedBySD.symbolDirectionCount[sd]
+		currentSDCount = Bundle.FilteredSortedBySD.SymbolDirectionCount[sd]
 		sdCountWhenOpen = statesOnGridOpen[gid].SDCountFiltered[sd]
 	case SDPairSpecific:
-		currentSDCount = bundle.SDCountPairSpecific[sd]
+		currentSDCount = Bundle.SDCountPairSpecific[sd]
 		sdCountWhenOpen = statesOnGridOpen[gid].SDCountPairSpecific[sd]
 	}
 	ratio := float64(currentSDCount) / float64(sdCountWhenOpen)
@@ -164,34 +174,34 @@ func gridSDCount(gid int, symbol, direction string, setType string) (int, int, f
 }
 
 func (tracked *TrackedGrids) Remove(id int) {
-	g, ok := tracked.gridsByGid[id]
+	g, ok := tracked.GridsByGid[id]
 	if !ok {
 		return
 	}
-	tracked.existingSymbols.Remove(g.Symbol)
-	tracked.existingSIDs.Remove(g.SID)
+	tracked.ExistingSymbols.Remove(g.Symbol)
+	tracked.ExistingSIDs.Remove(g.SID)
 	if g.Direction == DirectionMap[LONG] {
-		tracked.longs.Remove(g.GID)
+		tracked.Longs.Remove(g.GID)
 	} else if g.Direction == DirectionMap[SHORT] {
-		tracked.shorts.Remove(g.GID)
+		tracked.Shorts.Remove(g.GID)
 	} else {
-		tracked.neutrals.Remove(g.GID)
+		tracked.Neutrals.Remove(g.GID)
 	}
-	tracked.totalGridInitial -= g.initialValue
-	tracked.totalGridPnl -= g.totalPnl
-	delete(tracked.gridsByGid, g.GID)
+	tracked.TotalGridInitial -= g.initialValue
+	tracked.TotalGridPnl -= g.totalPnl
+	delete(tracked.GridsByGid, g.GID)
 }
 
 func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
-	tracked.existingSymbols.Add(g.Symbol)
-	tracked.existingSIDs.Add(g.SID)
+	tracked.ExistingSymbols.Add(g.Symbol)
+	tracked.ExistingSIDs.Add(g.SID)
 
 	if g.Direction == DirectionMap[LONG] {
-		tracked.longs.Add(g.GID)
+		tracked.Longs.Add(g.GID)
 	} else if g.Direction == DirectionMap[SHORT] {
-		tracked.shorts.Add(g.GID)
+		tracked.Shorts.Add(g.GID)
 	} else {
-		tracked.neutrals.Add(g.GID)
+		tracked.Neutrals.Add(g.GID)
 	}
 	initial, _ := strconv.ParseFloat(g.GridInitialValue, 64)
 	profit, _ := strconv.ParseFloat(g.GridProfit, 64)
@@ -201,70 +211,70 @@ func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
 	marketPrice, _ := sdk.GetSessionSymbolPrice(g.Symbol)
 	g.initialValue = initial / float64(g.InitialLeverage)
 	g.totalPnl = profit + fundingFee + position*(marketPrice-entryPrice) // position is negative for short
-	g.lastRoi = g.totalPnl / g.initialValue
+	g.LastRoi = g.totalPnl / g.initialValue
 	updateTime := time.Now()
-	prevG, ok := tracked.gridsByGid[g.GID]
-	tracked.totalGridInitial += g.initialValue
-	tracked.totalGridPnl += g.totalPnl
+	prevG, ok := tracked.GridsByGid[g.GID]
+	tracked.TotalGridInitial += g.initialValue
+	tracked.TotalGridPnl += g.totalPnl
 	if ok {
-		tracked.totalGridInitial -= prevG.initialValue
-		tracked.totalGridPnl -= prevG.totalPnl
-		tracking := prevG.tracking
-		if g.lastRoi < tracking.lowestRoi {
-			tracking.timeLowestRoi = updateTime
+		tracked.TotalGridInitial -= prevG.initialValue
+		tracked.TotalGridPnl -= prevG.totalPnl
+		tracking := prevG.Tracking
+		if g.LastRoi < tracking.LowestRoi {
+			tracking.TimeLowestRoi = updateTime
 		}
-		if g.lastRoi > tracking.highestRoi {
-			tracking.timeHighestRoi = updateTime
+		if g.LastRoi > tracking.HighestRoi {
+			tracking.TimeHighestRoi = updateTime
 		}
-		if g.lastRoi != prevG.lastRoi {
-			tracking.timeLastChange = updateTime
+		if g.LastRoi != prevG.LastRoi {
+			tracking.TimeLastChange = updateTime
 		}
-		tracking.lowestRoi = math.Min(g.lastRoi, tracking.lowestRoi)
-		tracking.highestRoi = math.Max(g.lastRoi, tracking.highestRoi)
+		tracking.LowestRoi = math.Min(g.LastRoi, tracking.LowestRoi)
+		tracking.HighestRoi = math.Max(g.LastRoi, tracking.HighestRoi)
 		if trackContinuous {
-			if g.lastRoi > prevG.lastRoi {
-				tracking.continuousRoiGrowth += 1
-				tracking.continuousRoiLoss = 0
-				tracking.continuousRoiNoChange = 0
-			} else if g.lastRoi < prevG.lastRoi {
-				tracking.continuousRoiLoss += 1
-				tracking.continuousRoiGrowth = 0
-				tracking.continuousRoiNoChange = 0
+			if g.LastRoi > prevG.LastRoi {
+				tracking.ContinuousRoiGrowth += 1
+				tracking.ContinuousRoiLoss = 0
+				tracking.ContinuousRoiNoChange = 0
+			} else if g.LastRoi < prevG.LastRoi {
+				tracking.ContinuousRoiLoss += 1
+				tracking.ContinuousRoiGrowth = 0
+				tracking.ContinuousRoiNoChange = 0
 			} else {
-				tracking.continuousRoiNoChange += 1
-				tracking.continuousRoiGrowth = 0
-				tracking.continuousRoiLoss = 0
+				tracking.ContinuousRoiNoChange += 1
+				tracking.ContinuousRoiGrowth = 0
+				tracking.ContinuousRoiLoss = 0
 			}
 		}
-		g.tracking = tracking
+		g.Tracking = tracking
 	} else {
-		g.tracking = &GridTracking{
-			lowestRoi:      g.lastRoi,
-			highestRoi:     g.lastRoi,
-			timeHighestRoi: updateTime,
-			timeLowestRoi:  updateTime,
-			timeLastChange: updateTime,
+		g.Tracking = &GridTracking{
+			LowestRoi:      g.LastRoi,
+			HighestRoi:     g.LastRoi,
+			TimeHighestRoi: updateTime,
+			TimeLowestRoi:  updateTime,
+			TimeLastChange: updateTime,
 		}
 		persistStateOnGridOpen(g.GID)
 	}
-	tracked.gridsByGid[g.GID] = g
+	tracked.GridsByGid[g.GID] = g
 }
 
 type TrackedGrids struct {
-	totalGridInitial float64
-	totalGridPnl     float64
-	shorts           mapset.Set[int]
-	longs            mapset.Set[int]
-	neutrals         mapset.Set[int]
-	existingSIDs     mapset.Set[int]
-	existingSymbols  mapset.Set[string]
-	gridsByGid       map[int]*Grid
+	TotalGridInitial float64
+	TotalGridPnl     float64
+	Shorts           mapset.Set[int]
+	Longs            mapset.Set[int]
+	Neutrals         mapset.Set[int]
+	ExistingSIDs     mapset.Set[int]
+	ExistingSymbols  mapset.Set[string]
+	GridsByGid       map[int]*Grid
 }
 
 func (tracked *TrackedGrids) findGridIdsByStrategyId(ids ...int) mapset.Set[int] {
 	gridIds := mapset.NewSet[int]()
 	idsSet := mapset.NewSet[int](ids...)
-	for _, g := range tracked.gridsByGid {
+	for _, g := range tracked.GridsByGid {
 		if idsSet.Contains(g.SID) {
 			gridIds.Add(g.GID)
 		}
@@ -293,50 +303,50 @@ func getGridSymbols() (mapset.Set[string], error) {
 	return symbols, nil
 }
 
-func updateOpenGrids(trackContinuous bool) error {
+func UpdateOpenGrids(trackContinuous bool) error {
 	res, err := getOpenGrids()
 	if err != nil {
 		return err
 	}
 	currentIds := mapset.NewSet[int]()
 	for _, grid := range res.Grids {
-		gGrids.Add(grid, trackContinuous)
+		GlobalGrids.Add(grid, trackContinuous)
 		currentIds.Add(grid.GID)
 	}
-	for _, g := range gGrids.gridsByGid {
+	for _, g := range GlobalGrids.GridsByGid {
 		if !currentIds.Contains(g.GID) {
-			gGrids.Remove(g.GID)
-			discord.Info(display(nil, g,
+			GlobalGrids.Remove(g.GID)
+			discord.Info(Display(nil, g,
 				fmt.Sprintf("**Gone - Block for %d Minutes**", config.TheConfig.TradingBlockMinutesAfterCancel),
 				0, 0), discord.ActionWebhook, discord.DefaultWebhook)
-			tradingBlock = time.Now().Add(time.Duration(config.TheConfig.TradingBlockMinutesAfterCancel) * time.Minute)
+			blacklist.BlockTrading(time.Duration(config.TheConfig.TradingBlockMinutesAfterCancel)*time.Minute, "Grid Gone")
 		}
 	}
 	discord.Infof("Open Pairs: %v, Open Ids: %v, Initial: %f, TotalPnL: %f, C: %f, L/S/N: %d/%d/%d",
-		gGrids.existingSymbols, gGrids.existingSIDs, gGrids.totalGridInitial, gGrids.totalGridPnl, gGrids.totalGridPnl+gGrids.totalGridInitial,
-		gGrids.longs.Cardinality(), gGrids.shorts.Cardinality(), gGrids.neutrals.Cardinality())
+		GlobalGrids.ExistingSymbols, GlobalGrids.ExistingSIDs, GlobalGrids.TotalGridInitial, GlobalGrids.TotalGridPnl, GlobalGrids.TotalGridPnl+GlobalGrids.TotalGridInitial,
+		GlobalGrids.Longs.Cardinality(), GlobalGrids.Shorts.Cardinality(), GlobalGrids.Neutrals.Cardinality())
 	return nil
 }
 
 func (grid *Grid) String() string {
-	tracking := grid.tracking
+	tracking := grid.Tracking
 	extendedProfit := ""
 	extendedProfit = fmt.Sprintf(" [%.2f%% (%s), %.2f%% (%s)][+%d, -%d, %d (%s)]",
-		tracking.lowestRoi*100,
-		time.Since(tracking.timeLowestRoi).Round(time.Second),
-		tracking.highestRoi*100,
-		time.Since(tracking.timeHighestRoi).Round(time.Second),
-		tracking.continuousRoiGrowth, tracking.continuousRoiLoss, tracking.continuousRoiNoChange,
-		time.Since(tracking.timeLastChange).Round(time.Second),
+		tracking.LowestRoi*100,
+		time.Since(tracking.TimeLowestRoi).Round(time.Second),
+		tracking.HighestRoi*100,
+		time.Since(tracking.TimeHighestRoi).Round(time.Second),
+		tracking.ContinuousRoiGrowth, tracking.ContinuousRoiLoss, tracking.ContinuousRoiNoChange,
+		time.Since(tracking.TimeLastChange).Round(time.Second),
 	)
 	formatSDRatio := func(setType string) string {
-		currentSD, sdWhenOpen, ratio := gridSDCount(grid.GID, grid.Symbol, grid.Direction, setType)
+		currentSD, sdWhenOpen, ratio := GridSDCount(grid.GID, grid.Symbol, grid.Direction, setType)
 		return fmt.Sprintf("%s: %d/%d/%.1f%%", setType, currentSD, sdWhenOpen, ratio*100)
 	}
 	realized, _ := strconv.ParseFloat(grid.GridProfit, 64)
 	return fmt.Sprintf("*%d*, Realized: %.2f, Total: %.2f, =%.2f%%%s, %s, %s, %s",
 		grid.GID,
-		realized, grid.totalPnl, grid.lastRoi*100, extendedProfit,
+		realized, grid.totalPnl, grid.LastRoi*100, extendedProfit,
 		formatSDRatio(SDRaw), formatSDRatio(SDFiltered), formatSDRatio(SDPairSpecific))
 }
 
@@ -353,7 +363,7 @@ func closeGrid(strategyId int) error {
 	return err
 }
 
-func placeGrid(strategy Strategy, initialUSDT float64) error {
+func PlaceGrid(strategy Strategy, initialUSDT float64) error {
 	if _, ok := DirectionMap[strategy.Direction]; !ok {
 		return fmt.Errorf("invalid direction: %d", strategy.Direction)
 	}

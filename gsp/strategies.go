@@ -1,4 +1,4 @@
-package main
+package gsp
 
 import (
 	"BinanceTopStrategies/config"
@@ -89,19 +89,19 @@ type UserPair struct {
 }
 
 type TrackedStrategies struct {
-	strategiesById             map[int]*Strategy
-	strategiesByUserId         map[int]Strategies
-	strategies                 Strategies
-	userRankings               map[int]int
-	usersWithMoreThan1Strategy []UserPair
-	symbolCount                map[string]int
-	symbolDirectionCount       map[string]int
-	longs                      mapset.Set[int]
-	shorts                     mapset.Set[int]
-	neutrals                   mapset.Set[int]
-	highest                    StrategyMetrics
-	lowest                     StrategyMetrics
-	ids                        mapset.Set[int]
+	StrategiesById             map[int]*Strategy
+	StrategiesByUserId         map[int]Strategies
+	Strategies                 Strategies
+	UserRankings               map[int]int
+	UsersWithMoreThan1Strategy []UserPair
+	SymbolCount                map[string]int
+	SymbolDirectionCount       map[string]int
+	Longs                      mapset.Set[int]
+	Shorts                     mapset.Set[int]
+	Neutrals                   mapset.Set[int]
+	Highest                    StrategyMetrics
+	Lowest                     StrategyMetrics
+	Ids                        mapset.Set[int]
 }
 
 type QueryTopStrategy struct {
@@ -120,91 +120,91 @@ type Strategies []*Strategy
 
 func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 	sss := &TrackedStrategies{
-		strategiesById:       make(map[int]*Strategy),
-		strategiesByUserId:   make(map[int]Strategies),
-		userRankings:         make(map[int]int),
-		symbolCount:          make(map[string]int),
-		symbolDirectionCount: make(map[string]int),
-		longs:                mapset.NewSet[int](),
-		shorts:               mapset.NewSet[int](),
-		neutrals:             mapset.NewSet[int](),
+		StrategiesById:       make(map[int]*Strategy),
+		StrategiesByUserId:   make(map[int]Strategies),
+		UserRankings:         make(map[int]int),
+		SymbolCount:          make(map[string]int),
+		SymbolDirectionCount: make(map[string]int),
+		Longs:                mapset.NewSet[int](),
+		Shorts:               mapset.NewSet[int](),
+		Neutrals:             mapset.NewSet[int](),
 	}
 	for _, s := range by {
-		_, ok := sss.strategiesById[s.SID]
+		_, ok := sss.StrategiesById[s.SID]
 		if ok {
 			continue
 		}
-		sss.strategiesById[s.SID] = s
-		if _, ok := sss.strategiesByUserId[s.UserID]; !ok {
-			sss.strategiesByUserId[s.UserID] = make(Strategies, 0)
+		sss.StrategiesById[s.SID] = s
+		if _, ok := sss.StrategiesByUserId[s.UserID]; !ok {
+			sss.StrategiesByUserId[s.UserID] = make(Strategies, 0)
 		}
-		sss.strategiesByUserId[s.UserID] = append(sss.strategiesByUserId[s.UserID], s)
-		sss.userRankings[s.UserID] += 1
-		sss.symbolCount[s.Symbol] += 1
-		sss.symbolDirectionCount[s.Symbol+DirectionMap[s.Direction]] += 1
+		sss.StrategiesByUserId[s.UserID] = append(sss.StrategiesByUserId[s.UserID], s)
+		sss.UserRankings[s.UserID] += 1
+		sss.SymbolCount[s.Symbol] += 1
+		sss.SymbolDirectionCount[s.Symbol+DirectionMap[s.Direction]] += 1
 		if s.Direction == LONG {
-			sss.longs.Add(s.SID)
+			sss.Longs.Add(s.SID)
 		} else if s.Direction == SHORT {
-			sss.shorts.Add(s.SID)
+			sss.Shorts.Add(s.SID)
 		} else {
-			sss.neutrals.Add(s.SID)
+			sss.Neutrals.Add(s.SID)
 		}
 		roi, _ := strconv.ParseFloat(s.Roi, 64)
 		pnl, _ := strconv.ParseFloat(s.Pnl, 64)
-		if sss.highest.CopyCount == nil || s.CopyCount > *sss.highest.CopyCount {
-			sss.highest.CopyCount = &s.CopyCount
+		if sss.Highest.CopyCount == nil || s.CopyCount > *sss.Highest.CopyCount {
+			sss.Highest.CopyCount = &s.CopyCount
 		}
-		if sss.lowest.CopyCount == nil || s.CopyCount < *sss.lowest.CopyCount {
-			sss.lowest.CopyCount = &s.CopyCount
+		if sss.Lowest.CopyCount == nil || s.CopyCount < *sss.Lowest.CopyCount {
+			sss.Lowest.CopyCount = &s.CopyCount
 		}
-		if sss.highest.Roi == nil || roi > *sss.highest.Roi {
-			sss.highest.Roi = &roi
+		if sss.Highest.Roi == nil || roi > *sss.Highest.Roi {
+			sss.Highest.Roi = &roi
 		}
-		if sss.lowest.Roi == nil || roi < *sss.lowest.Roi {
-			sss.lowest.Roi = &roi
+		if sss.Lowest.Roi == nil || roi < *sss.Lowest.Roi {
+			sss.Lowest.Roi = &roi
 		}
-		if sss.highest.Pnl == nil || pnl > *sss.highest.Pnl {
-			sss.highest.Pnl = &pnl
+		if sss.Highest.Pnl == nil || pnl > *sss.Highest.Pnl {
+			sss.Highest.Pnl = &pnl
 		}
-		if sss.lowest.Pnl == nil || pnl < *sss.lowest.Pnl {
-			sss.lowest.Pnl = &pnl
+		if sss.Lowest.Pnl == nil || pnl < *sss.Lowest.Pnl {
+			sss.Lowest.Pnl = &pnl
 		}
-		if sss.highest.runningTime == nil || s.RunningTime > *sss.highest.runningTime {
-			sss.highest.runningTime = &s.RunningTime
+		if sss.Highest.runningTime == nil || s.RunningTime > *sss.Highest.runningTime {
+			sss.Highest.runningTime = &s.RunningTime
 		}
-		if sss.lowest.runningTime == nil || s.RunningTime < *sss.lowest.runningTime {
-			sss.lowest.runningTime = &s.RunningTime
+		if sss.Lowest.runningTime == nil || s.RunningTime < *sss.Lowest.runningTime {
+			sss.Lowest.runningTime = &s.RunningTime
 		}
-		if sss.highest.MatchedCount == nil || s.MatchedCount > *sss.highest.MatchedCount {
-			sss.highest.MatchedCount = &s.MatchedCount
+		if sss.Highest.MatchedCount == nil || s.MatchedCount > *sss.Highest.MatchedCount {
+			sss.Highest.MatchedCount = &s.MatchedCount
 		}
-		if sss.lowest.MatchedCount == nil || s.MatchedCount < *sss.lowest.MatchedCount {
-			sss.lowest.MatchedCount = &s.MatchedCount
+		if sss.Lowest.MatchedCount == nil || s.MatchedCount < *sss.Lowest.MatchedCount {
+			sss.Lowest.MatchedCount = &s.MatchedCount
 		}
-		if sss.highest.LatestMatchedCount == nil || s.LatestMatchedCount > *sss.highest.LatestMatchedCount {
-			sss.highest.LatestMatchedCount = &s.LatestMatchedCount
+		if sss.Highest.LatestMatchedCount == nil || s.LatestMatchedCount > *sss.Highest.LatestMatchedCount {
+			sss.Highest.LatestMatchedCount = &s.LatestMatchedCount
 		}
-		if sss.lowest.LatestMatchedCount == nil || s.LatestMatchedCount < *sss.lowest.LatestMatchedCount {
-			sss.lowest.LatestMatchedCount = &s.LatestMatchedCount
+		if sss.Lowest.LatestMatchedCount == nil || s.LatestMatchedCount < *sss.Lowest.LatestMatchedCount {
+			sss.Lowest.LatestMatchedCount = &s.LatestMatchedCount
 		}
-		globalStrategies[s.SID] = s
-		sss.strategies = append(sss.strategies, s)
+		GlobalStrategies[s.SID] = s
+		sss.Strategies = append(sss.Strategies, s)
 	}
-	if sss.highest.runningTime != nil {
-		sss.highest.RunningTime = utils.StringPointer(fmt.Sprintf("%s", time.Duration(*sss.highest.runningTime)*time.Second))
+	if sss.Highest.runningTime != nil {
+		sss.Highest.RunningTime = utils.StringPointer(fmt.Sprintf("%s", time.Duration(*sss.Highest.runningTime)*time.Second))
 	}
-	if sss.lowest.runningTime != nil {
-		sss.lowest.RunningTime = utils.StringPointer(fmt.Sprintf("%s", time.Duration(*sss.lowest.runningTime)*time.Second))
+	if sss.Lowest.runningTime != nil {
+		sss.Lowest.RunningTime = utils.StringPointer(fmt.Sprintf("%s", time.Duration(*sss.Lowest.runningTime)*time.Second))
 	}
-	for userId, count := range sss.userRankings {
+	for userId, count := range sss.UserRankings {
 		if count > 1 {
-			sss.usersWithMoreThan1Strategy = append(sss.usersWithMoreThan1Strategy, UserPair{Id: userId, Count: count})
+			sss.UsersWithMoreThan1Strategy = append(sss.UsersWithMoreThan1Strategy, UserPair{Id: userId, Count: count})
 		}
 	}
-	sort.Slice(sss.usersWithMoreThan1Strategy, func(i, j int) bool {
-		return sss.usersWithMoreThan1Strategy[i].Count > sss.usersWithMoreThan1Strategy[j].Count
+	sort.Slice(sss.UsersWithMoreThan1Strategy, func(i, j int) bool {
+		return sss.UsersWithMoreThan1Strategy[i].Count > sss.UsersWithMoreThan1Strategy[j].Count
 	})
-	sss.ids = mapset.NewSetFromMapKeys(sss.strategiesById)
+	sss.Ids = mapset.NewSetFromMapKeys(sss.StrategiesById)
 	return sss
 }
 
@@ -212,7 +212,7 @@ func (t *TrackedStrategies) findStrategyRanking(s Strategy) int {
 	symbolDirection := mapset.NewSet[string]()
 	counter := 0
 	sd := s.Symbol + DirectionMap[s.Direction]
-	for _, s := range t.strategies {
+	for _, s := range t.Strategies {
 		sdd := s.Symbol + DirectionMap[s.Direction]
 		if sdd == sd {
 			return counter
@@ -228,13 +228,13 @@ func (t *TrackedStrategies) findStrategyRanking(s Strategy) int {
 
 func (t *TrackedStrategies) String() string {
 	return fmt.Sprintf("%d, Symbols: %d, L/S/N: %d/%d/%d, SymbolDirections: %v, H: %v, L: %v",
-		len(t.strategiesById), len(t.symbolCount),
-		t.longs.Cardinality(), t.shorts.Cardinality(), t.neutrals.Cardinality(),
-		utils.AsJson(t.symbolDirectionCount), utils.AsJson(t.highest), utils.AsJson(t.lowest))
+		len(t.StrategiesById), len(t.SymbolCount),
+		t.Longs.Cardinality(), t.Shorts.Cardinality(), t.Neutrals.Cardinality(),
+		utils.AsJson(t.SymbolDirectionCount), utils.AsJson(t.Highest), utils.AsJson(t.Lowest))
 }
 
-func (t *TrackedStrategies) exists(id int) bool {
-	return t.ids.Contains(id)
+func (t *TrackedStrategies) Exists(id int) bool {
+	return t.Ids.Contains(id)
 }
 
 func (r StrategyRoi) lastNRecords(n int) string {
@@ -253,8 +253,9 @@ func (r StrategyRoi) lastNRecords(n int) string {
 func (s Strategy) String() string {
 	pnl, _ := strconv.ParseFloat(s.Pnl, 64)
 	ranking := ""
-	if bundle != nil {
-		ranking = fmt.Sprintf(", Rank: Raw: %d, FilterdSD: %d", bundle.Raw.findStrategyRanking(s), bundle.FilteredSortedBySD.findStrategyRanking(s))
+	if Bundle != nil {
+		ranking = fmt.Sprintf(", Rank: Raw: %d, FilterdSD: %d", Bundle.Raw.findStrategyRanking(s),
+			Bundle.FilteredSortedBySD.findStrategyRanking(s))
 	}
 	return fmt.Sprintf("Cpy: %d, Mch: [%d, %d], PnL: %.2f, Rois: %s, [H%%, A/Day/12H/6H: %.1f%%/%.1f%%/%.1f%%/%.1f%%], [A/D/3/2/1H: %s%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s%s",
 		s.CopyCount, s.MatchedCount, s.LatestMatchedCount, pnl, s.Rois.lastNRecords(config.TheConfig.LastNHoursNoDips),
@@ -262,12 +263,12 @@ func (s Strategy) String() string {
 		s.lastDayRoiChange*100, s.last3HrRoiChange*100, s.last2HrRoiChange*100, s.lastHrRoiChange*100, s.MinInvestment, ranking)
 }
 
-func display(s *Strategy, grid *Grid, action string, index int, length int) string {
+func Display(s *Strategy, grid *Grid, action string, index int, length int) string {
 	if grid == nil && s == nil {
 		return "Strategy and Grid are both nil"
 	}
 	if grid != nil {
-		if gl, ok := globalStrategies[grid.SID]; s == nil && ok {
+		if gl, ok := GlobalStrategies[grid.SID]; s == nil && ok {
 			s = gl
 		}
 	}

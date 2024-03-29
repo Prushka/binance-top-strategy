@@ -12,6 +12,7 @@ type blacklists struct {
 	BySID             map[int]*content
 	BySymbolDirection map[string]*content
 	BySymbol          map[string]*content
+	Global            *content
 }
 
 type content struct {
@@ -35,6 +36,12 @@ func Init() {
 	}
 }
 
+func BlockTrading(d time.Duration, reason string) {
+	blacklist.Global = &content{Till: time.Now().Add(d), Reason: reason}
+	discord.Infof(fmt.Sprintf("**Global block:** %s, %s", d, reason))
+	persistBlacklist()
+}
+
 func AddSymbolDirection(symbol, direction string, d time.Duration, reason string) {
 	blacklist.BySymbolDirection[symbol+direction] = &content{Till: time.Now().Add(d), Reason: reason}
 	discord.Infof(fmt.Sprintf("**Add blacklist:** %s, %s, %s, %s", symbol, direction, d, reason))
@@ -51,6 +58,17 @@ func AddSymbol(symbol string, d time.Duration, reason string) {
 	blacklist.BySymbol[symbol] = &content{Till: time.Now().Add(d), Reason: reason}
 	discord.Infof(fmt.Sprintf("**Add blacklist:** %s, %s, %s", symbol, d, reason), discord.DefaultWebhook)
 	persistBlacklist()
+}
+
+func IsTradingBlocked() (bool, time.Time) {
+	if blacklist.Global != nil {
+		if time.Now().Before(blacklist.Global.Till) {
+			return true, blacklist.Global.Till
+		} else {
+			blacklist.Global = nil
+		}
+	}
+	return false, time.Time{}
 }
 
 func SymbolDirectionBlacklisted(symbol, direction string) (bool, time.Time) {
