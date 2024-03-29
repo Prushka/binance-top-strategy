@@ -269,10 +269,10 @@ func tick() error {
 			toCancel.AddGridToCancel(grid, 0, reason)
 		}
 
-		for c, gpMax := range TheConfig.GainExitNotGoingUp {
+		for c, gpMax := range TheConfig.TakeProfits {
 			if grid.lastRoi >= gpMax {
-				gpLookBack := time.Duration(TheConfig.GainExitNotGoingUpMaxLookBackMinutes[c]) * time.Minute
-				gpBlock := time.Duration(TheConfig.GainExitNotGoingUpBlockMinutes[c]) * time.Minute
+				gpLookBack := time.Duration(TheConfig.TakeProfitsMaxLookbackMinutes[c]) * time.Minute
+				gpBlock := time.Duration(TheConfig.TakeProfitsBlockMinutes[c]) * time.Minute
 				if time.Since(grid.tracking.timeHighestRoi) > gpLookBack {
 					reason := fmt.Sprintf("max gain %.2f%%/%.2f%%, reached %s ago",
 						grid.lastRoi*100, grid.tracking.highestRoi*100,
