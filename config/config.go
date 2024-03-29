@@ -28,7 +28,7 @@ type Config struct {
 	CancelWithLossSymbolDirectionShrink    float64   `env:"CANCEL_WITH_LOSS_SYMBOL_DIRECTION_SHRINK" envDefault:"0.65"`
 	MaxLossWithSymbolDirectionShrink       float64   `env:"MAX_LOSS_WITH_SYMBOL_DIRECTION_SHRINK" envDefault:"-0.2"`
 	TradingBlockMinutesAfterCancel         int       `env:"TRADING_BLOCK_MINUTES_AFTER_CANCEL" envDefault:"3"`
-	TakeProfits                            []float64 `env:"TAKE_PROFITS" envDefault:"0.8,0.5,0.3"`
+	TakeProfits                            []float64 `env:"TAKE_PROFITS" envDefault:"0.8,0.5,0.25"`
 	TakeProfitsMaxLookbackMinutes          []int     `env:"TAKE_PROFITS_MAX_LOOKBACK_MINUTES" envDefault:"5,15,25"`
 	TakeProfitsBlockMinutes                []int     `env:"TAKE_PROFITS_BLOCK_MINUTES" envDefault:"40,-1,-1"`
 	TickEverySeconds                       int       `env:"TICK_EVERY_SECONDS" envDefault:"60"`
