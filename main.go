@@ -212,10 +212,7 @@ func tick() error {
 	Time("Fetch grids")
 	count := 0
 	for _, grid := range gGrids.gridsByGid {
-		sid := grid.SID
-		Discordf(display(nil, grid,
-			fmt.Sprintf("%d, %d", bundle.Raw.findStrategyRanking(sid), bundle.FilteredSortedBySD.findStrategyRanking(sid)),
-			count+1, len(gGrids.gridsByGid)))
+		Discordf(display(nil, grid, "", count+1, len(gGrids.gridsByGid)))
 		count++
 	}
 	toCancel := make(GridsToCancel)
@@ -395,6 +392,8 @@ func tick() error {
 // use it to cancel
 
 // strict stop gain then block
+
+// strict stop loss or other conditions then block
 
 // TODO: cancel when above n%, then cooldown?
 // perform last 20 min roi (latest - last 20 OR if max roi was reached more than 20 min ago), if not positive and stop gain, cancel then block symbolpairdirection until next hr

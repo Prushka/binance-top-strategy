@@ -142,19 +142,10 @@ type TrackedStrategies struct {
 	ids                        mapset.Set[int]
 }
 
-func (t *TrackedStrategies) findStrategyRanking(id int) int {
+func (t *TrackedStrategies) findStrategyRanking(s Strategy) int {
 	symbolDirection := mapset.NewSet[string]()
 	counter := 0
-	sd := ""
-	for _, s := range t.strategies {
-		if s.SID == id {
-			sd = s.Symbol + DirectionMap[s.Direction]
-			break
-		}
-	}
-	if sd == "" {
-		return -1
-	}
+	sd := s.Symbol + DirectionMap[s.Direction]
 	for _, s := range t.strategies {
 		sdd := s.Symbol + DirectionMap[s.Direction]
 		if sdd == sd {
@@ -267,10 +258,14 @@ func (r StrategyRoi) lastNRecords(n int) string {
 
 func (s Strategy) String() string {
 	pnl, _ := strconv.ParseFloat(s.Pnl, 64)
-	return fmt.Sprintf("Cpy: %d, Mch: [%d, %d], PnL: %.2f, Rois: %s, [H%%, A/Day/12H/6H: %.1f%%/%.1f%%/%.1f%%/%.1f%%], [A/D/3/2/1H: %s%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s",
+	ranking := ""
+	if bundle != nil {
+		ranking = fmt.Sprintf(", Rank: Raw: %d, FilterdSD: %d", bundle.Raw.findStrategyRanking(s), bundle.FilteredSortedBySD.findStrategyRanking(s))
+	}
+	return fmt.Sprintf("Cpy: %d, Mch: [%d, %d], PnL: %.2f, Rois: %s, [H%%, A/Day/12H/6H: %.1f%%/%.1f%%/%.1f%%/%.1f%%], [A/D/3/2/1H: %s%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s%s",
 		s.CopyCount, s.MatchedCount, s.LatestMatchedCount, pnl, s.Rois.lastNRecords(TheConfig.LastNHoursNoDips),
 		s.roiPerHour*100, s.lastDayRoiPerHr*100, s.last12HrRoiPerHr*100, s.last6HrRoiPerHr*100, s.Roi,
-		s.lastDayRoiChange*100, s.last3HrRoiChange*100, s.last2HrRoiChange*100, s.lastHrRoiChange*100, s.MinInvestment)
+		s.lastDayRoiChange*100, s.last3HrRoiChange*100, s.last2HrRoiChange*100, s.lastHrRoiChange*100, s.MinInvestment, ranking)
 }
 
 func display(s *Strategy, grid *Grid, action string, index int, length int) string {
@@ -352,7 +347,7 @@ func display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		seq = fmt.Sprintf("%d/%d - ", index, length)
 	}
 
-	return fmt.Sprintf("* [%s%s%s, %s, %s, %s @ %f, %s Grids, %s] %s:%s%s",
+	return fmt.Sprintf("* [%s%s%s, %s, %s, %s @ %f, %s Grids, %s] %s: %s%s",
 		seq, symbol, direction, leverage, runTime,
 		priceRange, marketPrice, grids, strategyId, action, ss, gg)
 }
