@@ -14,11 +14,11 @@ type GridToCancel struct {
 
 type GridsToCancel map[int]*GridToCancel
 
-func (tc GridToCancel) CanCancel() bool {
+func (tc *GridToCancel) CanCancel() bool {
 	return tc.Grid.lastRoi >= tc.MaxLoss
 }
 
-func (tc GridToCancel) Cancel() error {
+func (tc *GridToCancel) Cancel() error {
 	grid := tc.Grid
 	webhooks := []int{DefaultWebhook}
 	if tc.CanCancel() {
