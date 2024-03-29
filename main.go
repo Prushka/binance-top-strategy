@@ -41,12 +41,12 @@ func tick() error {
 
 	utils.Time("Fetch grids")
 	count := 0
-	for _, grid := range gsp.GlobalGrids.GridsByGid {
-		discord.Infof(gsp.Display(nil, grid, "", count+1, len(gsp.GlobalGrids.GridsByGid)))
+	for _, grid := range gsp.GGrids.GridsByGid {
+		discord.Infof(gsp.Display(nil, grid, "", count+1, len(gsp.GGrids.GridsByGid)))
 		count++
 	}
 	toCancel := make(gsp.GridsToCancel)
-	for _, grid := range gsp.GlobalGrids.GridsByGid {
+	for _, grid := range gsp.GGrids.GridsByGid {
 		symbolDifferentDirectionsHigherRanking := 0
 		possibleDirections := mapset.NewSet[string]()
 		for _, s := range gsp.Bundle.FilteredSortedByMetric.Strategies {
@@ -127,12 +127,12 @@ func tick() error {
 		return nil
 	}
 
-	gridsOpen := len(gsp.GlobalGrids.GridsByGid)
+	gridsOpen := len(gsp.GGrids.GridsByGid)
 	if config.TheConfig.MaxChunks-gridsOpen <= 0 && !config.TheConfig.Paper {
 		discord.Infof("Max Chunks reached, No cancel - Skip current run")
 		return nil
 	}
-	if mapset.NewSetFromMapKeys(gsp.Bundle.FilteredSortedBySD.SymbolCount).Difference(gsp.GlobalGrids.ExistingSymbols).Cardinality() == 0 && !config.TheConfig.Paper {
+	if mapset.NewSetFromMapKeys(gsp.Bundle.FilteredSortedBySD.SymbolCount).Difference(gsp.GGrids.ExistingSymbols).Cardinality() == 0 && !config.TheConfig.Paper {
 		discord.Infof("All symbols exists in open grids, Skip")
 		return nil
 	}
@@ -144,15 +144,15 @@ func tick() error {
 	chunksInt := config.TheConfig.MaxChunks - gridsOpen
 	chunks := float64(config.TheConfig.MaxChunks - gridsOpen)
 	invChunk := (usdt - config.TheConfig.LeavingAsset) / chunks
-	idealInvChunk := (usdt + gsp.GlobalGrids.TotalGridPnl + gsp.GlobalGrids.TotalGridInitial) / float64(config.TheConfig.MaxChunks)
+	idealInvChunk := (usdt + gsp.GGrids.TotalGridPnl + gsp.GGrids.TotalGridInitial) / float64(config.TheConfig.MaxChunks)
 	log.Infof("Ideal Investment: %f, allowed Investment: %f, missing %f chunks", idealInvChunk, invChunk, chunks)
 	if invChunk > idealInvChunk {
 		invChunk = idealInvChunk
 	}
-	sessionSymbols := gsp.GlobalGrids.ExistingSymbols.Clone()
+	sessionSymbols := gsp.GGrids.ExistingSymbols.Clone()
 	for c, s := range gsp.Bundle.FilteredSortedBySD.Strategies {
 		discord.Infof(gsp.Display(s, nil, "New", c+1, len(gsp.Bundle.FilteredSortedBySD.Strategies)))
-		if gsp.GlobalGrids.ExistingSIDs.Contains(s.SID) {
+		if gsp.GGrids.ExistingSIDs.Contains(s.SID) {
 			discord.Infof("Strategy exists in open grids, Skip")
 			continue
 		}
@@ -220,6 +220,9 @@ func tick() error {
 // Detect move out of range
 
 // strict stop loss or other conditions then block
+
+// Use filtered SD ratio to cancel
+// Use total SD ratio of the pair to cancel
 
 // TODO: cancel when above n%, then cooldown?
 // perform last 20 min roi (latest - last 20 OR if max roi was reached more than 20 min ago), if not positive and stop gain, cancel then block symbolpairdirection until next hr

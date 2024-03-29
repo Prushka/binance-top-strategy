@@ -187,7 +187,6 @@ func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 		if sss.Lowest.LatestMatchedCount == nil || s.LatestMatchedCount < *sss.Lowest.LatestMatchedCount {
 			sss.Lowest.LatestMatchedCount = &s.LatestMatchedCount
 		}
-		GlobalStrategies[s.SID] = s
 		sss.Strategies = append(sss.Strategies, s)
 	}
 	if sss.Highest.runningTime != nil {
@@ -268,7 +267,7 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		return "Strategy and Grid are both nil"
 	}
 	if grid != nil {
-		if gl, ok := GlobalStrategies[grid.SID]; s == nil && ok {
+		if gl, ok := GStrats[grid.SID]; s == nil && ok {
 			s = gl
 		}
 	}

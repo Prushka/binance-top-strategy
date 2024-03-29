@@ -44,7 +44,7 @@ func UpdateTopStrategiesWithRoi() error {
 		lower, _ := strconv.ParseFloat(s.StrategyParams.LowerLimit, 64)
 		upper, _ := strconv.ParseFloat(s.StrategyParams.UpperLimit, 64)
 		s.priceDifference = upper/lower - 1
-
+		GStrats[s.SID] = s
 		if len(s.Rois) > 1 {
 			s.roi = s.Rois[0].Roi
 			s.lastDayRoiChange = GetRoiChange(s.Rois, 24*time.Hour)
@@ -109,8 +109,8 @@ func UpdateTopStrategiesWithRoi() error {
 	discord.Infof("* Open: " + Bundle.FilteredSortedBySD.String())
 	filteredSymbols := mapset.NewSetFromMapKeys(Bundle.FilteredSortedBySD.SymbolCount)
 	var gridSymbols mapset.Set[string]
-	if GlobalGrids.ExistingSymbols.Cardinality() > 0 {
-		gridSymbols = GlobalGrids.ExistingSymbols
+	if GGrids.ExistingSymbols.Cardinality() > 0 {
+		gridSymbols = GGrids.ExistingSymbols
 	} else {
 		gridSymbols, err = getGridSymbols()
 		if err != nil {

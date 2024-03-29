@@ -43,12 +43,12 @@ func UpdateOpenGrids(trackContinuous bool) error {
 	}
 	currentIds := mapset.NewSet[int]()
 	for _, grid := range res.Grids {
-		GlobalGrids.add(grid, trackContinuous)
+		GGrids.add(grid, trackContinuous)
 		currentIds.Add(grid.GID)
 	}
-	for _, g := range GlobalGrids.GridsByGid {
+	for _, g := range GGrids.GridsByGid {
 		if !currentIds.Contains(g.GID) {
-			GlobalGrids.remove(g.GID)
+			GGrids.remove(g.GID)
 			discord.Info(Display(nil, g,
 				fmt.Sprintf("**Gone - Block for %d Minutes**", config.TheConfig.TradingBlockMinutesAfterCancel),
 				0, 0), discord.ActionWebhook, discord.DefaultWebhook)
@@ -56,7 +56,7 @@ func UpdateOpenGrids(trackContinuous bool) error {
 		}
 	}
 	discord.Infof("Open Pairs: %v, Open Ids: %v, Initial: %f, TotalPnL: %f, C: %f, L/S/N: %d/%d/%d",
-		GlobalGrids.ExistingSymbols, GlobalGrids.ExistingSIDs, GlobalGrids.TotalGridInitial, GlobalGrids.TotalGridPnl, GlobalGrids.TotalGridPnl+GlobalGrids.TotalGridInitial,
-		GlobalGrids.Longs.Cardinality(), GlobalGrids.Shorts.Cardinality(), GlobalGrids.Neutrals.Cardinality())
+		GGrids.ExistingSymbols, GGrids.ExistingSIDs, GGrids.TotalGridInitial, GGrids.TotalGridPnl, GGrids.TotalGridPnl+GGrids.TotalGridInitial,
+		GGrids.Longs.Cardinality(), GGrids.Shorts.Cardinality(), GGrids.Neutrals.Cardinality())
 	return nil
 }
