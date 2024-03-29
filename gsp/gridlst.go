@@ -55,8 +55,8 @@ func UpdateOpenGrids(trackContinuous bool) error {
 			blacklist.BlockTrading(time.Duration(config.TheConfig.TradingBlockMinutesAfterCancel)*time.Minute, "Grid Gone")
 		}
 	}
-	discord.Infof("Open Pairs: %v, Open Ids: %v, Initial: %f, TotalPnL: %f, C: %f, L/S/N: %d/%d/%d",
-		GGrids.ExistingSymbols, GGrids.ExistingSIDs, GGrids.TotalGridInitial, GGrids.TotalGridPnl, GGrids.TotalGridPnl+GGrids.TotalGridInitial,
+	discord.Infof("Open Pairs: %v, Initial: %f, TotalPnL: %f, C: %f, L/S/N: %d/%d/%d",
+		GGrids.ExistingSymbols, GGrids.TotalGridInitial, GGrids.TotalGridPnl, GGrids.TotalGridPnl+GGrids.TotalGridInitial,
 		GGrids.Longs.Cardinality(), GGrids.Shorts.Cardinality(), GGrids.Neutrals.Cardinality())
 	return nil
 }

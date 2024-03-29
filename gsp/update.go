@@ -137,6 +137,5 @@ func updateSDCountPairSpecific(symbols mapset.Set[string]) error {
 			}
 		}
 	}
-	discord.Infof("* SDSpecific: %v", Bundle.SDCountPairSpecific)
 	return nil
 }
