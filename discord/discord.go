@@ -73,6 +73,7 @@ func Init() {
 	if err != nil {
 		log.Fatalf("error scheduling discord service: %v", err)
 	}
+	scheduler.StartAsync()
 }
 
 type errorResponse struct {

@@ -1,7 +1,16 @@
 package gsp
 
+import mapset "github.com/deckarep/golang-set/v2"
+
 var GlobalStrategies = make(map[int]*Strategy)
-var GlobalGrids = newTrackedGrids()
+var GlobalGrids = &TrackedGrids{
+	Shorts:          mapset.NewSet[int](),
+	Longs:           mapset.NewSet[int](),
+	Neutrals:        mapset.NewSet[int](),
+	ExistingSIDs:    mapset.NewSet[int](),
+	ExistingSymbols: mapset.NewSet[string](),
+	GridsByGid:      make(map[int]*Grid),
+}
 var Bundle *StrategiesBundle
 
 type StrategiesBundle struct {

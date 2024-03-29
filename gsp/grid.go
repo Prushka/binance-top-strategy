@@ -1,73 +1,22 @@
 package gsp
 
 import (
-	"BinanceTopStrategies/blacklist"
-	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/discord"
-	"BinanceTopStrategies/notional"
 	"BinanceTopStrategies/persistence"
-	"BinanceTopStrategies/request"
 	"BinanceTopStrategies/sdk"
-	"BinanceTopStrategies/utils"
-	"encoding/json"
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
-	log "github.com/sirupsen/logrus"
 	"math"
 	"strconv"
 	"time"
 )
 
-func Init() {
-	err := persistence.Load(&statesOnGridOpen, persistence.GridStatesFileName)
-	if err != nil {
-		log.Fatalf("Error loading state on grid open: %v", err)
-	}
-}
+var envOnGridsOpen = make(map[int]*envOnGridOpen)
 
-var statesOnGridOpen = make(map[int]*StateOnGridOpen)
-
-type StateOnGridOpen struct {
-	SDCountRaw          map[string]int
-	SDCountFiltered     map[string]int
-	SDCountPairSpecific map[string]int
-}
-
-type PlaceGridRequest struct {
-	Symbol                 string `json:"symbol"`
-	Direction              string `json:"direction"`
-	Leverage               int    `json:"leverage"`
-	MarginType             string `json:"marginType"`
-	GridType               string `json:"gridType"`
-	GridCount              int    `json:"gridCount"`
-	GridLowerLimit         string `json:"gridLowerLimit"`
-	GridUpperLimit         string `json:"gridUpperLimit"`
-	GridInitialValue       string `json:"gridInitialValue"`
-	Cos                    bool   `json:"cos"`
-	Cps                    bool   `json:"cps"`
-	TrailingUp             bool   `json:"trailingUp,omitempty"`
-	TrailingDown           bool   `json:"trailingDown,omitempty"`
-	OrderCurrency          string `json:"orderCurrency"`
-	StopUpperLimit         string `json:"stopUpperLimit,omitempty"`
-	StopLowerLimit         string `json:"stopLowerLimit,omitempty"`
-	TriggerPrice           string `json:"triggerPrice,omitempty"`
-	TriggerType            string `json:"triggerType,omitempty"`
-	TrailingStopUpperLimit bool   `json:"trailingStopUpperLimit"`
-	TrailingStopLowerLimit bool   `json:"trailingStopLowerLimit"`
-	StopTriggerType        string `json:"stopTriggerType,omitempty"`
-	ClientStrategyID       string `json:"clientStrategyId,omitempty"`
-	CopiedStrategyID       int    `json:"copiedStrategyId"`
-}
-
-type PlaceGridResponse struct {
-	Data struct {
-		StrategyID       int    `json:"strategyId"`
-		ClientStrategyID string `json:"clientStrategyId"`
-		StrategyType     string `json:"strategyType"`
-		StrategyStatus   string `json:"strategyStatus"`
-		UpdateTime       int64  `json:"updateTime"`
-	} `json:"data"`
-	request.BinanceBaseResponse
+type envOnGridOpen struct {
+	SDRaw          map[string]int
+	SDFiltered     map[string]int
+	SDPairSpecific map[string]int
 }
 
 type GridTracking struct {
@@ -81,9 +30,20 @@ type GridTracking struct {
 	ContinuousRoiNoChange int
 }
 
+type TrackedGrids struct {
+	TotalGridInitial float64
+	TotalGridPnl     float64
+	Shorts           mapset.Set[int]
+	Longs            mapset.Set[int]
+	Neutrals         mapset.Set[int]
+	ExistingSIDs     mapset.Set[int]
+	ExistingSymbols  mapset.Set[string]
+	GridsByGid       map[int]*Grid
+}
+
 type Grid struct {
-	totalPnl               float64
-	initialValue           float64
+	TotalPnl               float64
+	InitialValue           float64
 	LastRoi                float64
 	Tracking               *GridTracking
 	GID                    int    `json:"strategyId"`
@@ -126,28 +86,12 @@ type Grid struct {
 	MarginType             string `json:"marginType"`
 }
 
-type OpenGridResponse struct {
-	Grids []*Grid `json:"data"`
-	request.BinanceBaseResponse
-}
-
-func newTrackedGrids() *TrackedGrids {
-	return &TrackedGrids{
-		Shorts:          mapset.NewSet[int](),
-		Longs:           mapset.NewSet[int](),
-		Neutrals:        mapset.NewSet[int](),
-		ExistingSIDs:    mapset.NewSet[int](),
-		ExistingSymbols: mapset.NewSet[string](),
-		GridsByGid:      make(map[int]*Grid),
-	}
-}
-
-func persistStateOnGridOpen(gid int) {
-	if _, ok := statesOnGridOpen[gid]; !ok {
-		statesOnGridOpen[gid] = &StateOnGridOpen{SDCountRaw: Bundle.Raw.SymbolDirectionCount,
-			SDCountFiltered:     Bundle.FilteredSortedBySD.SymbolDirectionCount,
-			SDCountPairSpecific: Bundle.SDCountPairSpecific}
-		err := persistence.Save(statesOnGridOpen, persistence.GridStatesFileName)
+func persistGridEnvs(gid int) {
+	if _, ok := envOnGridsOpen[gid]; !ok {
+		envOnGridsOpen[gid] = &envOnGridOpen{SDRaw: Bundle.Raw.SymbolDirectionCount,
+			SDFiltered:     Bundle.FilteredSortedBySD.SymbolDirectionCount,
+			SDPairSpecific: Bundle.SDCountPairSpecific}
+		err := persistence.Save(envOnGridsOpen, persistence.GridStatesFileName)
 		if err != nil {
 			discord.Infof("Error saving state on grid open: %v", err)
 		}
@@ -161,19 +105,19 @@ func GridSDCount(gid int, symbol, direction string, setType string) (int, int, f
 	switch setType {
 	case SDRaw:
 		currentSDCount = Bundle.Raw.SymbolDirectionCount[sd]
-		sdCountWhenOpen = statesOnGridOpen[gid].SDCountRaw[sd]
+		sdCountWhenOpen = envOnGridsOpen[gid].SDRaw[sd]
 	case SDFiltered:
 		currentSDCount = Bundle.FilteredSortedBySD.SymbolDirectionCount[sd]
-		sdCountWhenOpen = statesOnGridOpen[gid].SDCountFiltered[sd]
+		sdCountWhenOpen = envOnGridsOpen[gid].SDFiltered[sd]
 	case SDPairSpecific:
 		currentSDCount = Bundle.SDCountPairSpecific[sd]
-		sdCountWhenOpen = statesOnGridOpen[gid].SDCountPairSpecific[sd]
+		sdCountWhenOpen = envOnGridsOpen[gid].SDPairSpecific[sd]
 	}
 	ratio := float64(currentSDCount) / float64(sdCountWhenOpen)
 	return currentSDCount, sdCountWhenOpen, ratio
 }
 
-func (tracked *TrackedGrids) Remove(id int) {
+func (tracked *TrackedGrids) remove(id int) {
 	g, ok := tracked.GridsByGid[id]
 	if !ok {
 		return
@@ -187,12 +131,12 @@ func (tracked *TrackedGrids) Remove(id int) {
 	} else {
 		tracked.Neutrals.Remove(g.GID)
 	}
-	tracked.TotalGridInitial -= g.initialValue
-	tracked.TotalGridPnl -= g.totalPnl
+	tracked.TotalGridInitial -= g.InitialValue
+	tracked.TotalGridPnl -= g.TotalPnl
 	delete(tracked.GridsByGid, g.GID)
 }
 
-func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
+func (tracked *TrackedGrids) add(g *Grid, trackContinuous bool) {
 	tracked.ExistingSymbols.Add(g.Symbol)
 	tracked.ExistingSIDs.Add(g.SID)
 
@@ -209,16 +153,16 @@ func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
 	position, _ := strconv.ParseFloat(g.GridPosition, 64)
 	entryPrice, _ := strconv.ParseFloat(g.GridEntryPrice, 64)
 	marketPrice, _ := sdk.GetSessionSymbolPrice(g.Symbol)
-	g.initialValue = initial / float64(g.InitialLeverage)
-	g.totalPnl = profit + fundingFee + position*(marketPrice-entryPrice) // position is negative for short
-	g.LastRoi = g.totalPnl / g.initialValue
+	g.InitialValue = initial / float64(g.InitialLeverage)
+	g.TotalPnl = profit + fundingFee + position*(marketPrice-entryPrice) // position is negative for short
+	g.LastRoi = g.TotalPnl / g.InitialValue
 	updateTime := time.Now()
 	prevG, ok := tracked.GridsByGid[g.GID]
-	tracked.TotalGridInitial += g.initialValue
-	tracked.TotalGridPnl += g.totalPnl
+	tracked.TotalGridInitial += g.InitialValue
+	tracked.TotalGridPnl += g.TotalPnl
 	if ok {
-		tracked.TotalGridInitial -= prevG.initialValue
-		tracked.TotalGridPnl -= prevG.totalPnl
+		tracked.TotalGridInitial -= prevG.InitialValue
+		tracked.TotalGridPnl -= prevG.TotalPnl
 		tracking := prevG.Tracking
 		if g.LastRoi < tracking.LowestRoi {
 			tracking.TimeLowestRoi = updateTime
@@ -255,77 +199,9 @@ func (tracked *TrackedGrids) Add(g *Grid, trackContinuous bool) {
 			TimeLowestRoi:  updateTime,
 			TimeLastChange: updateTime,
 		}
-		persistStateOnGridOpen(g.GID)
+		persistGridEnvs(g.GID)
 	}
 	tracked.GridsByGid[g.GID] = g
-}
-
-type TrackedGrids struct {
-	TotalGridInitial float64
-	TotalGridPnl     float64
-	Shorts           mapset.Set[int]
-	Longs            mapset.Set[int]
-	Neutrals         mapset.Set[int]
-	ExistingSIDs     mapset.Set[int]
-	ExistingSymbols  mapset.Set[string]
-	GridsByGid       map[int]*Grid
-}
-
-func (tracked *TrackedGrids) findGridIdsByStrategyId(ids ...int) mapset.Set[int] {
-	gridIds := mapset.NewSet[int]()
-	idsSet := mapset.NewSet[int](ids...)
-	for _, g := range tracked.GridsByGid {
-		if idsSet.Contains(g.SID) {
-			gridIds.Add(g.GID)
-		}
-	}
-	return gridIds
-}
-
-func getOpenGrids() (*OpenGridResponse, error) {
-	url := "https://www.binance.com/bapi/futures/v2/private/future/grid/query-open-grids"
-	res, _, err := request.PrivateRequest(url, "POST", nil, &OpenGridResponse{})
-	if err != nil {
-		return nil, err
-	}
-	return res, nil
-}
-
-func getGridSymbols() (mapset.Set[string], error) {
-	res, err := getOpenGrids()
-	if err != nil {
-		return nil, err
-	}
-	symbols := mapset.NewSet[string]()
-	for _, grid := range res.Grids {
-		symbols.Add(grid.Symbol)
-	}
-	return symbols, nil
-}
-
-func UpdateOpenGrids(trackContinuous bool) error {
-	res, err := getOpenGrids()
-	if err != nil {
-		return err
-	}
-	currentIds := mapset.NewSet[int]()
-	for _, grid := range res.Grids {
-		GlobalGrids.Add(grid, trackContinuous)
-		currentIds.Add(grid.GID)
-	}
-	for _, g := range GlobalGrids.GridsByGid {
-		if !currentIds.Contains(g.GID) {
-			GlobalGrids.Remove(g.GID)
-			discord.Info(Display(nil, g,
-				fmt.Sprintf("**Gone - Block for %d Minutes**", config.TheConfig.TradingBlockMinutesAfterCancel),
-				0, 0), discord.ActionWebhook, discord.DefaultWebhook)
-			blacklist.BlockTrading(time.Duration(config.TheConfig.TradingBlockMinutesAfterCancel)*time.Minute, "Grid Gone")
-		}
-	}
-	discord.Infof("Open Pairs: %v, Open Ids: %v, Initial: %f, TotalPnL: %f, C: %f, L/S/N: %d/%d/%d",
-		GlobalGrids.ExistingSymbols, GlobalGrids.ExistingSIDs, GlobalGrids.TotalGridInitial, GlobalGrids.TotalGridPnl, GlobalGrids.TotalGridPnl+GlobalGrids.TotalGridInitial,
-		GlobalGrids.Longs.Cardinality(), GlobalGrids.Shorts.Cardinality(), GlobalGrids.Neutrals.Cardinality())
-	return nil
 }
 
 func (grid *Grid) String() string {
@@ -346,76 +222,6 @@ func (grid *Grid) String() string {
 	realized, _ := strconv.ParseFloat(grid.GridProfit, 64)
 	return fmt.Sprintf("*%d*, Realized: %.2f, Total: %.2f, =%.2f%%%s, %s, %s, %s",
 		grid.GID,
-		realized, grid.totalPnl, grid.LastRoi*100, extendedProfit,
+		realized, grid.TotalPnl, grid.LastRoi*100, extendedProfit,
 		formatSDRatio(SDRaw), formatSDRatio(SDFiltered), formatSDRatio(SDPairSpecific))
-}
-
-func closeGrid(strategyId int) error {
-	if config.TheConfig.Paper {
-		log.Infof("Paper mode, not closing grid")
-		return nil
-	}
-	url := "https://www.binance.com/bapi/futures/v1/private/future/grid/close-grid"
-	payload := map[string]interface{}{
-		"strategyId": strategyId,
-	}
-	_, _, err := request.PrivateRequest(url, "POST", payload, &request.BinanceBaseResponse{})
-	return err
-}
-
-func PlaceGrid(strategy Strategy, initialUSDT float64) error {
-	if _, ok := DirectionMap[strategy.Direction]; !ok {
-		return fmt.Errorf("invalid direction: %d", strategy.Direction)
-	}
-	leverage := config.TheConfig.MaxLeverage
-	if strategy.StrategyParams.Leverage < leverage {
-		leverage = strategy.StrategyParams.Leverage
-	}
-	leverage = notional.GetLeverage(strategy.Symbol, initialUSDT, leverage)
-	payload := &PlaceGridRequest{
-		Symbol:                 strategy.Symbol,
-		Direction:              DirectionMap[strategy.Direction],
-		Leverage:               leverage,
-		MarginType:             config.TheConfig.MarginType,
-		GridType:               strategy.StrategyParams.Type,
-		GridCount:              strategy.StrategyParams.GridCount,
-		GridLowerLimit:         strategy.StrategyParams.LowerLimit,
-		GridUpperLimit:         strategy.StrategyParams.UpperLimit,
-		GridInitialValue:       fmt.Sprintf("%.2f", initialUSDT*float64(leverage)),
-		Cos:                    true,
-		Cps:                    true,
-		TrailingUp:             strategy.StrategyParams.TrailingUp,
-		TrailingDown:           strategy.StrategyParams.TrailingDown,
-		OrderCurrency:          "BASE",
-		ClientStrategyID:       "ctrc_web_" + utils.GenerateRandomNumberUUID(),
-		CopiedStrategyID:       strategy.SID,
-		TrailingStopLowerLimit: false, // !!t[E.w2.stopLowerLimit]
-		TrailingStopUpperLimit: false, // !1 in js
-	}
-	if payload.TrailingUp || payload.TrailingDown {
-		payload.OrderCurrency = "QUOTE"
-		if strategy.StrategyParams.StopLowerLimit != nil {
-			payload.TrailingStopLowerLimit = true
-		}
-	}
-	if strategy.StrategyParams.TriggerPrice != nil {
-		payload.TriggerPrice = *strategy.StrategyParams.TriggerPrice
-		payload.TriggerType = "MARK_PRICE"
-	}
-	if strategy.StrategyParams.StopUpperLimit != nil {
-		payload.StopUpperLimit = *strategy.StrategyParams.StopUpperLimit
-		payload.StopTriggerType = "MARK_PRICE"
-	}
-	if strategy.StrategyParams.StopLowerLimit != nil {
-		payload.StopLowerLimit = *strategy.StrategyParams.StopLowerLimit
-		payload.StopTriggerType = "MARK_PRICE"
-	}
-	s, _ := json.Marshal(payload)
-	discord.Info(discord.Json(string(s)), discord.OrderWebhook)
-	if config.TheConfig.Paper {
-		log.Infof("Paper mode, not placing grid")
-		return nil
-	}
-	_, _, err := request.PrivateRequest("https://www.binance.com/bapi/futures/v2/private/future/grid/place-grid", "POST", payload, &PlaceGridResponse{})
-	return err
 }

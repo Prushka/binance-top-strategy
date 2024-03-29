@@ -1,8 +1,11 @@
 package gsp
 
 import (
+	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/discord"
+	"BinanceTopStrategies/request"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"strings"
 )
 
@@ -17,6 +20,19 @@ type GridsToCancel map[int]*gridToCancel
 
 func (tc *gridToCancel) canCancel() bool {
 	return tc.Grid.LastRoi >= tc.MaxLoss
+}
+
+func closeGrid(strategyId int) error {
+	if config.TheConfig.Paper {
+		log.Infof("Paper mode, not closing grid")
+		return nil
+	}
+	url := "https://www.binance.com/bapi/futures/v1/private/future/grid/close-grid"
+	payload := map[string]interface{}{
+		"strategyId": strategyId,
+	}
+	_, _, err := request.PrivateRequest(url, "POST", payload, &request.BinanceBaseResponse{})
+	return err
 }
 
 func (tc *gridToCancel) Cancel() error {

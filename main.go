@@ -238,7 +238,6 @@ func tick() error {
 
 func main() {
 	config.Init()
-	log.Infof("Public IP: %s", utils.GetPublicIP())
 	discord.Init()
 	switch config.TheConfig.Mode {
 	case "trading":

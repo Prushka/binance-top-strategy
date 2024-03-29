@@ -3,6 +3,7 @@ package gsp
 import (
 	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/discord"
+	"BinanceTopStrategies/persistence"
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
 	log "github.com/sirupsen/logrus"
@@ -11,10 +12,17 @@ import (
 	"time"
 )
 
-type SDCountPair struct {
+type sdCountPair struct {
 	SymbolDirection string
 	Count           int
 	MaxMetric       float64
+}
+
+func Init() {
+	err := persistence.Load(&envOnGridsOpen, persistence.GridStatesFileName)
+	if err != nil {
+		log.Fatalf("Error loading state on grid open: %v", err)
+	}
 }
 
 func UpdateTopStrategiesWithRoi() error {
@@ -78,9 +86,9 @@ func UpdateTopStrategiesWithRoi() error {
 		}
 		filteredBySymbolDirection[sd] = append(filteredBySymbolDirection[sd], s)
 	}
-	sdLengths := make([]SDCountPair, 0)
+	sdLengths := make([]sdCountPair, 0)
 	for sd, s := range filteredBySymbolDirection {
-		sdLengths = append(sdLengths, SDCountPair{SymbolDirection: sd, Count: len(s), MaxMetric: s[0].last6HrRoiPerHr})
+		sdLengths = append(sdLengths, sdCountPair{SymbolDirection: sd, Count: len(s), MaxMetric: s[0].last6HrRoiPerHr})
 	}
 	sort.Slice(sdLengths, func(i, j int) bool {
 		if sdLengths[i].Count == sdLengths[j].Count {

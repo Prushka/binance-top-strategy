@@ -306,7 +306,7 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		direction = grid.Direction
 		symbol = grid.Symbol
 		strategyId = fmt.Sprintf("%d", grid.SID)
-		leverage = fmt.Sprintf("%.2fX%d=%d", grid.initialValue, grid.InitialLeverage, int(grid.initialValue*float64(grid.InitialLeverage)))
+		leverage = fmt.Sprintf("%.2fX%d=%d", grid.InitialValue, grid.InitialLeverage, int(grid.InitialValue*float64(grid.InitialLeverage)))
 		runTime = formatRunTime(time.Now().Unix() - grid.BookTime/1000)
 		priceRange = formatPriceRange(grid.GridLowerLimit, grid.GridUpperLimit)
 		grids = fmt.Sprintf("%d", grid.GridCount)
@@ -324,7 +324,7 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 			if s.StrategyParams.GridCount != grid.GridCount {
 				grids = fmt.Sprintf("S/G: %d/%d", s.StrategyParams.GridCount, grid.GridCount)
 			}
-			leverage = fmt.Sprintf("%dX/%.2fX%d=%d", s.StrategyParams.Leverage, grid.initialValue, grid.InitialLeverage, int(grid.initialValue*float64(grid.InitialLeverage)))
+			leverage = fmt.Sprintf("%dX/%.2fX%d=%d", s.StrategyParams.Leverage, grid.InitialValue, grid.InitialLeverage, int(grid.InitialValue*float64(grid.InitialLeverage)))
 			runTime = fmt.Sprintf("%s/%s", formatRunTime(int64(s.RunningTime)), formatRunTime(time.Now().Unix()-grid.BookTime/1000))
 			if s.StrategyParams.LowerLimit != grid.GridLowerLimit || s.StrategyParams.UpperLimit != grid.GridUpperLimit {
 				priceRange = fmt.Sprintf("S/G: %s/%s", formatPriceRange(s.StrategyParams.LowerLimit, s.StrategyParams.UpperLimit),
