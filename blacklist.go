@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -26,19 +27,19 @@ func persistBlacklist() {
 
 func addSymbolDirectionToBlacklist(symbol, direction string, d time.Duration, reason string) {
 	blacklist.BySymbolDirection[symbol+direction] = &Blacklist{Till: time.Now().Add(d), Reason: reason}
-	Discordf("**Add blacklist:** %s, %s, %s", symbol, direction, d)
+	DiscordWebhookS(fmt.Sprintf("**Add blacklist:** %s, %s, %s, %s", symbol, direction, d, reason), ActionWebhook, DefaultWebhook)
 	persistBlacklist()
 }
 
 func addSIDToBlacklist(id int, d time.Duration, reason string) {
 	blacklist.BySID[id] = &Blacklist{Till: time.Now().Add(d), Reason: reason}
-	Discordf("**Add blacklist:** %d, %s", id, d)
+	DiscordWebhookS(fmt.Sprintf("**Add blacklist:** %d, %s, %s", id, d, reason), ActionWebhook, DefaultWebhook)
 	persistBlacklist()
 }
 
 func addSymbolToBlacklist(symbol string, d time.Duration, reason string) {
 	blacklist.BySymbol[symbol] = &Blacklist{Till: time.Now().Add(d), Reason: reason}
-	Discordf("**Add blacklist:** %s, %s", symbol, d)
+	DiscordWebhookS(fmt.Sprintf("**Add blacklist:** %s, %s, %s", symbol, d, reason), ActionWebhook, DefaultWebhook)
 	persistBlacklist()
 }
 

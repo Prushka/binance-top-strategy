@@ -56,7 +56,7 @@ func gridSDCount(gid int, symbol, direction string, setType string) (int, int, f
 		currentSDCount = bundle.Raw.symbolDirectionCount[sd]
 		sdCountWhenOpen = statesOnGridOpen[gid].SDCountRaw[sd]
 	case SDFiltered:
-		currentSDCount = bundle.FilteredSortedBySD.symbolCount[sd]
+		currentSDCount = bundle.FilteredSortedBySD.symbolDirectionCount[sd]
 		sdCountWhenOpen = statesOnGridOpen[gid].SDCountFiltered[sd]
 	case SDPairSpecific:
 		currentSDCount = bundle.SDCountPairSpecific[sd]
@@ -164,7 +164,8 @@ func updateTopStrategiesWithRoi() error {
 	for _, sd := range sdLengths {
 		sortedBySDCount = append(sortedBySDCount, filteredBySymbolDirection[sd.SymbolDirection]...)
 	}
-	bundle = &StrategiesBundle{Raw: strategies, FilteredSortedBySD: sortedBySDCount.toTrackedStrategies(),
+	bundle = &StrategiesBundle{Raw: strategies,
+		FilteredSortedBySD:     sortedBySDCount.toTrackedStrategies(),
 		FilteredSortedByMetric: filtered.toTrackedStrategies(),
 		SDCountPairSpecific:    make(map[string]int)}
 	Discordf("### Strategies")
