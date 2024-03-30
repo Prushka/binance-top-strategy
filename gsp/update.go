@@ -4,6 +4,7 @@ import (
 	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/persistence"
+	"BinanceTopStrategies/sdk"
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
 	log "github.com/sirupsen/logrus"
@@ -43,7 +44,9 @@ func UpdateTopStrategiesWithRoi() error {
 
 		lower, _ := strconv.ParseFloat(s.StrategyParams.LowerLimit, 64)
 		upper, _ := strconv.ParseFloat(s.StrategyParams.UpperLimit, 64)
+		marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)
 		s.priceDifference = upper/lower - 1
+		priceWithinRange := marketPrice > lower && marketPrice < upper
 		GStrats[s.SID] = s
 		if len(s.Rois) > 1 {
 			s.roi = s.Rois[0].Roi
@@ -65,6 +68,7 @@ func UpdateTopStrategiesWithRoi() error {
 				s.last12HrRoiPerHr > 0.014 &&
 				s.last6HrRoiPerHr > 0.014 &&
 				s.priceDifference > 0.05 &&
+				priceWithinRange &&
 				// TODO: price difference can shrink with trailing, e.g., 5.xx% -> 4.xx%
 				s.lastNHrNoDip {
 				filtered = append(filtered, s)

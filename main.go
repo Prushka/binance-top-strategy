@@ -7,6 +7,7 @@ import (
 	"BinanceTopStrategies/gsp"
 	"BinanceTopStrategies/sdk"
 	"BinanceTopStrategies/utils"
+	"context"
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/go-co-op/gocron"
@@ -224,6 +225,8 @@ func tick() error {
 // Use filtered SD ratio to cancel
 // Use total SD ratio of the pair to cancel
 
+// neutral: either trail down or check if range is in the middle before placing
+
 // TODO: cancel when above n%, then cooldown?
 // perform last 20 min roi (latest - last 20 OR if max roi was reached more than 20 min ago), if not positive and stop gain, cancel then block symbolpairdirection until next hr
 
@@ -254,6 +257,17 @@ func main() {
 			log.Errorf("Error: %v", err)
 			return
 		}
+		scheduler.StartBlocking()
+	case "playground":
+		sdk.Init()
+		timeAgo := 41 * time.Hour
+		res, err := sdk.FuturesClient.NewMarkPriceKlinesService().
+			Symbol("DOGEUSDT").Interval("1m").StartTime(time.Now().Add(-timeAgo).Unix() * 1000).
+			EndTime(time.Now().Add(-timeAgo+time.Minute).Unix() * 1000).Do(context.Background())
+		if err != nil {
+			log.Errorf("Error: %v", err)
+			return
+		}
+		log.Info(utils.AsJson(res))
 	}
-	scheduler.StartBlocking()
 }

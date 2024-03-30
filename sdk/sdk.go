@@ -11,7 +11,7 @@ import (
 	"strconv"
 )
 
-var futuresClient *futures.Client
+var FuturesClient *futures.Client
 var sessionSymbolPrice = make(map[string]float64)
 
 func ClearSessionSymbolPrice() {
@@ -30,7 +30,7 @@ func GetSessionSymbolPrice(symbol string) (float64, error) {
 }
 
 func Init() {
-	futuresClient = binance.NewFuturesClient(config.TheConfig.ApiKey, config.TheConfig.SecretKey) // USDT-M Futures
+	FuturesClient = binance.NewFuturesClient(config.TheConfig.ApiKey, config.TheConfig.SecretKey) // USDT-M Futures
 }
 
 func fetchMarketPrice(symbol string) (float64, error) {
@@ -43,7 +43,7 @@ func fetchMarketPrice(symbol string) (float64, error) {
 }
 
 func _fetchMarketPrice(symbol string) (float64, error) {
-	res, err := futuresClient.NewListPricesService().Symbol(symbol).Do(context.Background())
+	res, err := FuturesClient.NewListPricesService().Symbol(symbol).Do(context.Background())
 	if err != nil {
 		return 0, err
 	}
@@ -56,7 +56,7 @@ func _fetchMarketPrice(symbol string) (float64, error) {
 }
 
 func GetFutureUSDT() (float64, error) {
-	res, err := futuresClient.NewGetBalanceService().Do(context.Background())
+	res, err := FuturesClient.NewGetBalanceService().Do(context.Background())
 	if err != nil {
 		return 0, err
 	}
