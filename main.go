@@ -260,9 +260,9 @@ func main() {
 		scheduler.StartBlocking()
 	case "playground":
 		sdk.Init()
-		timeAgo := 41 * time.Hour
+		timeAgo := 47 * time.Hour
 		res, err := sdk.FuturesClient.NewMarkPriceKlinesService().
-			Symbol("DOGEUSDT").Interval("1m").StartTime(time.Now().Add(-timeAgo).Unix() * 1000).
+			Symbol("BCHUSDT").Interval("1m").StartTime(time.Now().Add(-timeAgo).Unix() * 1000).
 			EndTime(time.Now().Add(-timeAgo+time.Minute).Unix() * 1000).Do(context.Background())
 		if err != nil {
 			log.Errorf("Error: %v", err)

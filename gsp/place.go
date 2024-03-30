@@ -77,6 +77,11 @@ func PlaceGrid(strategy Strategy, initialUSDT float64) error {
 		TrailingStopLowerLimit: false, // !!t[E.w2.stopLowerLimit]
 		TrailingStopUpperLimit: false, // !1 in js
 	}
+	// experimental start
+	if strategy.Direction == NEUTRAL {
+		payload.TrailingDown = true
+	}
+	// experimental end
 	if payload.TrailingUp || payload.TrailingDown {
 		payload.OrderCurrency = "QUOTE"
 		if strategy.StrategyParams.StopLowerLimit != nil {
