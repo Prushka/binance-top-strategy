@@ -45,6 +45,8 @@ type Grid struct {
 	TotalPnl               float64
 	InitialValue           float64
 	LastRoi                float64
+	BelowLowerLimit        bool
+	AboveUpperLimit        bool
 	Tracking               *GridTracking
 	GID                    int    `json:"strategyId"`
 	RootUserID             int    `json:"rootUserId"`
@@ -153,6 +155,10 @@ func (tracked *TrackedGrids) add(g *Grid, trackContinuous bool) {
 	position, _ := strconv.ParseFloat(g.GridPosition, 64)
 	entryPrice, _ := strconv.ParseFloat(g.GridEntryPrice, 64)
 	marketPrice, _ := sdk.GetSessionSymbolPrice(g.Symbol)
+	lowerLimit, _ := strconv.ParseFloat(g.GridLowerLimit, 64)
+	upperLimit, _ := strconv.ParseFloat(g.GridUpperLimit, 64)
+	g.BelowLowerLimit = marketPrice < lowerLimit
+	g.AboveUpperLimit = marketPrice > upperLimit
 	g.InitialValue = initial / float64(g.InitialLeverage)
 	g.TotalPnl = profit + fundingFee + position*(marketPrice-entryPrice) // position is negative for short
 	g.LastRoi = g.TotalPnl / g.InitialValue
