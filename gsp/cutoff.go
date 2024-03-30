@@ -78,6 +78,7 @@ func UpdateTopStrategiesWithRoi() error {
 			s.last2HrRoiChange = GetRoiChange(s.Rois, 2*time.Hour)
 			s.lastHrRoiChange = GetRoiChange(s.Rois, 1*time.Hour)
 			s.lastDayRoiPerHr = GetRoiPerHr(s.Rois, 24*time.Hour)
+			s.last15HrRoiPerHr = GetRoiPerHr(s.Rois, 15*time.Hour)
 			s.last12HrRoiPerHr = GetRoiPerHr(s.Rois, 12*time.Hour)
 			s.last9HrRoiPerHr = GetRoiPerHr(s.Rois, 9*time.Hour)
 			s.last6HrRoiPerHr = GetRoiPerHr(s.Rois, 6*time.Hour)
