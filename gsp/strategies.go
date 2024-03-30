@@ -265,7 +265,7 @@ func (s Strategy) String() string {
 }
 
 func (s Strategy) GetMetric() float64 {
-	return s.last15HrRoiPerHr
+	return s.last12HrRoiPerHr
 }
 
 func Display(s *Strategy, grid *Grid, action string, index int, length int) string {
