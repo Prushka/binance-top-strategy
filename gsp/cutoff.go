@@ -36,7 +36,7 @@ func sortBySDCount(filtered Strategies) Strategies {
 	}
 	sdLengths := make([]sdCountPair, 0)
 	for sd, s := range filteredBySymbolDirection {
-		sdLengths = append(sdLengths, sdCountPair{SymbolDirection: sd, Count: len(s), MaxMetric: s[0].last6HrRoiPerHr})
+		sdLengths = append(sdLengths, sdCountPair{SymbolDirection: sd, Count: len(s), MaxMetric: s[0].GetMetric()})
 	}
 	sort.Slice(sdLengths, func(i, j int) bool {
 		if sdLengths[i].Count == sdLengths[j].Count {
@@ -79,6 +79,7 @@ func UpdateTopStrategiesWithRoi() error {
 			s.lastHrRoiChange = GetRoiChange(s.Rois, 1*time.Hour)
 			s.lastDayRoiPerHr = GetRoiPerHr(s.Rois, 24*time.Hour)
 			s.last12HrRoiPerHr = GetRoiPerHr(s.Rois, 12*time.Hour)
+			s.last9HrRoiPerHr = GetRoiPerHr(s.Rois, 9*time.Hour)
 			s.last6HrRoiPerHr = GetRoiPerHr(s.Rois, 6*time.Hour)
 			s.lastNHrNoDip = NoDip(s.Rois, time.Duration(config.TheConfig.LastNHoursNoDips)*time.Hour)
 			s.roiPerHour = (s.roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
@@ -100,9 +101,9 @@ func UpdateTopStrategiesWithRoi() error {
 		}
 	}
 	sort.Slice(filtered, func(i, j int) bool {
-		I := filtered[i]
-		J := filtered[j]
-		return I.last6HrRoiPerHr > J.last6HrRoiPerHr
+		I := filtered[i].GetMetric()
+		J := filtered[j].GetMetric()
+		return I > J
 	})
 	Bundle = &StrategiesBundle{Raw: strategies,
 		FilteredSortedBySD:     sortBySDCount(filtered).toTrackedStrategies(),
