@@ -254,7 +254,7 @@ func (s Strategy) String() string {
 	ranking := ""
 	if Bundle != nil {
 		ranking = fmt.Sprintf(", Rank: Raw: %d, FilterdSD: %d", Bundle.Raw.findStrategyRanking(s),
-			Bundle.FilteredSortedBySD.findStrategyRanking(s))
+			GetPool().findStrategyRanking(s))
 	}
 	return fmt.Sprintf("Cpy: %d, Mch: [%d, %d], PnL: %.2f, Rois: %s, [H%%, A/Day/12H/6H: %.1f%%/%.1f%%/%.1f%%/%.1f%%], [A/D/3/2/1H: %s%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s%s",
 		s.CopyCount, s.MatchedCount, s.LatestMatchedCount, pnl, s.Rois.lastNRecords(config.TheConfig.LastNHoursNoDips),

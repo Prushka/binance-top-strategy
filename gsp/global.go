@@ -20,6 +20,10 @@ type StrategiesBundle struct {
 	SDCountPairSpecific    map[string]int
 }
 
+func GetPool() *TrackedStrategies {
+	return Bundle.FilteredSortedByMetric
+}
+
 const (
 	SDRaw          = "SDRaw"
 	SDFiltered     = "SDFiltered"

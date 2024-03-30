@@ -50,7 +50,7 @@ func tick() error {
 	for _, grid := range gsp.GGrids.GridsByGid {
 		symbolDifferentDirectionsHigherRanking := 0
 		possibleDirections := mapset.NewSet[string]()
-		for _, s := range gsp.Bundle.FilteredSortedByMetric.Strategies {
+		for _, s := range gsp.GetPool().Strategies {
 			if s.Symbol == grid.Symbol {
 				if gsp.DirectionMap[s.Direction] != grid.Direction {
 					symbolDifferentDirectionsHigherRanking++
@@ -90,7 +90,7 @@ func tick() error {
 			if grid.LastRoi < 0 {
 				blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), "strategy not found, lastRoi loss")
 			}
-		} else if !gsp.Bundle.FilteredSortedBySD.Exists(grid.SID) {
+		} else if !gsp.GetPool().Exists(grid.SID) {
 			toCancel.AddGridToCancel(grid, 0, "strategy not picked")
 		}
 
@@ -133,7 +133,7 @@ func tick() error {
 		discord.Infof("Max Chunks reached, No cancel - Skip current run")
 		return nil
 	}
-	if mapset.NewSetFromMapKeys(gsp.Bundle.FilteredSortedBySD.SymbolCount).Difference(gsp.GGrids.ExistingSymbols).Cardinality() == 0 && !config.TheConfig.Paper {
+	if mapset.NewSetFromMapKeys(gsp.GetPool().SymbolCount).Difference(gsp.GGrids.ExistingSymbols).Cardinality() == 0 && !config.TheConfig.Paper {
 		discord.Infof("All symbols exists in open grids, Skip")
 		return nil
 	}
@@ -151,8 +151,8 @@ func tick() error {
 		invChunk = idealInvChunk
 	}
 	sessionSymbols := gsp.GGrids.ExistingSymbols.Clone()
-	for c, s := range gsp.Bundle.FilteredSortedBySD.Strategies {
-		discord.Infof(gsp.Display(s, nil, "New", c+1, len(gsp.Bundle.FilteredSortedBySD.Strategies)))
+	for c, s := range gsp.GetPool().Strategies {
+		discord.Infof(gsp.Display(s, nil, "New", c+1, len(gsp.GetPool().Strategies)))
 		if gsp.GGrids.ExistingSIDs.Contains(s.SID) {
 			discord.Infof("Strategy exists in open grids, Skip")
 			continue
@@ -195,7 +195,7 @@ func tick() error {
 				break
 			}
 		} else {
-			discord.Info(gsp.Display(s, nil, "**Opened Grid**", c+1, len(gsp.Bundle.FilteredSortedBySD.Strategies)), discord.ActionWebhook, discord.DefaultWebhook)
+			discord.Info(gsp.Display(s, nil, "**Opened Grid**", c+1, len(gsp.GetPool().Strategies)), discord.ActionWebhook, discord.DefaultWebhook)
 			chunksInt -= 1
 			sessionSymbols.Add(s.Symbol)
 			if chunksInt <= 0 {

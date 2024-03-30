@@ -25,6 +25,32 @@ func Init() {
 	}
 }
 
+func sortBySDCount(filtered Strategies) Strategies {
+	filteredBySymbolDirection := make(map[string]Strategies)
+	for _, s := range filtered {
+		sd := s.Symbol + DirectionMap[s.Direction]
+		if _, ok := filteredBySymbolDirection[sd]; !ok {
+			filteredBySymbolDirection[sd] = make(Strategies, 0)
+		}
+		filteredBySymbolDirection[sd] = append(filteredBySymbolDirection[sd], s)
+	}
+	sdLengths := make([]sdCountPair, 0)
+	for sd, s := range filteredBySymbolDirection {
+		sdLengths = append(sdLengths, sdCountPair{SymbolDirection: sd, Count: len(s), MaxMetric: s[0].last6HrRoiPerHr})
+	}
+	sort.Slice(sdLengths, func(i, j int) bool {
+		if sdLengths[i].Count == sdLengths[j].Count {
+			return sdLengths[i].MaxMetric > sdLengths[j].MaxMetric
+		}
+		return sdLengths[i].Count > sdLengths[j].Count
+	})
+	sortedBySDCount := make(Strategies, 0)
+	for _, sd := range sdLengths {
+		sortedBySDCount = append(sortedBySDCount, filteredBySymbolDirection[sd.SymbolDirection]...)
+	}
+	return sortedBySDCount
+}
+
 func UpdateTopStrategiesWithRoi() error {
 	strategies, err := getTopStrategies(FUTURE, "")
 	if err != nil {
@@ -43,9 +69,7 @@ func UpdateTopStrategiesWithRoi() error {
 
 		lower, _ := strconv.ParseFloat(s.StrategyParams.LowerLimit, 64)
 		upper, _ := strconv.ParseFloat(s.StrategyParams.UpperLimit, 64)
-		//marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)
 		s.priceDifference = upper/lower - 1
-		//priceWithinRange := marketPrice > lower && marketPrice < upper
 		GStrats[s.SID] = s
 		if len(s.Rois) > 1 {
 			s.roi = s.Rois[0].Roi
@@ -80,36 +104,14 @@ func UpdateTopStrategiesWithRoi() error {
 		J := filtered[j]
 		return I.last6HrRoiPerHr > J.last6HrRoiPerHr
 	})
-	filteredBySymbolDirection := make(map[string]Strategies)
-	for _, s := range filtered {
-		sd := s.Symbol + DirectionMap[s.Direction]
-		if _, ok := filteredBySymbolDirection[sd]; !ok {
-			filteredBySymbolDirection[sd] = make(Strategies, 0)
-		}
-		filteredBySymbolDirection[sd] = append(filteredBySymbolDirection[sd], s)
-	}
-	sdLengths := make([]sdCountPair, 0)
-	for sd, s := range filteredBySymbolDirection {
-		sdLengths = append(sdLengths, sdCountPair{SymbolDirection: sd, Count: len(s), MaxMetric: s[0].last6HrRoiPerHr})
-	}
-	sort.Slice(sdLengths, func(i, j int) bool {
-		if sdLengths[i].Count == sdLengths[j].Count {
-			return sdLengths[i].MaxMetric > sdLengths[j].MaxMetric
-		}
-		return sdLengths[i].Count > sdLengths[j].Count
-	})
-	sortedBySDCount := make(Strategies, 0)
-	for _, sd := range sdLengths {
-		sortedBySDCount = append(sortedBySDCount, filteredBySymbolDirection[sd.SymbolDirection]...)
-	}
 	Bundle = &StrategiesBundle{Raw: strategies,
-		FilteredSortedBySD:     sortedBySDCount.toTrackedStrategies(),
+		FilteredSortedBySD:     sortBySDCount(filtered).toTrackedStrategies(),
 		FilteredSortedByMetric: filtered.toTrackedStrategies(),
 		SDCountPairSpecific:    make(map[string]int)}
 	discord.Infof("### Strategies")
 	discord.Infof("* Raw: " + Bundle.Raw.String())
-	discord.Infof("* Open: " + Bundle.FilteredSortedBySD.String())
-	filteredSymbols := mapset.NewSetFromMapKeys(Bundle.FilteredSortedBySD.SymbolCount)
+	discord.Infof("* Open: " + GetPool().String())
+	filteredSymbols := mapset.NewSetFromMapKeys(GetPool().SymbolCount)
 	var gridSymbols mapset.Set[string]
 	if GGrids.ExistingSymbols.Cardinality() > 0 {
 		gridSymbols = GGrids.ExistingSymbols

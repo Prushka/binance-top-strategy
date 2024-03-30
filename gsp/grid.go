@@ -91,7 +91,7 @@ type Grid struct {
 func persistGridEnvs(gid int) {
 	if _, ok := envOnGridsOpen[gid]; !ok {
 		envOnGridsOpen[gid] = &envOnGridOpen{SDRaw: Bundle.Raw.SymbolDirectionCount,
-			SDFiltered:     Bundle.FilteredSortedBySD.SymbolDirectionCount,
+			SDFiltered:     GetPool().SymbolDirectionCount,
 			SDPairSpecific: Bundle.SDCountPairSpecific}
 		err := persistence.Save(envOnGridsOpen, persistence.GridStatesFileName)
 		if err != nil {
@@ -109,7 +109,7 @@ func GridSDCount(gid int, symbol, direction string, setType string) (int, int, f
 		currentSDCount = Bundle.Raw.SymbolDirectionCount[sd]
 		sdCountWhenOpen = envOnGridsOpen[gid].SDRaw[sd]
 	case SDFiltered:
-		currentSDCount = Bundle.FilteredSortedBySD.SymbolDirectionCount[sd]
+		currentSDCount = GetPool().SymbolDirectionCount[sd]
 		sdCountWhenOpen = envOnGridsOpen[gid].SDFiltered[sd]
 	case SDPairSpecific:
 		currentSDCount = Bundle.SDCountPairSpecific[sd]
