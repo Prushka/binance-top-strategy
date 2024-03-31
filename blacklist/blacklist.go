@@ -63,9 +63,7 @@ func AddSymbol(symbol string, d time.Duration, reason string) {
 func newContent(c *content, d time.Duration, reason string) *content {
 	curr := time.Now().Add(d)
 	if c != nil {
-		if curr.Before(c.Till) {
-			curr = c.Till
-		}
+		return c
 	}
 	return &content{Till: curr, Reason: reason}
 }
