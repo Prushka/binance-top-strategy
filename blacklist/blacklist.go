@@ -5,7 +5,6 @@ import (
 	"BinanceTopStrategies/persistence"
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"strings"
 	"time"
 )
 
@@ -63,14 +62,12 @@ func AddSymbol(symbol string, d time.Duration, reason string) {
 
 func newContent(c *content, d time.Duration, reason string) *content {
 	curr := time.Now().Add(d)
-	var reasonR []string
 	if c != nil {
 		if curr.Before(c.Till) {
 			curr = c.Till
 		}
-		reasonR = append(reasonR, c.Reason)
 	}
-	return &content{Till: curr, Reason: strings.Join(append(reasonR, reason), ", ")}
+	return &content{Till: curr, Reason: reason}
 }
 
 func IsTradingBlocked() (bool, time.Time) {
