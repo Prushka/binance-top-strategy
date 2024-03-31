@@ -226,7 +226,7 @@ func tick() error {
 // Use total SD ratio of the pair to cancel
 
 // neutral: either trail down or check if range is in the middle before placing
-
+// log error and blacklist in different channel
 // TODO: cancel when above n%, then cooldown?
 // perform last 20 min roi (latest - last 20 OR if max roi was reached more than 20 min ago), if not positive and stop gain, cancel then block symbolpairdirection until next hr
 
