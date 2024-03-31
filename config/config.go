@@ -21,7 +21,7 @@ type Config struct {
 	DiscordName                            string    `env:"DISCORD_NAME" envDefault:"BTS"`
 	DataFolder                             string    `env:"DATA_FOLDER" envDefault:"./data"`
 	LastNHoursNoDips                       int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"6"`
-	LeavingAsset                           float64   `env:"LEAVING_ASSET" envDefault:"10"`
+	LeavingAsset                           float64   `env:"LEAVING_ASSET" envDefault:"150"`
 	CancelWhenOppositeDirections           bool      `env:"CANCEL_WHEN_OPPOSITE_DIRECTIONS" envDefault:"false"`
 	CancelNoChangeMinutes                  int       `env:"CANCEL_NO_CHANGE_MINUTES" envDefault:"15"`
 	CancelSymbolDirectionShrinkMinConstant int       `env:"CANCEL_SYMBOL_DIRECTION_SHRINK_MIN_CONSTANT" envDefault:"2"`
