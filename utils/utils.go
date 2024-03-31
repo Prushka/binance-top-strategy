@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/discord"
 	"encoding/json"
 	"fmt"
@@ -26,9 +27,9 @@ func ShortDur(d time.Duration) string {
 func TillNextRefresh() time.Duration {
 	minutesTillNextHour := 60 - time.Now().Minute()
 	if minutesTillNextHour >= 30 {
-		return time.Duration(minutesTillNextHour+15) * time.Minute
+		return time.Duration(minutesTillNextHour+config.TheConfig.ShiftMinutesAfterHour) * time.Minute
 	}
-	return time.Duration(minutesTillNextHour+75) * time.Minute
+	return time.Duration(minutesTillNextHour+config.TheConfig.ShiftMinutesAfterHour+60) * time.Minute
 }
 
 var timing = time.Now()

@@ -20,6 +20,7 @@ type Config struct {
 	DiscordWebhookOrder                    string    `env:"DISCORD_WEBHOOK_ORDER"`
 	DiscordName                            string    `env:"DISCORD_NAME" envDefault:"BTS"`
 	DataFolder                             string    `env:"DATA_FOLDER" envDefault:"./data"`
+	ShiftMinutesAfterHour                  int       `env:"SHIFT_MINUTES_AFTER_HOUR" envDefault:"5"`
 	LastNHoursNoDips                       int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"6"`
 	LeavingAsset                           float64   `env:"LEAVING_ASSET" envDefault:"150"`
 	CancelWhenOppositeDirections           bool      `env:"CANCEL_WHEN_OPPOSITE_DIRECTIONS" envDefault:"false"`
