@@ -22,6 +22,7 @@ type Config struct {
 	DataFolder                             string    `env:"DATA_FOLDER" envDefault:"./data"`
 	LastNHoursNoDips                       int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"6"`
 	LeavingAsset                           float64   `env:"LEAVING_ASSET" envDefault:"10"`
+	CancelWhenOppositeDirections           bool      `env:"CANCEL_WHEN_OPPOSITE_DIRECTIONS" envDefault:"false"`
 	CancelNoChangeMinutes                  int       `env:"CANCEL_NO_CHANGE_MINUTES" envDefault:"15"`
 	CancelSymbolDirectionShrinkMinConstant int       `env:"CANCEL_SYMBOL_DIRECTION_SHRINK_MIN_CONSTANT" envDefault:"2"`
 	CancelSymbolDirectionShrink            float64   `env:"CANCEL_SYMBOL_DIRECTION_SHRINK" envDefault:"0.82"`
@@ -33,7 +34,7 @@ type Config struct {
 	TakeProfitsBlockMinutes                []int     `env:"TAKE_PROFITS_BLOCK_MINUTES" envDefault:"40,-1,-1"`
 	TickEverySeconds                       int       `env:"TICK_EVERY_SECONDS" envDefault:"60"`
 	AssetSymbol                            string    `env:"ASSET_SYMBOL" envDefault:"USDT"`
-	MaxChunks                              int       `env:"MAX_CHUNKS" envDefault:"4"`
+	MaxChunks                              int       `env:"MAX_CHUNKS" envDefault:"5"`
 	MaxCancelLoss                          float64   `env:"MAX_CANCEL_LOSS" envDefault:"0"`
 	MaxCancelLossStrategyDeleted           float64   `env:"MAX_CANCEL_LOSS_STRATEGY_DELETED" envDefault:"-0.2"`
 	Mode                                   string    `env:"MODE" envDefault:"trading"`

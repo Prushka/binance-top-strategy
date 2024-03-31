@@ -67,7 +67,7 @@ func tick() error {
 				break
 			}
 		}
-		if symbolDifferentDirectionsHigherRanking >= 2 && existsNonBlacklistedOpposite {
+		if symbolDifferentDirectionsHigherRanking >= 2 && existsNonBlacklistedOpposite && config.TheConfig.CancelWhenOppositeDirections {
 			toCancel.AddGridToCancel(grid, 0,
 				fmt.Sprintf("opposite directions at top: %d", symbolDifferentDirectionsHigherRanking))
 			blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, 10*time.Minute, "opposite directions at top")
