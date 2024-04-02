@@ -36,7 +36,7 @@ type Config struct {
 	TakeProfits                            []float64 `env:"TAKE_PROFITS" envDefault:"0.5,0.35,0.2"`
 	TakeProfitsMaxLookbackMinutes          []int     `env:"TAKE_PROFITS_MAX_LOOKBACK_MINUTES" envDefault:"5,15,25"`
 	TakeProfitsBlockMinutes                []int     `env:"TAKE_PROFITS_BLOCK_MINUTES" envDefault:"40,-1,-1"`
-	TickEverySeconds                       int       `env:"TICK_EVERY_SECONDS" envDefault:"60"`
+	TickEverySeconds                       int       `env:"TICK_EVERY_SECONDS" envDefault:"30"`
 	AssetSymbol                            string    `env:"ASSET_SYMBOL" envDefault:"USDT"`
 	MaxChunks                              int       `env:"MAX_CHUNKS" envDefault:"4"`
 	MaxCancelLoss                          float64   `env:"MAX_CANCEL_LOSS" envDefault:"0"`
