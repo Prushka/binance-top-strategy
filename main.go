@@ -20,6 +20,47 @@ import (
 
 var scheduler = gocron.NewScheduler(time.Now().Location())
 
+func checkOppositeDirections(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
+	symbolDifferentDirectionsHigherRanking := 0
+	possibleDirections := mapset.NewSet[string]()
+	for _, s := range gsp.GetPool().Strategies {
+		if s.Symbol == grid.Symbol {
+			if gsp.DirectionMap[s.Direction] != grid.Direction {
+				symbolDifferentDirectionsHigherRanking++
+				possibleDirections.Add(gsp.DirectionMap[s.Direction])
+			} else {
+				break
+			}
+		}
+	}
+	existsNonBlacklistedOpposite := false
+	for _, d := range possibleDirections.ToSlice() {
+		if bl, _ := blacklist.SymbolDirectionBlacklisted(grid.Symbol, d); !bl {
+			existsNonBlacklistedOpposite = true
+			break
+		}
+	}
+	if symbolDifferentDirectionsHigherRanking >= 2 && existsNonBlacklistedOpposite && config.TheConfig.CancelWhenOppositeDirections {
+		toCancel.AddGridToCancel(grid, 0,
+			fmt.Sprintf("opposite directions at top: %d", symbolDifferentDirectionsHigherRanking))
+		blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, 10*time.Minute, "opposite directions at top")
+	}
+}
+
+func checkDirectionShrink(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
+	currentSDCount, sdCountWhenOpen, ratio := gsp.GridSDCount(grid.GID, grid.Symbol, grid.Direction, gsp.SDRaw)
+	if ratio < config.TheConfig.CancelSymbolDirectionShrink && sdCountWhenOpen-currentSDCount >= config.TheConfig.CancelSymbolDirectionShrinkMinConstant {
+		reason := fmt.Sprintf("direction shrink: %.2f", ratio)
+		blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), reason)
+		toCancel.AddGridToCancel(grid, 0, reason)
+		if ratio < config.TheConfig.CancelWithLossSymbolDirectionShrink {
+			toCancel.AddGridToCancel(grid, config.TheConfig.MaxLossWithSymbolDirectionShrink,
+				fmt.Sprintf("shrink below %f, accept loss: %f",
+					config.TheConfig.CancelWithLossSymbolDirectionShrink, config.TheConfig.MaxLossWithSymbolDirectionShrink))
+		}
+	}
+}
+
 func tick() error {
 	utils.ResetTime()
 	sdk.ClearSessionSymbolPrice()
@@ -48,43 +89,6 @@ func tick() error {
 	}
 	toCancel := make(gsp.GridsToCancel)
 	for _, grid := range gsp.GGrids.GridsByGid {
-		symbolDifferentDirectionsHigherRanking := 0
-		possibleDirections := mapset.NewSet[string]()
-		for _, s := range gsp.GetPool().Strategies {
-			if s.Symbol == grid.Symbol {
-				if gsp.DirectionMap[s.Direction] != grid.Direction {
-					symbolDifferentDirectionsHigherRanking++
-					possibleDirections.Add(gsp.DirectionMap[s.Direction])
-				} else {
-					break
-				}
-			}
-		}
-		existsNonBlacklistedOpposite := false
-		for _, d := range possibleDirections.ToSlice() {
-			if bl, _ := blacklist.SymbolDirectionBlacklisted(grid.Symbol, d); !bl {
-				existsNonBlacklistedOpposite = true
-				break
-			}
-		}
-		if symbolDifferentDirectionsHigherRanking >= 2 && existsNonBlacklistedOpposite && config.TheConfig.CancelWhenOppositeDirections {
-			toCancel.AddGridToCancel(grid, 0,
-				fmt.Sprintf("opposite directions at top: %d", symbolDifferentDirectionsHigherRanking))
-			blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, 10*time.Minute, "opposite directions at top")
-		}
-
-		currentSDCount, sdCountWhenOpen, ratio := gsp.GridSDCount(grid.GID, grid.Symbol, grid.Direction, gsp.SDRaw)
-		if ratio < config.TheConfig.CancelSymbolDirectionShrink && sdCountWhenOpen-currentSDCount >= config.TheConfig.CancelSymbolDirectionShrinkMinConstant {
-			reason := fmt.Sprintf("direction shrink: %.2f", ratio)
-			blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), reason)
-			toCancel.AddGridToCancel(grid, 0, reason)
-			if ratio < config.TheConfig.CancelWithLossSymbolDirectionShrink {
-				toCancel.AddGridToCancel(grid, config.TheConfig.MaxLossWithSymbolDirectionShrink,
-					fmt.Sprintf("shrink below %f, accept loss: %f",
-						config.TheConfig.CancelWithLossSymbolDirectionShrink, config.TheConfig.MaxLossWithSymbolDirectionShrink))
-			}
-		}
-
 		if !gsp.Bundle.Raw.Exists(grid.SID) {
 			toCancel.AddGridToCancel(grid, config.TheConfig.MaxCancelLossStrategyDeleted, "strategy not found")
 			if grid.LastRoi < 0 {
