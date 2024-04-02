@@ -61,6 +61,26 @@ func checkDirectionShrink(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 	}
 }
 
+func checkMaxGain(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
+	for c, gpMax := range config.TheConfig.TakeProfits {
+		if grid.LastRoi >= gpMax {
+			gpLookBack := time.Duration(config.TheConfig.TakeProfitsMaxLookbackMinutes[c]) * time.Minute
+			gpBlock := time.Duration(config.TheConfig.TakeProfitsBlockMinutes[c]) * time.Minute
+			if time.Since(grid.Tracking.TimeHighestRoi) > gpLookBack {
+				reason := fmt.Sprintf("max gain %.2f%%/%.2f%%, reached %s ago",
+					grid.LastRoi*100, grid.Tracking.HighestRoi*100,
+					time.Since(grid.Tracking.TimeHighestRoi).Round(time.Second))
+				toCancel.AddGridToCancel(grid, gpMax, reason)
+				if gpBlock < 0 {
+					blacklist.AddSymbol(grid.Symbol, utils.TillNextRefresh(), reason)
+				} else {
+					blacklist.AddSymbol(grid.Symbol, gpBlock, reason)
+				}
+			}
+		}
+	}
+}
+
 func tick() error {
 	utils.ResetTime()
 	sdk.ClearSessionSymbolPrice()
@@ -104,23 +124,7 @@ func tick() error {
 			toCancel.AddGridToCancel(grid, 0, reason)
 		}
 
-		for c, gpMax := range config.TheConfig.TakeProfits {
-			if grid.LastRoi >= gpMax {
-				gpLookBack := time.Duration(config.TheConfig.TakeProfitsMaxLookbackMinutes[c]) * time.Minute
-				gpBlock := time.Duration(config.TheConfig.TakeProfitsBlockMinutes[c]) * time.Minute
-				if time.Since(grid.Tracking.TimeHighestRoi) > gpLookBack {
-					reason := fmt.Sprintf("max gain %.2f%%/%.2f%%, reached %s ago",
-						grid.LastRoi*100, grid.Tracking.HighestRoi*100,
-						time.Since(grid.Tracking.TimeHighestRoi).Round(time.Second))
-					toCancel.AddGridToCancel(grid, gpMax, reason)
-					if gpBlock < 0 {
-						blacklist.AddSymbol(grid.Symbol, utils.TillNextRefresh(), reason)
-					} else {
-						blacklist.AddSymbol(grid.Symbol, gpBlock, reason)
-					}
-				}
-			}
-		}
+		checkMaxGain(grid, toCancel)
 	}
 	if !toCancel.IsEmpty() {
 		discord.Infof("### Expired Strategies: %s", toCancel)
