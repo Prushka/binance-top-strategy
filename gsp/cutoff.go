@@ -90,10 +90,10 @@ func UpdateTopStrategiesWithRoi() error {
 				s.lastHrRoiChange > 0.01 &&
 				s.last2HrRoiChange > s.lastHrRoiChange &&
 				s.lastDayRoiPerHr > 0.01 &&
-				s.last12HrRoiPerHr > 0.01 &&
-				s.priceDifference > 0.05 {
+				s.last12HrRoiPerHr > 0.014 &&
+				s.priceDifference > 0.05 &&
+				s.lastNHrNoDip {
 				// TODO: price difference can shrink with trailing, e.g., 5.xx% -> 4.xx%
-				//s.lastNHrNoDip {
 				filtered = append(filtered, s)
 				prefix += "Open"
 			}
