@@ -84,7 +84,7 @@ func Init() {
 						chunks = append(chunks, message)
 						continue
 					}
-					if len(chunks[len(chunks)-1])+len(message) > 1500 {
+					if len(chunks[len(chunks)-1])+len(message) > 1800 {
 						chunks = append(chunks, message)
 					} else {
 						chunks[len(chunks)-1] = chunks[len(chunks)-1] + "\n" + message
