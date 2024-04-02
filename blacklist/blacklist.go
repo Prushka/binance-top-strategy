@@ -25,7 +25,7 @@ var blacklist = &blacklists{BySID: make(map[int]*content), BySymbolDirection: ma
 func persistBlacklist() {
 	err := persistence.Save(blacklist, persistence.BlacklistFileName)
 	if err != nil {
-		discord.Infof("Error saving blacklist: %v", err)
+		discord.Errorf("Error saving blacklist: %v", err)
 	}
 }
 
@@ -38,25 +38,25 @@ func Init() {
 
 func BlockTrading(d time.Duration, reason string) {
 	blacklist.Global = newContent(blacklist.Global, d, reason)
-	discord.Infof(fmt.Sprintf("**Global block:** %s, %s", d, reason))
+	discord.Blacklistf(fmt.Sprintf("**Global block:** %s, %s", d, reason))
 	persistBlacklist()
 }
 
 func AddSymbolDirection(symbol, direction string, d time.Duration, reason string) {
 	blacklist.BySymbolDirection[symbol+direction] = newContent(blacklist.BySymbolDirection[symbol+direction], d, reason)
-	discord.Infof(fmt.Sprintf("**Add blacklist:** %s, %s, %s, %s", symbol, direction, d, reason))
+	discord.Blacklistf(fmt.Sprintf("**Add blacklist:** %s, %s, %s, %s", symbol, direction, d, reason))
 	persistBlacklist()
 }
 
 func AddSID(id int, d time.Duration, reason string) {
 	blacklist.BySID[id] = newContent(blacklist.BySID[id], d, reason)
-	discord.Infof(fmt.Sprintf("**Add blacklist:** %d, %s, %s", id, d, reason), discord.DefaultWebhook)
+	discord.Blacklistf(fmt.Sprintf("**Add blacklist:** %d, %s, %s", id, d, reason))
 	persistBlacklist()
 }
 
 func AddSymbol(symbol string, d time.Duration, reason string) {
 	blacklist.BySymbol[symbol] = newContent(blacklist.BySymbol[symbol], d, reason)
-	discord.Infof(fmt.Sprintf("**Add blacklist:** %s, %s, %s", symbol, d, reason), discord.DefaultWebhook)
+	discord.Blacklistf(fmt.Sprintf("**Add blacklist:** %s, %s, %s", symbol, d, reason))
 	persistBlacklist()
 }
 

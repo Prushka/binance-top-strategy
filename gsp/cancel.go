@@ -44,13 +44,13 @@ func (tc *gridToCancel) Cancel() error {
 			return err
 		}
 		tc.Cancelled = true
-		discord.Info(Display(nil, grid, "**Cancelled**", 0, 0), discord.ActionWebhook, discord.DefaultWebhook)
+		discord.Actionf(Display(nil, grid, "**Cancelled**", 0, 0))
 		webhooks = append(webhooks, discord.ActionWebhook)
 	} else {
-		discord.Info(Display(nil, grid, "**Skip Cancel**", 0, 0), discord.DefaultWebhook)
+		discord.Infof(Display(nil, grid, "**Skip Cancel**", 0, 0))
 	}
 	for _, reason := range tc.Reasons {
-		discord.Info(" * "+reason, webhooks...)
+		discord.Webhooks(" * "+reason, webhooks...)
 	}
 	return nil
 }

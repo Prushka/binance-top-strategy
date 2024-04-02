@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"BinanceTopStrategies/discord"
 	"sync"
 	"time"
 
@@ -30,7 +31,7 @@ func (c *MapCache[T]) Get(key string) (T, error) {
 		log.Infof("Cache expired %s, fetching new data", key)
 		data, err := c.FetchMethod(key)
 		if err != nil {
-			log.Errorf("Error fetching data: %v", err)
+			discord.Errorf("Error fetching data: %v", err)
 			return c.Data[key], err
 		}
 		c.Data[key] = data

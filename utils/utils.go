@@ -5,7 +5,6 @@ import (
 	"BinanceTopStrategies/discord"
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"math/rand"
 	"net/http"
@@ -71,7 +70,7 @@ func GenerateRandomNumberUUID() string {
 func AsJson(v interface{}) string {
 	b, err := json.Marshal(v)
 	if err != nil {
-		log.Error(err)
+		discord.Errorf("Error marshalling json: %v", err)
 	}
 	return string(b)
 }

@@ -203,7 +203,7 @@ func tick() error {
 				break
 			}
 		} else {
-			discord.Info(gsp.Display(s, nil, "**Opened Grid**", c+1, len(gsp.GetPool().Strategies)), discord.ActionWebhook, discord.DefaultWebhook)
+			discord.Actionf(gsp.Display(s, nil, "**Opened Grid**", c+1, len(gsp.GetPool().Strategies)))
 			chunksInt -= 1
 			sessionSymbols.Add(s.Symbol)
 			if chunksInt <= 0 {
@@ -234,7 +234,6 @@ func tick() error {
 // Use total SD ratio of the pair to cancel
 
 // neutral: either trail down or check if range is in the middle before placing
-// log error and blacklist in different channel
 // TODO: cancel when above n%, then cooldown?
 // perform last 20 min roi (latest - last 20 OR if max roi was reached more than 20 min ago), if not positive and stop gain, cancel then block symbolpairdirection until next hr
 
@@ -256,13 +255,13 @@ func main() {
 				t := time.Now()
 				err := tick()
 				if err != nil {
-					log.Errorf("Error: %v", err)
+					discord.Errorf("Error: %v", err)
 				}
 				discord.Infof("*Run took: %v*", time.Since(t))
 			},
 		)
 		if err != nil {
-			log.Errorf("Error: %v", err)
+			discord.Errorf("Error: %v", err)
 			return
 		}
 		scheduler.StartBlocking()
@@ -273,7 +272,7 @@ func main() {
 			Symbol("BCHUSDT").Interval("1m").StartTime(time.Now().Add(-timeAgo).Unix() * 1000).
 			EndTime(time.Now().Add(-timeAgo+time.Minute).Unix() * 1000).Do(context.Background())
 		if err != nil {
-			log.Errorf("Error: %v", err)
+			discord.Errorf("Error: %v", err)
 			return
 		}
 		log.Info(utils.AsJson(res))

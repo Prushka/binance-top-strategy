@@ -18,6 +18,8 @@ type Config struct {
 	DiscordWebhook                         string    `env:"DISCORD_WEBHOOK"`
 	DiscordWebhookAction                   string    `env:"DISCORD_WEBHOOK_ACTION"`
 	DiscordWebhookOrder                    string    `env:"DISCORD_WEBHOOK_ORDER"`
+	DiscordWebhookError                    string    `env:"DISCORD_WEBHOOK_ERROR"`
+	DiscordWebhookBlacklist                string    `env:"DISCORD_WEBHOOK_BLACKLIST"`
 	DiscordName                            string    `env:"DISCORD_NAME" envDefault:"BTS"`
 	DataFolder                             string    `env:"DATA_FOLDER" envDefault:"./data"`
 	ShiftMinutesAfterHour                  int       `env:"SHIFT_MINUTES_AFTER_HOUR" envDefault:"0"`

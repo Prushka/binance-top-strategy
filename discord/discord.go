@@ -4,6 +4,7 @@ import (
 	"BinanceTopStrategies/config"
 	"encoding/json"
 	"fmt"
+	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/go-co-op/gocron"
 	"github.com/gtuk/discordwebhook"
 	log "github.com/sirupsen/logrus"
@@ -23,16 +24,41 @@ func Json(chat string) string {
 	return "```json\n" + chat + "\n```"
 }
 
-func Infof(format string, args ...any) {
-	s := format
-	if len(args) > 0 {
-		s = fmt.Sprintf(format, args...)
-	}
-	Info(s, DefaultWebhook)
+func Actionf(f string, args ...any) {
+	Webhooks(format(f, args...), ActionWebhook, DefaultWebhook)
 }
 
-func Info(chat string, webhookTypes ...int) {
-	log.Info(chat)
+func Infof(f string, args ...any) {
+	Webhooks(format(f, args...), DefaultWebhook)
+}
+
+func Errorf(f string, args ...any) {
+	Webhooks(format(f, args...), ErrorWebhook, DefaultWebhook)
+}
+
+func Blacklistf(f string, args ...any) {
+	Webhooks(format(f, args...), BlacklistWebhook, DefaultWebhook)
+}
+
+func Orderf(f string, args ...any) {
+	Webhooks(format(f, args...), OrderWebhook)
+}
+
+func format(f string, args ...any) string {
+	s := f
+	if len(args) > 0 {
+		s = fmt.Sprintf(f, args...)
+	}
+	return s
+}
+
+func Webhooks(chat string, webhookTypes ...int) {
+	hooks := mapset.NewSet(webhookTypes...)
+	if hooks.Contains(ErrorWebhook) {
+		log.Error(chat)
+	} else {
+		log.Info(chat)
+	}
 	mutex.Lock()
 	defer mutex.Unlock()
 	for _, webhookType := range webhookTypes {
@@ -86,6 +112,8 @@ const (
 	DefaultWebhook int = iota
 	ActionWebhook
 	OrderWebhook
+	ErrorWebhook
+	BlacklistWebhook
 )
 
 func send(payload messagePayload) {
@@ -109,6 +137,16 @@ func send(payload messagePayload) {
 			return
 		}
 		err = discordwebhook.SendMessage(config.TheConfig.DiscordWebhookOrder, message)
+	case ErrorWebhook:
+		if config.TheConfig.DiscordWebhookError == "" {
+			return
+		}
+		err = discordwebhook.SendMessage(config.TheConfig.DiscordWebhookError, message)
+	case BlacklistWebhook:
+		if config.TheConfig.DiscordWebhookBlacklist == "" {
+			return
+		}
+		err = discordwebhook.SendMessage(config.TheConfig.DiscordWebhookBlacklist, message)
 	default:
 		err = discordwebhook.SendMessage(config.TheConfig.DiscordWebhook, message)
 	}

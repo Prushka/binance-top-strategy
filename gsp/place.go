@@ -96,7 +96,7 @@ func PlaceGrid(strategy Strategy, initialUSDT float64) error {
 		payload.StopTriggerType = "MARK_PRICE"
 	}
 	s, _ := json.Marshal(payload)
-	discord.Info(discord.Json(string(s)), discord.OrderWebhook)
+	discord.Orderf(discord.Json(string(s)))
 	if config.TheConfig.Paper {
 		log.Infof("Paper mode, not placing grid")
 		return nil
