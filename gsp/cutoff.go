@@ -83,6 +83,7 @@ func UpdateTopStrategiesWithRoi() error {
 			s.last9HrRoiPerHr = GetRoiPerHr(s.Rois, 9*time.Hour)
 			s.last6HrRoiPerHr = GetRoiPerHr(s.Rois, 6*time.Hour)
 			s.lastNHrNoDip = NoDip(s.Rois, time.Duration(config.TheConfig.LastNHoursNoDips)*time.Hour)
+			s.lastNHrAllPositive = AllPositive(s.Rois, time.Duration(config.TheConfig.LastNHoursAllPositive)*time.Hour)
 			s.roiPerHour = (s.roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
 			prefix := ""
 			if s.lastDayRoiChange > 0.1 &&
@@ -92,7 +93,7 @@ func UpdateTopStrategiesWithRoi() error {
 				s.lastDayRoiPerHr > 0.01 &&
 				s.last12HrRoiPerHr > 0.014 &&
 				s.priceDifference > 0.05 &&
-				s.lastNHrNoDip {
+				s.lastNHrAllPositive {
 				// TODO: price difference can shrink with trailing, e.g., 5.xx% -> 4.xx%
 				filtered = append(filtered, s)
 				prefix += "Open"

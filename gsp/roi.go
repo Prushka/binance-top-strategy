@@ -110,3 +110,17 @@ func NoDip(roi StrategyRoi, t time.Duration) bool {
 	}
 	return true
 }
+
+func AllPositive(roi StrategyRoi, t time.Duration) bool {
+	latestTimestamp := roi[0].Time
+	l := latestTimestamp - int64(t.Seconds())
+	for c, r := range roi {
+		if r.Time < l {
+			return true
+		}
+		if c > 0 && roi[c-1].Roi-r.Roi <= 0 {
+			return false
+		}
+	}
+	return true
+}

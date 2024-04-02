@@ -42,30 +42,31 @@ type StrategiesResponse struct {
 }
 
 type Strategy struct {
-	Rois             StrategyRoi
-	Symbol           string `json:"symbol"`
-	CopyCount        int    `json:"copyCount"`
-	Roi              string `json:"roi"`
-	Pnl              string `json:"pnl"`
-	RunningTime      int    `json:"runningTime"`
-	SID              int    `json:"strategyId"`
-	StrategyType     int    `json:"strategyType"`
-	Direction        int    `json:"direction"`
-	UserID           int    `json:"userId"`
-	roi              float64
-	lastDayRoiChange float64
-	last3HrRoiChange float64
-	last2HrRoiChange float64
-	lastHrRoiChange  float64
-	lastDayRoiPerHr  float64
-	last15HrRoiPerHr float64
-	last12HrRoiPerHr float64
-	last9HrRoiPerHr  float64
-	last6HrRoiPerHr  float64
-	lastNHrNoDip     bool
-	roiPerHour       float64
-	priceDifference  float64
-	StrategyParams   struct {
+	Rois               StrategyRoi
+	Symbol             string `json:"symbol"`
+	CopyCount          int    `json:"copyCount"`
+	Roi                string `json:"roi"`
+	Pnl                string `json:"pnl"`
+	RunningTime        int    `json:"runningTime"`
+	SID                int    `json:"strategyId"`
+	StrategyType       int    `json:"strategyType"`
+	Direction          int    `json:"direction"`
+	UserID             int    `json:"userId"`
+	roi                float64
+	lastDayRoiChange   float64
+	last3HrRoiChange   float64
+	last2HrRoiChange   float64
+	lastHrRoiChange    float64
+	lastDayRoiPerHr    float64
+	last15HrRoiPerHr   float64
+	last12HrRoiPerHr   float64
+	last9HrRoiPerHr    float64
+	last6HrRoiPerHr    float64
+	lastNHrNoDip       bool
+	lastNHrAllPositive bool
+	roiPerHour         float64
+	priceDifference    float64
+	StrategyParams     struct {
 		Type           string  `json:"type"`
 		LowerLimit     string  `json:"lowerLimit"`
 		UpperLimit     string  `json:"upperLimit"`
