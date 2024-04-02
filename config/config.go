@@ -22,7 +22,7 @@ type Config struct {
 	DataFolder                             string    `env:"DATA_FOLDER" envDefault:"./data"`
 	ShiftMinutesAfterHour                  int       `env:"SHIFT_MINUTES_AFTER_HOUR" envDefault:"5"`
 	LastNHoursNoDips                       int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"6"`
-	LeavingAsset                           float64   `env:"LEAVING_ASSET" envDefault:"150"`
+	LeavingAsset                           float64   `env:"LEAVING_ASSET" envDefault:"300"`
 	CancelWhenOppositeDirections           bool      `env:"CANCEL_WHEN_OPPOSITE_DIRECTIONS" envDefault:"false"`
 	CancelNoChangeMinutes                  int       `env:"CANCEL_NO_CHANGE_MINUTES" envDefault:"15"`
 	CancelSymbolDirectionShrinkMinConstant int       `env:"CANCEL_SYMBOL_DIRECTION_SHRINK_MIN_CONSTANT" envDefault:"2"`
