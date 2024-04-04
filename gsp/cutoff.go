@@ -88,11 +88,12 @@ func UpdateTopStrategiesWithRoi() error {
 			prefix := ""
 			if s.lastDayRoiChange > 0.1 &&
 				s.last3HrRoiChange > 0.03 &&
-				s.lastHrRoiChange > 0.01 &&
+				s.lastHrRoiChange > 0.02 &&
 				s.last2HrRoiChange > s.lastHrRoiChange &&
 				s.lastDayRoiPerHr > 0.01 &&
 				s.last12HrRoiPerHr > 0.014 &&
 				s.priceDifference > 0.05 &&
+				//((s.Direction == SHORT && s.StrategyParams.StopUpperLimit != nil) || (s.Direction == LONG && s.StrategyParams.StopLowerLimit != nil) || (s.Direction == NEUTRAL && s.StrategyParams.StopLowerLimit != nil && s.StrategyParams.StopUpperLimit != nil)) &&
 				s.lastNHrAllPositive {
 				// TODO: price difference can shrink with trailing, e.g., 5.xx% -> 4.xx%
 				filtered = append(filtered, s)
