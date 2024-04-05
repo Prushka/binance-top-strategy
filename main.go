@@ -187,7 +187,7 @@ func tick() error {
 	sessionSymbols := gsp.GGrids.ExistingSymbols.Clone()
 	for c, s := range gsp.GetPool().Strategies {
 		if gsp.GGrids.ExistingSIDs.Contains(s.SID) {
-			discord.Infof("Strategy %d - %s exists in open grids, Skip", s.SID, s.SD())
+			discord.Infof("* Strategy %d - %s exists in open grids, Skip", s.SID, s.SD())
 			continue
 		}
 		if sessionSymbols.Contains(s.Symbol) {
