@@ -68,7 +68,7 @@ func Webhooks(chat string, webhookTypes ...int) {
 
 func Init() {
 	scheduler := gocron.NewScheduler(time.Now().Location())
-	_, err := scheduler.SingletonMode().Every(5).Seconds().Do(func() {
+	_, err := scheduler.SingletonMode().Every(10).Seconds().Do(func() {
 		mutex.Lock()
 		currentMessages := make(map[int][]string)
 		for k, v := range messages {
