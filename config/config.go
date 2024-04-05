@@ -26,7 +26,6 @@ type Config struct {
 	LastNHoursNoDips                 int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"5"`
 	LastNHoursAllPositive            int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"5"`
 	LeavingAsset                     float64   `env:"LEAVING_ASSET" envDefault:"0"`
-	CancelWhenOppositeDirections     bool      `env:"CANCEL_WHEN_OPPOSITE_DIRECTIONS" envDefault:"false"`
 	CancelNoChangeMinutes            int       `env:"CANCEL_NO_CHANGE_MINUTES" envDefault:"15"`
 	SymbolDirectionShrinkMinConstant int       `env:"SYMBOL_DIRECTION_SHRINK_MIN_CONSTANT" envDefault:"2"`
 	SymbolDirectionShrink            []float64 `env:"SYMBOL_DIRECTION_SHRINK" envDefault:"0.82,0.65"`

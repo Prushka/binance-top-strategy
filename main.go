@@ -40,10 +40,9 @@ func checkOppositeDirections(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 			break
 		}
 	}
-	if symbolDifferentDirectionsHigherRanking >= 2 && existsNonBlacklistedOpposite && config.TheConfig.CancelWhenOppositeDirections {
+	if symbolDifferentDirectionsHigherRanking >= 2 && existsNonBlacklistedOpposite {
 		toCancel.AddGridToCancel(grid, 0,
 			fmt.Sprintf("opposite directions at top: %d", symbolDifferentDirectionsHigherRanking))
-		blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, 10*time.Minute, "opposite directions at top")
 	}
 }
 
@@ -145,6 +144,7 @@ func tick() error {
 
 		checkMaxGain(grid, toCancel)
 		checkDirectionShrink(grid, toCancel)
+		checkOppositeDirections(grid, toCancel)
 	}
 	if !toCancel.IsEmpty() {
 		discord.Infof("### Expired Strategies: %s", toCancel)
