@@ -1,9 +1,11 @@
 package gsp
 
 import (
+	"BinanceTopStrategies/blacklist"
 	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/persistence"
+	"BinanceTopStrategies/utils"
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
 	log "github.com/sirupsen/logrus"
@@ -100,6 +102,7 @@ func UpdateTopStrategiesWithRoi() error {
 					grid := GGrids.GetGridBySID(s.SID)
 					if grid.Tracking.HighestRoi < 0 && grid.GetRunTime() > 1*time.Hour {
 						discord.Infof(Display(s, grid, "Grid has negative ROI", 0, 0))
+						blacklist.AddSID(s.SID, utils.TillNextRefresh(), "Grid has negative ROI")
 						continue
 					}
 				}
