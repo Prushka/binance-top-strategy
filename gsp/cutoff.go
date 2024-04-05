@@ -96,6 +96,13 @@ func UpdateTopStrategiesWithRoi() error {
 				//((s.Direction == SHORT && s.StrategyParams.StopUpperLimit != nil) || (s.Direction == LONG && s.StrategyParams.StopLowerLimit != nil) || (s.Direction == NEUTRAL && s.StrategyParams.StopLowerLimit != nil && s.StrategyParams.StopUpperLimit != nil)) &&
 				s.lastNHrAllPositive {
 				// TODO: price difference can shrink with trailing, e.g., 5.xx% -> 4.xx%
+				if GGrids.ExistingSIDs.Contains(s.SID) {
+					grid := GGrids.GetGridBySID(s.SID)
+					if grid.Tracking.HighestRoi < 0 && grid.GetRunTime() > 1*time.Hour {
+						discord.Infof(Display(s, grid, "Grid has negative ROI", 0, 0))
+						continue
+					}
+				}
 				filtered = append(filtered, s)
 				prefix += "Open"
 			}

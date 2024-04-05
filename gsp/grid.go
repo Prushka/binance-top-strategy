@@ -162,6 +162,15 @@ func GridSDCount(gid int, symbol, direction string, setType string) (int, int, f
 	return currentSDCount, sdCountWhenOpen, ratio
 }
 
+func (tracked *TrackedGrids) GetGridBySID(sid int) *Grid {
+	for _, g := range tracked.GridsByGid {
+		if g.SID == sid {
+			return g
+		}
+	}
+	return nil
+}
+
 func (tracked *TrackedGrids) remove(id int) {
 	g, ok := tracked.GridsByGid[id]
 	if !ok {
@@ -253,6 +262,10 @@ func (tracked *TrackedGrids) add(g *Grid, trackContinuous bool) {
 	}
 	persistGridCurrEnvs(g.GID, g.SID)
 	tracked.GridsByGid[g.GID] = g
+}
+
+func (grid *Grid) GetRunTime() time.Duration {
+	return time.Duration(time.Now().Unix()-grid.BookTime/1000) * time.Second
 }
 
 func (grid *Grid) String() string {
