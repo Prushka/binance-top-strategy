@@ -49,14 +49,13 @@ func checkOppositeDirections(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 
 func checkDirectionShrink(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 	currentSDCount, sdCountWhenOpen, ratio := gsp.GridSDCount(grid.GID, grid.Symbol, grid.Direction, gsp.SDRaw)
-	if ratio < config.TheConfig.CancelSymbolDirectionShrink && sdCountWhenOpen-currentSDCount >= config.TheConfig.CancelSymbolDirectionShrinkMinConstant {
-		reason := fmt.Sprintf("direction shrink: %.2f", ratio)
-		blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), reason)
-		toCancel.AddGridToCancel(grid, 0, reason)
-		if ratio < config.TheConfig.CancelWithLossSymbolDirectionShrink {
-			toCancel.AddGridToCancel(grid, config.TheConfig.MaxLossWithSymbolDirectionShrink,
-				fmt.Sprintf("shrink below %f, accept loss: %f",
-					config.TheConfig.CancelWithLossSymbolDirectionShrink, config.TheConfig.MaxLossWithSymbolDirectionShrink))
+	diff := sdCountWhenOpen - currentSDCount
+	for c, ratioCutoff := range config.TheConfig.SymbolDirectionShrink {
+		if ratio < ratioCutoff && diff >= config.TheConfig.SymbolDirectionShrinkMinConstant {
+			maxLoss := config.TheConfig.SymbolDirectionShrinkLoss[c]
+			reason := fmt.Sprintf("direction shrink: %.2f, accept loss: %f", ratio, maxLoss)
+			blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), reason)
+			toCancel.AddGridToCancel(grid, maxLoss, reason)
 		}
 	}
 }
