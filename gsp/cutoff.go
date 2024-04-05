@@ -19,7 +19,7 @@ type sdCountPair struct {
 }
 
 func Init() {
-	err := persistence.Load(&envOnGridsOpen, persistence.GridStatesFileName)
+	err := persistence.Load(&gridEnv, persistence.GridStatesFileName)
 	if err != nil {
 		log.Fatalf("Error loading state on grid open: %v", err)
 	}

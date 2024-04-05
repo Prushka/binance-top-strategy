@@ -81,6 +81,18 @@ func checkMaxGain(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 	}
 }
 
+func checkStopLossNotPicked(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
+	for c, slHr := range config.TheConfig.StopLossNotPickedHrs {
+		slDuration := time.Duration(slHr) * time.Hour
+		maxLoss := config.TheConfig.StopLossNotPicked[c]
+		notPickedDuration := gsp.GridNotPickedDuration(grid.GID)
+		if *notPickedDuration > slDuration {
+			toCancel.AddGridToCancel(grid, maxLoss, fmt.Sprintf("not picked for %s, accept loss: %f",
+				notPickedDuration.Round(time.Second), maxLoss))
+		}
+	}
+}
+
 func tick() error {
 	utils.ResetTime()
 	sdk.ClearSessionSymbolPrice()
@@ -116,6 +128,7 @@ func tick() error {
 			}
 		} else if !gsp.GetPool().Exists(grid.SID) {
 			toCancel.AddGridToCancel(grid, 0, "strategy not picked")
+			checkStopLossNotPicked(grid, toCancel)
 		}
 
 		if time.Since(grid.Tracking.TimeLastChange) > time.Duration(config.TheConfig.CancelNoChangeMinutes)*time.Minute {
@@ -125,6 +138,7 @@ func tick() error {
 		}
 
 		checkMaxGain(grid, toCancel)
+		checkDirectionShrink(grid, toCancel)
 	}
 	if !toCancel.IsEmpty() {
 		discord.Infof("### Expired Strategies: %s", toCancel)

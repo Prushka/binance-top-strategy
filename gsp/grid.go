@@ -11,12 +11,13 @@ import (
 	"time"
 )
 
-var envOnGridsOpen = make(map[int]*envOnGridOpen)
+var gridEnv = make(map[int]*GridEnv)
 
-type envOnGridOpen struct {
-	SDRaw          map[string]int
-	SDFiltered     map[string]int
-	SDPairSpecific map[string]int
+type GridEnv struct {
+	SDRaw                 map[string]int
+	SDFiltered            map[string]int
+	SDPairSpecific        map[string]int
+	StrategyLastNotPicked *time.Time
 }
 
 type GridTracking struct {
@@ -88,14 +89,48 @@ type Grid struct {
 	MarginType             string `json:"marginType"`
 }
 
-func persistGridEnvs(gid int) {
-	if _, ok := envOnGridsOpen[gid]; !ok {
-		envOnGridsOpen[gid] = &envOnGridOpen{SDRaw: Bundle.Raw.SymbolDirectionCount,
+func GridNotPickedDuration(gid int) *time.Duration {
+	env := gridEnv[gid]
+	if env == nil {
+		discord.Errorf("Grid %d not found in gridEnv", gid)
+		return nil
+	}
+	if env.StrategyLastNotPicked == nil {
+		return nil
+	}
+	now := time.Now()
+	duration := now.Sub(*env.StrategyLastNotPicked)
+	return &duration
+}
+
+func persistGridCurrEnvs(gid int, sid int) {
+	env := gridEnv[gid]
+	if env == nil {
+		discord.Errorf("Grid %d not found in gridEnv", gid)
+	}
+	var err error
+	picked := GetPool().Exists(sid)
+	if !picked && env.StrategyLastNotPicked == nil {
+		now := time.Now()
+		env.StrategyLastNotPicked = &now
+		err = persistence.Save(gridEnv, persistence.GridStatesFileName)
+	} else if picked && env.StrategyLastNotPicked != nil {
+		env.StrategyLastNotPicked = nil
+		err = persistence.Save(gridEnv, persistence.GridStatesFileName)
+	}
+	if err != nil {
+		discord.Errorf("Error saving state on grid close: %v", err)
+	}
+}
+
+func persistGridInitialEnvs(gid int) {
+	if _, ok := gridEnv[gid]; !ok {
+		gridEnv[gid] = &GridEnv{SDRaw: Bundle.Raw.SymbolDirectionCount,
 			SDFiltered:     GetPool().SymbolDirectionCount,
 			SDPairSpecific: Bundle.SDCountPairSpecific}
-		err := persistence.Save(envOnGridsOpen, persistence.GridStatesFileName)
+		err := persistence.Save(gridEnv, persistence.GridStatesFileName)
 		if err != nil {
-			discord.Infof("Error saving state on grid open: %v", err)
+			discord.Errorf("Error saving state on grid open: %v", err)
 		}
 	}
 }
@@ -107,13 +142,13 @@ func GridSDCount(gid int, symbol, direction string, setType string) (int, int, f
 	switch setType {
 	case SDRaw:
 		currentSDCount = Bundle.Raw.SymbolDirectionCount[sd]
-		sdCountWhenOpen = envOnGridsOpen[gid].SDRaw[sd]
+		sdCountWhenOpen = gridEnv[gid].SDRaw[sd]
 	case SDFiltered:
 		currentSDCount = GetPool().SymbolDirectionCount[sd]
-		sdCountWhenOpen = envOnGridsOpen[gid].SDFiltered[sd]
+		sdCountWhenOpen = gridEnv[gid].SDFiltered[sd]
 	case SDPairSpecific:
 		currentSDCount = Bundle.SDCountPairSpecific[sd]
-		sdCountWhenOpen = envOnGridsOpen[gid].SDPairSpecific[sd]
+		sdCountWhenOpen = gridEnv[gid].SDPairSpecific[sd]
 	}
 	ratio := float64(currentSDCount) / float64(sdCountWhenOpen)
 	return currentSDCount, sdCountWhenOpen, ratio
@@ -205,8 +240,9 @@ func (tracked *TrackedGrids) add(g *Grid, trackContinuous bool) {
 			TimeLowestRoi:  updateTime,
 			TimeLastChange: updateTime,
 		}
-		persistGridEnvs(g.GID)
+		persistGridInitialEnvs(g.GID)
 	}
+	persistGridCurrEnvs(g.GID, g.SID)
 	tracked.GridsByGid[g.GID] = g
 }
 
