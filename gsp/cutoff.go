@@ -30,7 +30,7 @@ func Init() {
 func sortBySDCount(filtered Strategies) Strategies {
 	filteredBySymbolDirection := make(map[string]Strategies)
 	for _, s := range filtered {
-		sd := s.Symbol + DirectionMap[s.Direction]
+		sd := s.SD()
 		if _, ok := filteredBySymbolDirection[sd]; !ok {
 			filteredBySymbolDirection[sd] = make(Strategies, 0)
 		}

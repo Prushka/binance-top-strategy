@@ -213,7 +213,7 @@ func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 func (t *TrackedStrategies) findStrategyRanking(s Strategy) int {
 	symbolDirection := mapset.NewSet[string]()
 	counter := 0
-	sd := s.Symbol + DirectionMap[s.Direction]
+	sd := s.SD()
 	for _, s := range t.Strategies {
 		sdd := s.Symbol + DirectionMap[s.Direction]
 		if sdd == sd {
@@ -267,6 +267,10 @@ func (s Strategy) String() string {
 
 func (s Strategy) GetMetric() float64 {
 	return s.lastHrRoiChange
+}
+
+func (s Strategy) SD() string {
+	return s.Symbol + DirectionMap[s.Direction]
 }
 
 func Display(s *Strategy, grid *Grid, action string, index int, length int) string {

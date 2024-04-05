@@ -186,15 +186,16 @@ func tick() error {
 	discord.Infof("### Opening new grids:")
 	sessionSymbols := gsp.GGrids.ExistingSymbols.Clone()
 	for c, s := range gsp.GetPool().Strategies {
-		discord.Infof(gsp.Display(s, nil, "New", c+1, len(gsp.GetPool().Strategies)))
 		if gsp.GGrids.ExistingSIDs.Contains(s.SID) {
-			discord.Infof("Strategy exists in open grids, Skip")
+			discord.Infof("Strategy %d - %s exists in open grids, Skip", s.SID, s.SD())
 			continue
 		}
 		if sessionSymbols.Contains(s.Symbol) {
-			discord.Infof("Symbol exists in open grids, Skip")
+			log.Infof("Symbol exists in open grids, Skip")
 			continue
 		}
+		discord.Infof(gsp.Display(s, nil, "New", c+1, len(gsp.GetPool().Strategies)))
+
 		if bl, till := blacklist.SIDBlacklisted(s.SID); bl {
 			discord.Infof("Strategy blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
 			continue
