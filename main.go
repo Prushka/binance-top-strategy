@@ -178,7 +178,7 @@ func tick() error {
 	if invChunk > idealInvChunk {
 		invChunk = idealInvChunk
 	}
-	if invChunk < config.TheConfig.MinInvestmentPerChunk {
+	if invChunk < config.TheConfig.MinInvestmentPerChunk && !config.TheConfig.Paper {
 		discord.Infof("Investment too low (%f), Skip", invChunk)
 		return nil
 	}
