@@ -185,6 +185,7 @@ func tick() error {
 	}
 	discord.Infof("### Opening new grids:")
 	sessionSymbols := gsp.GGrids.ExistingSymbols.Clone()
+	blacklistedInPool := mapset.NewSet[string]()
 	for c, s := range gsp.GetPool().Strategies {
 		if gsp.GGrids.ExistingSIDs.Contains(s.SID) {
 			discord.Infof("* Strategy %d - %s exists in open grids, Skip", s.SID, s.SD())
@@ -196,15 +197,18 @@ func tick() error {
 		}
 
 		if bl, till := blacklist.SIDBlacklisted(s.SID); bl {
-			discord.Infof("Strategy blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
+			blacklistedInPool.Add(fmt.Sprintf("%d", s.SID))
+			log.Infof("Strategy blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
 			continue
 		}
 		if bl, till := blacklist.SymbolDirectionBlacklisted(s.Symbol, gsp.DirectionMap[s.Direction]); bl {
-			discord.Infof("Symbol Direction blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
+			blacklistedInPool.Add(s.SD())
+			log.Infof("Symbol Direction blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
 			continue
 		}
 		if bl, till := blacklist.SymbolBlacklisted(s.Symbol); bl {
-			discord.Infof("Symbol blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
+			blacklistedInPool.Add(s.Symbol)
+			log.Infof("Symbol blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
 			continue
 		}
 
@@ -222,6 +226,8 @@ func tick() error {
 				discord.Infof("Investment too low (%f/%f), Skip", invChunk, realMinInvestment)
 				continue
 			}
+		case gsp.SHORT:
+
 		}
 
 		if s.StrategyParams.TriggerPrice != nil {
@@ -252,6 +258,9 @@ func tick() error {
 				break
 			}
 		}
+	}
+	if blacklistedInPool.Cardinality() > 0 {
+		discord.Infof("Blacklisted in pool: %s", blacklistedInPool)
 	}
 
 	utils.Time("Place/Cancel done")
