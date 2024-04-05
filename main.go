@@ -40,7 +40,8 @@ func checkOppositeDirections(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 			break
 		}
 	}
-	if symbolDifferentDirectionsHigherRanking >= 2 && existsNonBlacklistedOpposite {
+	if symbolDifferentDirectionsHigherRanking >= config.TheConfig.MinOppositeDirectionHigherRanking &&
+		existsNonBlacklistedOpposite {
 		toCancel.AddGridToCancel(grid, 0,
 			fmt.Sprintf("opposite directions at top: %d", symbolDifferentDirectionsHigherRanking))
 	}
