@@ -168,7 +168,6 @@ func tick() error {
 		discord.Infof("Trading Block, Skip")
 		return nil
 	}
-	discord.Infof("### Opening new grids:")
 	chunksInt := config.TheConfig.MaxChunks - gridsOpen
 	chunks := float64(config.TheConfig.MaxChunks - gridsOpen)
 	invChunk := (usdt - config.TheConfig.LeavingAsset) / chunks
@@ -177,6 +176,11 @@ func tick() error {
 	if invChunk > idealInvChunk {
 		invChunk = idealInvChunk
 	}
+	if invChunk < config.TheConfig.MinInvestmentPerChunk {
+		discord.Infof("Investment too low (%f), Skip", invChunk)
+		return nil
+	}
+	discord.Infof("### Opening new grids:")
 	sessionSymbols := gsp.GGrids.ExistingSymbols.Clone()
 	for c, s := range gsp.GetPool().Strategies {
 		discord.Infof(gsp.Display(s, nil, "New", c+1, len(gsp.GetPool().Strategies)))
