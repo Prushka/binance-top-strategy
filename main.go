@@ -194,7 +194,6 @@ func tick() error {
 			log.Infof("Symbol exists in open grids, Skip")
 			continue
 		}
-		discord.Infof(gsp.Display(s, nil, "New", c+1, len(gsp.GetPool().Strategies)))
 
 		if bl, till := blacklist.SIDBlacklisted(s.SID); bl {
 			discord.Infof("Strategy blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
@@ -209,6 +208,22 @@ func tick() error {
 			continue
 		}
 
+		discord.Infof(gsp.Display(s, nil, "New", c+1, len(gsp.GetPool().Strategies)))
+
+		minInvestment, _ := strconv.ParseFloat(s.MinInvestment, 64)
+		leverage := s.MaxLeverage(invChunk)
+		switch s.Direction {
+		case gsp.LONG:
+
+		case gsp.NEUTRAL:
+			minInvestPerLeverage := minInvestment * float64(s.StrategyParams.Leverage)
+			realMinInvestment := minInvestPerLeverage / float64(leverage)
+			if invChunk < realMinInvestment {
+				discord.Infof("Investment too low (%f/%f), Skip", invChunk, realMinInvestment)
+				continue
+			}
+		}
+
 		if s.StrategyParams.TriggerPrice != nil {
 			triggerPrice, _ := strconv.ParseFloat(*s.StrategyParams.TriggerPrice, 64)
 			marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)
@@ -220,7 +235,7 @@ func tick() error {
 			}
 		}
 
-		errr := gsp.PlaceGrid(*s, invChunk)
+		errr := gsp.PlaceGrid(*s, invChunk, leverage)
 		if config.TheConfig.Paper {
 
 		} else if errr != nil {

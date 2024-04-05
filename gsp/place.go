@@ -48,15 +48,19 @@ type placeGridResponse struct {
 	request.BinanceBaseResponse
 }
 
-func PlaceGrid(strategy Strategy, initialUSDT float64) error {
+func (s Strategy) MaxLeverage(initialUSDT float64) int {
+	leverage := config.TheConfig.MaxLeverage
+	if s.StrategyParams.Leverage < leverage {
+		leverage = s.StrategyParams.Leverage
+	}
+	leverage = notional.GetLeverage(s.Symbol, initialUSDT, leverage)
+	return leverage
+}
+
+func PlaceGrid(strategy Strategy, initialUSDT float64, leverage int) error {
 	if _, ok := DirectionMap[strategy.Direction]; !ok {
 		return fmt.Errorf("invalid direction: %d", strategy.Direction)
 	}
-	leverage := config.TheConfig.MaxLeverage
-	if strategy.StrategyParams.Leverage < leverage {
-		leverage = strategy.StrategyParams.Leverage
-	}
-	leverage = notional.GetLeverage(strategy.Symbol, initialUSDT, leverage)
 	payload := &placeGridRequest{
 		Symbol:                 strategy.Symbol,
 		Direction:              DirectionMap[strategy.Direction],
