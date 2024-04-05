@@ -135,6 +135,14 @@ func persistGridInitialEnvs(gid int) {
 	}
 }
 
+func persistGridRemoval(gid int) {
+	delete(gridEnv, gid)
+	err := persistence.Save(gridEnv, persistence.GridStatesFileName)
+	if err != nil {
+		discord.Errorf("Error saving state on grid removal: %v", err)
+	}
+}
+
 func GridSDCount(gid int, symbol, direction string, setType string) (int, int, float64) {
 	sd := symbol + direction
 	var currentSDCount int
@@ -171,6 +179,7 @@ func (tracked *TrackedGrids) remove(id int) {
 	tracked.TotalGridInitial -= g.InitialValue
 	tracked.TotalGridPnl -= g.TotalPnl
 	delete(tracked.GridsByGid, g.GID)
+	persistGridRemoval(g.GID)
 }
 
 func (tracked *TrackedGrids) add(g *Grid, trackContinuous bool) {
