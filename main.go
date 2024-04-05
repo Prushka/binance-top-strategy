@@ -117,6 +117,7 @@ func tick() error {
 	if err != nil {
 		return err
 	}
+	gsp.SessionCancelledGIDs.Clear()
 
 	utils.Time("Fetch grids")
 	count := 0
@@ -152,6 +153,7 @@ func tick() error {
 
 	if toCancel.HasCancelled() && !config.TheConfig.Paper {
 		discord.Infof("Cleared expired grids - Skip current run")
+		gsp.SessionCancelledGIDs = toCancel.CancelledGIDs()
 		return nil
 	}
 

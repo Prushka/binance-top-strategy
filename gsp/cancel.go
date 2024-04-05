@@ -5,6 +5,7 @@ import (
 	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/request"
 	"fmt"
+	mapset "github.com/deckarep/golang-set/v2"
 	log "github.com/sirupsen/logrus"
 	"strings"
 )
@@ -89,6 +90,16 @@ func (g GridsToCancel) HasCancelled() bool {
 		}
 	}
 	return false
+}
+
+func (g GridsToCancel) CancelledGIDs() mapset.Set[int] {
+	gids := mapset.NewSet[int]()
+	for _, tc := range g {
+		if tc.Cancelled {
+			gids.Add(tc.Grid.GID)
+		}
+	}
+	return gids
 }
 
 func (g GridsToCancel) String() string {

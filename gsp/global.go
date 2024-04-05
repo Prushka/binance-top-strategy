@@ -2,6 +2,8 @@ package gsp
 
 import mapset "github.com/deckarep/golang-set/v2"
 
+var SessionCancelledGIDs = mapset.NewSet[int]()
+
 var GStrats = make(map[int]*Strategy)
 var GGrids = &TrackedGrids{
 	Shorts:          mapset.NewSet[int](),
