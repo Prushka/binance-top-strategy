@@ -14,9 +14,9 @@ import (
 var gridEnv = make(map[int]*GridEnv)
 
 type GridEnv struct {
-	SDRaw                 map[string]int
-	SDFiltered            map[string]int
-	SDPairSpecific        map[string]int
+	SDRaw                 SDCount
+	SDFiltered            SDCount
+	SDPairSpecific        SDCount
 	StrategyLastNotPicked *time.Time
 }
 
@@ -144,19 +144,18 @@ func persistGridRemoval(gid int) {
 }
 
 func GridSDCount(gid int, symbol, direction string, setType string) (int, int, float64) {
-	sd := symbol + direction
 	var currentSDCount int
 	var sdCountWhenOpen int
 	switch setType {
 	case SDRaw:
-		currentSDCount = Bundle.Raw.SymbolDirectionCount[sd]
-		sdCountWhenOpen = gridEnv[gid].SDRaw[sd]
+		currentSDCount = Bundle.Raw.SymbolDirectionCount.GetSDCount(symbol, direction)
+		sdCountWhenOpen = gridEnv[gid].SDRaw.GetSDCount(symbol, direction)
 	case SDFiltered:
-		currentSDCount = GetPool().SymbolDirectionCount[sd]
-		sdCountWhenOpen = gridEnv[gid].SDFiltered[sd]
+		currentSDCount = GetPool().SymbolDirectionCount.GetSDCount(symbol, direction)
+		sdCountWhenOpen = gridEnv[gid].SDFiltered.GetSDCount(symbol, direction)
 	case SDPairSpecific:
-		currentSDCount = Bundle.SDCountPairSpecific[sd]
-		sdCountWhenOpen = gridEnv[gid].SDPairSpecific[sd]
+		currentSDCount = Bundle.SDCountPairSpecific.GetSDCount(symbol, direction)
+		sdCountWhenOpen = gridEnv[gid].SDPairSpecific.GetSDCount(symbol, direction)
 	}
 	ratio := float64(currentSDCount) / float64(sdCountWhenOpen)
 	return currentSDCount, sdCountWhenOpen, ratio

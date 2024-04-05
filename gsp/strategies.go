@@ -98,7 +98,7 @@ type TrackedStrategies struct {
 	UserRankings               map[int]int
 	UsersWithMoreThan1Strategy []UserPair
 	SymbolCount                map[string]int
-	SymbolDirectionCount       map[string]int
+	SymbolDirectionCount       SDCount
 	Longs                      mapset.Set[int]
 	Shorts                     mapset.Set[int]
 	Neutrals                   mapset.Set[int]
@@ -127,7 +127,7 @@ func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 		StrategiesByUserId:   make(map[int]Strategies),
 		UserRankings:         make(map[int]int),
 		SymbolCount:          make(map[string]int),
-		SymbolDirectionCount: make(map[string]int),
+		SymbolDirectionCount: make(SDCount),
 		Longs:                mapset.NewSet[int](),
 		Shorts:               mapset.NewSet[int](),
 		Neutrals:             mapset.NewSet[int](),
@@ -144,7 +144,10 @@ func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 		sss.StrategiesByUserId[s.UserID] = append(sss.StrategiesByUserId[s.UserID], s)
 		sss.UserRankings[s.UserID] += 1
 		sss.SymbolCount[s.Symbol] += 1
-		sss.SymbolDirectionCount[s.Symbol+DirectionMap[s.Direction]] += 1
+		if _, ok := sss.SymbolDirectionCount[s.Symbol]; !ok {
+			sss.SymbolDirectionCount[s.Symbol] = make(map[string]int)
+		}
+		sss.SymbolDirectionCount[s.Symbol][DirectionMap[s.Direction]] += 1
 		if s.Direction == LONG {
 			sss.Longs.Add(s.SID)
 		} else if s.Direction == SHORT {
@@ -229,7 +232,7 @@ func (t *TrackedStrategies) findStrategyRanking(s Strategy) int {
 }
 
 func (t *TrackedStrategies) String() string {
-	return fmt.Sprintf("%d, Symbols: %d, L/S/N: %d/%d/%d, SymbolDirections: %v, H: %v, L: %v",
+	return fmt.Sprintf("%d, Symbols: %d, L/S/N: %d/%d/%d, SymbolDirections: %v\nH: %v, L: %v",
 		len(t.StrategiesById), len(t.SymbolCount),
 		t.Longs.Cardinality(), t.Shorts.Cardinality(), t.Neutrals.Cardinality(),
 		utils.AsJson(t.SymbolDirectionCount), utils.AsJson(t.Highest), utils.AsJson(t.Lowest))

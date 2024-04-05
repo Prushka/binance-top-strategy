@@ -120,7 +120,7 @@ func UpdateTopStrategiesWithRoi() error {
 	Bundle = &StrategiesBundle{Raw: strategies,
 		FilteredSortedBySD:     sortBySDCount(filtered).toTrackedStrategies(),
 		FilteredSortedByMetric: filtered.toTrackedStrategies(),
-		SDCountPairSpecific:    make(map[string]int)}
+		SDCountPairSpecific:    make(SDCount)}
 	discord.Infof("### Strategies")
 	discord.Infof("* Raw: " + Bundle.Raw.String())
 	discord.Infof("* Open: " + GetPool().String())
@@ -148,10 +148,11 @@ func updateSDCountPairSpecific(symbols mapset.Set[string]) error {
 		if err != nil {
 			return err
 		}
-		for sd, count := range strategies.SymbolDirectionCount {
-			if _, ok := Bundle.SDCountPairSpecific[sd]; !ok {
-				Bundle.SDCountPairSpecific[sd] = count
+		for direction, count := range strategies.SymbolDirectionCount[symbol] {
+			if _, ok := Bundle.SDCountPairSpecific[symbol]; !ok {
+				Bundle.SDCountPairSpecific[symbol] = make(map[string]int)
 			}
+			Bundle.SDCountPairSpecific[symbol][direction] = count
 		}
 	}
 	return nil

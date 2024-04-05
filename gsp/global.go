@@ -19,7 +19,7 @@ type StrategiesBundle struct {
 	Raw                    *TrackedStrategies
 	FilteredSortedBySD     *TrackedStrategies
 	FilteredSortedByMetric *TrackedStrategies
-	SDCountPairSpecific    map[string]int
+	SDCountPairSpecific    SDCount
 }
 
 func GetPool() *TrackedStrategies {
