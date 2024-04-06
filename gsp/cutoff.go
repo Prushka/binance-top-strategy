@@ -75,23 +75,23 @@ func UpdateTopStrategiesWithRoi() error {
 		GStrats[s.SID] = s
 		if len(s.Rois) > 1 {
 			s.roi = s.Rois[0].Roi
-			s.lastDayRoiChange = GetRoiChange(s.Rois, 24*time.Hour)
-			s.last3HrRoiChange = GetRoiChange(s.Rois, 3*time.Hour)
-			s.last2HrRoiChange = GetRoiChange(s.Rois, 2*time.Hour)
-			s.lastHrRoiChange = GetRoiChange(s.Rois, 1*time.Hour)
-			s.lastDayRoiPerHr = GetRoiPerHr(s.Rois, 24*time.Hour)
-			s.last15HrRoiPerHr = GetRoiPerHr(s.Rois, 15*time.Hour)
-			s.last12HrRoiPerHr = GetRoiPerHr(s.Rois, 12*time.Hour)
-			s.last9HrRoiPerHr = GetRoiPerHr(s.Rois, 9*time.Hour)
-			s.last6HrRoiPerHr = GetRoiPerHr(s.Rois, 6*time.Hour)
-			s.lastNHrNoDip = NoDip(s.Rois, time.Duration(config.TheConfig.LastNHoursNoDips)*time.Hour)
-			s.lastNHrAllPositive = AllPositive(s.Rois, time.Duration(config.TheConfig.LastNHoursAllPositive)*time.Hour)
+			s.lastDayRoiChange = s.Rois.GetRoiChange(24 * time.Hour)
+			s.last3HrRoiChange = s.Rois.GetRoiChange(3 * time.Hour)
+			s.last2HrRoiChange = s.Rois.GetRoiChange(2 * time.Hour)
+			s.lastHrRoiChange = s.Rois.GetRoiChange(1 * time.Hour)
+			s.lastDayRoiPerHr = s.Rois.GetRoiPerHr(24 * time.Hour)
+			s.last15HrRoiPerHr = s.Rois.GetRoiPerHr(15 * time.Hour)
+			s.last12HrRoiPerHr = s.Rois.GetRoiPerHr(12 * time.Hour)
+			s.last9HrRoiPerHr = s.Rois.GetRoiPerHr(9 * time.Hour)
+			s.last6HrRoiPerHr = s.Rois.GetRoiPerHr(6 * time.Hour)
+			s.lastNHrNoDip = s.Rois.NoDip(time.Duration(config.TheConfig.LastNHoursNoDips) * time.Hour)
+			s.lastNHrAllPositive = s.Rois.AllPositive(time.Duration(config.TheConfig.LastNHoursAllPositive)*time.Hour, 0)
 			s.roiPerHour = (s.roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
 			prefix := ""
 			if s.lastDayRoiChange > 0.1 &&
 				s.last3HrRoiChange > 0.03 &&
-				s.lastHrRoiChange > 0.02 &&
-				s.last2HrRoiChange > s.lastHrRoiChange &&
+				s.lastHrRoiChange > 0.016 &&
+				s.Rois.AllPositive(3*time.Hour, 0.01) &&
 				s.lastDayRoiPerHr > 0.01 &&
 				s.last12HrRoiPerHr > 0.014 &&
 				s.priceDifference > 0.05 &&

@@ -10,10 +10,8 @@ import (
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/syohex/go-texttable"
-	"slices"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -252,19 +250,6 @@ func (t *TrackedStrategies) String() string {
 
 func (t *TrackedStrategies) Exists(id int) bool {
 	return t.Ids.Contains(id)
-}
-
-func (r StrategyRoi) lastNRecords(n int) string {
-	n += 1
-	if len(r) < n {
-		n = len(r)
-	}
-	var ss []string
-	for i := 0; i < n; i++ {
-		ss = append(ss, fmt.Sprintf("%.2f%%", r[i].Roi*100))
-	}
-	slices.Reverse(ss)
-	return strings.Join(ss, ", ")
 }
 
 func (s Strategy) String() string {

@@ -4,6 +4,8 @@ import (
 	"BinanceTopStrategies/cache"
 	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/request"
+	"fmt"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -72,7 +74,20 @@ func getStrategyRois(strategyID int, rootUserId int) (StrategyRoi, error) {
 	return roi.Data, nil
 }
 
-func GetRoiChange(roi StrategyRoi, t time.Duration) float64 {
+func (roi StrategyRoi) lastNRecords(n int) string {
+	n += 1
+	if len(roi) < n {
+		n = len(roi)
+	}
+	var ss []string
+	for i := 0; i < n; i++ {
+		ss = append(ss, fmt.Sprintf("%.2f%%", roi[i].Roi*100))
+	}
+	slices.Reverse(ss)
+	return strings.Join(ss, ", ")
+}
+
+func (roi StrategyRoi) GetRoiChange(t time.Duration) float64 {
 	latestTimestamp := roi[0].Time
 	latestRoi := roi[0].Roi
 	l := latestTimestamp - int64(t.Seconds())
@@ -84,7 +99,7 @@ func GetRoiChange(roi StrategyRoi, t time.Duration) float64 {
 	return latestRoi - roi[len(roi)-1].Roi
 }
 
-func GetRoiPerHr(roi StrategyRoi, t time.Duration) float64 {
+func (roi StrategyRoi) GetRoiPerHr(t time.Duration) float64 {
 	latestTimestamp := roi[0].Time
 	latestRoi := roi[0].Roi
 	l := latestTimestamp - int64(t.Seconds())
@@ -97,7 +112,7 @@ func GetRoiPerHr(roi StrategyRoi, t time.Duration) float64 {
 	return (latestRoi - roi[len(roi)-1].Roi) / (float64(roi[0].Time-roi[len(roi)-1].Time) / 3600)
 }
 
-func NoDip(roi StrategyRoi, t time.Duration) bool {
+func (roi StrategyRoi) NoDip(t time.Duration) bool {
 	latestTimestamp := roi[0].Time
 	l := latestTimestamp - int64(t.Seconds())
 	for c, r := range roi {
@@ -111,14 +126,14 @@ func NoDip(roi StrategyRoi, t time.Duration) bool {
 	return true
 }
 
-func AllPositive(roi StrategyRoi, t time.Duration) bool {
+func (roi StrategyRoi) AllPositive(t time.Duration, cutoff float64) bool {
 	latestTimestamp := roi[0].Time
 	l := latestTimestamp - int64(t.Seconds())
 	for c, r := range roi {
 		if r.Time < l {
 			return true
 		}
-		if c > 0 && roi[c-1].Roi-r.Roi <= 0 {
+		if c > 0 && roi[c-1].Roi-r.Roi <= cutoff {
 			return false
 		}
 	}
