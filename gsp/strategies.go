@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
+	"github.com/syohex/go-texttable"
 	"slices"
 	"sort"
 	"strconv"
@@ -232,10 +233,21 @@ func (t *TrackedStrategies) findStrategyRanking(s Strategy) int {
 }
 
 func (t *TrackedStrategies) String() string {
-	return fmt.Sprintf("%d, Symbols: %d, L/S/N: %d/%d/%d, SymbolDirections: %v\nH: %v, L: %v",
-		len(t.StrategiesById), len(t.SymbolCount),
-		t.Longs.Cardinality(), t.Shorts.Cardinality(), t.Neutrals.Cardinality(),
-		utils.AsJson(t.SymbolDirectionCount), utils.AsJson(t.Highest), utils.AsJson(t.Lowest))
+	tbl := &texttable.TextTable{}
+	tbl.SetHeader(fmt.Sprintf("Symbol (%d)", len(t.SymbolCount)),
+		fmt.Sprintf("L (%d)", t.Longs.Cardinality()),
+		fmt.Sprintf("S (%d)", t.Shorts.Cardinality()),
+		fmt.Sprintf("N (%d)", t.Neutrals.Cardinality()))
+	symbols := mapset.NewSetFromMapKeys(t.SymbolCount).ToSlice()
+	sort.Strings(symbols)
+	for _, symbol := range symbols {
+		directionMap := t.SymbolDirectionCount[symbol]
+		tbl.AddRow(symbol, fmt.Sprintf("%d", directionMap["LONG"]),
+			fmt.Sprintf("%d", directionMap["SHORT"]), fmt.Sprintf("%d", directionMap["NEUTRAL"]))
+	}
+	return fmt.Sprintf("%d, H: %v, L: %v\n```\n%s```",
+		len(t.StrategiesById), utils.AsJson(t.Highest), utils.AsJson(t.Lowest),
+		tbl.Draw())
 }
 
 func (t *TrackedStrategies) Exists(id int) bool {
