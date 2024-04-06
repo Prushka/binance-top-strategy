@@ -234,15 +234,15 @@ func (t *TrackedStrategies) findStrategyRanking(s Strategy) int {
 
 func (t *TrackedStrategies) String() string {
 	tbl := &texttable.TextTable{}
-	tbl.SetHeader(fmt.Sprintf("Symbol (%d)", len(t.SymbolCount)),
-		fmt.Sprintf("L (%d)", t.Longs.Cardinality()),
-		fmt.Sprintf("S (%d)", t.Shorts.Cardinality()),
-		fmt.Sprintf("N (%d)", t.Neutrals.Cardinality()))
+	tbl.SetHeader(fmt.Sprintf("Symbol %d", len(t.SymbolCount)),
+		fmt.Sprintf("L %d", t.Longs.Cardinality()),
+		fmt.Sprintf("S %d", t.Shorts.Cardinality()),
+		fmt.Sprintf("N %d", t.Neutrals.Cardinality()))
 	symbols := mapset.NewSetFromMapKeys(t.SymbolCount).ToSlice()
 	sort.Strings(symbols)
 	for _, symbol := range symbols {
 		directionMap := t.SymbolDirectionCount[symbol]
-		tbl.AddRow(symbol, fmt.Sprintf("%d", directionMap["LONG"]),
+		tbl.AddRow(symbol[:len(symbol)-len(config.TheConfig.AssetSymbol)], fmt.Sprintf("%d", directionMap["LONG"]),
 			fmt.Sprintf("%d", directionMap["SHORT"]), fmt.Sprintf("%d", directionMap["NEUTRAL"]))
 	}
 	return fmt.Sprintf("%d, H: %v, L: %v\n```\n%s```",
