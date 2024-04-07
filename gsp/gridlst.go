@@ -48,13 +48,13 @@ func UpdateOpenGrids(trackContinuous bool) error {
 	}
 	for _, g := range GGrids.GridsByGid {
 		if !currentIds.Contains(g.GID) {
-			GGrids.remove(g.GID)
 			if !SessionCancelledGIDs.Contains(g.GID) {
 				discord.Actionf(Display(nil, g,
 					fmt.Sprintf("**Gone [Not Cancelled] - Block for %d Minutes**", config.TheConfig.TradingBlockMinutesAfterCancel),
 					0, 0))
 			}
 			blacklist.BlockTrading(time.Duration(config.TheConfig.TradingBlockMinutesAfterCancel)*time.Minute, "Grid Gone")
+			GGrids.remove(g.GID)
 		}
 	}
 	discord.Infof("Open Pairs: %v, Initial: %f, TotalPnL: %f, C: %f, L/S/N: %d/%d/%d",

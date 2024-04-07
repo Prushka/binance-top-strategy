@@ -154,7 +154,7 @@ func tick() error {
 	}
 
 	if toCancel.HasCancelled() && !config.TheConfig.Paper {
-		discord.Infof("Cleared expired grids - Skip current run")
+		discord.Infof("Cancelled expired grids - Skip current run")
 		gsp.SessionCancelledGIDs = toCancel.CancelledGIDs()
 		return nil
 	}
