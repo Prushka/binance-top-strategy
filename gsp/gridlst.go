@@ -5,7 +5,6 @@ import (
 	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/request"
-	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
 	"time"
 )
@@ -50,7 +49,7 @@ func UpdateOpenGrids(trackContinuous bool) error {
 		if !currentIds.Contains(g.GID) {
 			if !SessionCancelledGIDs.Contains(g.GID) {
 				discord.Actionf(Display(nil, g,
-					fmt.Sprintf("**Gone [Not Cancelled] - Block for %d Minutes**", config.TheConfig.TradingBlockMinutesAfterCancel),
+					"**Gone**",
 					0, 0))
 			}
 			blacklist.BlockTrading(time.Duration(config.TheConfig.TradingBlockMinutesAfterCancel)*time.Minute, "Grid Gone")
