@@ -107,6 +107,7 @@ func persistGridCurrEnvs(gid int, sid int) {
 	env := gridEnv[gid]
 	if env == nil {
 		discord.Errorf("Grid %d not found in gridEnv", gid)
+		return
 	}
 	var err error
 	picked := GetPool().Exists(sid)

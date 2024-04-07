@@ -132,6 +132,7 @@ func tick() error {
 			if grid.LastRoi < 0 {
 				blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), "strategy not found, lastRoi loss")
 			}
+			checkStopLossNotPicked(grid, toCancel)
 		} else if !gsp.GetPool().Exists(grid.SID) {
 			toCancel.AddGridToCancel(grid, 0, "strategy not picked")
 			checkStopLossNotPicked(grid, toCancel)
