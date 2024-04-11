@@ -104,7 +104,7 @@ func checkStopLoss(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 		slack := config.TheConfig.StopLossMarkForRemovalSlack[c]
 		if grid.LastRoi < sl {
 			gsp.GridMarkForRemoval(grid.GID, sl+slack)
-			discord.Infof(fmt.Sprintf("**stop loss marked for removal**: %.2f%%", (sl+slack)*100), 0, 0)
+			discord.Infof(fmt.Sprintf("**stop loss marked for removal**: %.2f%%", (sl+slack)*100))
 		}
 	}
 	maxLoss := gsp.GetMaxLoss(grid.GID)
