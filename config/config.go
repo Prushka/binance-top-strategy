@@ -11,7 +11,7 @@ type Config struct {
 	CSRFToken                         string    `env:"CSRF"`
 	COOKIE                            string    `env:"COOKIE"`
 	MarginType                        string    `env:"MARGIN_TYPE" envDefault:"CROSSED"`
-	StrategiesCount                   int       `env:"STRATEGIES_COUNT" envDefault:"80"`
+	StrategiesCount                   int       `env:"STRATEGIES_COUNT" envDefault:"180"`
 	RuntimeMinHours                   int       `env:"RUNTIME_MIN_HOURS" envDefault:"3"`
 	RuntimeMaxHours                   int       `env:"RUNTIME_MAX_HOURS" envDefault:"168"`
 	Paper                             bool      `env:"PAPER" envDefault:"true"`
@@ -23,8 +23,8 @@ type Config struct {
 	DiscordName                       string    `env:"DISCORD_NAME" envDefault:"BTS"`
 	DataFolder                        string    `env:"DATA_FOLDER" envDefault:"./data"`
 	ShiftMinutesAfterHour             int       `env:"SHIFT_MINUTES_AFTER_HOUR" envDefault:"0"`
-	LastNHoursNoDips                  int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"5"`
-	LastNHoursAllPositive             int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"5"`
+	LastNHoursNoDips                  int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"4"`
+	LastNHoursAllPositive             int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"4"`
 	LeavingAsset                      float64   `env:"LEAVING_ASSET" envDefault:"0"`
 	CancelNoChangeMinutes             int       `env:"CANCEL_NO_CHANGE_MINUTES" envDefault:"15"`
 	MinOppositeDirectionHigherRanking int       `env:"MIN_OPPOSITE_DIRECTION_HIGHER_RANKING" envDefault:"2"`
