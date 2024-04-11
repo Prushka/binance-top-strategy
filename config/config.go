@@ -11,7 +11,7 @@ type Config struct {
 	CSRFToken                         string    `env:"CSRF"`
 	COOKIE                            string    `env:"COOKIE"`
 	MarginType                        string    `env:"MARGIN_TYPE" envDefault:"CROSSED"`
-	StrategiesCount                   int       `env:"STRATEGIES_COUNT" envDefault:"200"`
+	StrategiesCount                   int       `env:"STRATEGIES_COUNT" envDefault:"450"`
 	RuntimeMinHours                   int       `env:"RUNTIME_MIN_HOURS" envDefault:"3"`
 	RuntimeMaxHours                   int       `env:"RUNTIME_MAX_HOURS" envDefault:"168"`
 	Paper                             bool      `env:"PAPER" envDefault:"true"`
