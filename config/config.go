@@ -32,7 +32,7 @@ type Config struct {
 	SymbolDirectionShrink             []float64 `env:"SYMBOL_DIRECTION_SHRINK" envDefault:"0.82,0.65,0.45"`
 	SymbolDirectionShrinkLoss         []float64 `env:"SYMBOL_DIRECTION_SHRINK_LOSS" envDefault:"0,-0.2,-0.35"`
 	TradingBlockMinutesAfterCancel    int       `env:"TRADING_BLOCK_MINUTES_AFTER_CANCEL" envDefault:"3"`
-	TakeProfits                       []float64 `env:"TAKE_PROFITS" envDefault:"0.5,0.35,0.2,0.1"`
+	TakeProfits                       []float64 `env:"TAKE_PROFITS" envDefault:"0.5,0.35,0.2,0.12"`
 	TakeProfitsMaxLookbackMinutes     []int     `env:"TAKE_PROFITS_MAX_LOOKBACK_MINUTES" envDefault:"5,15,25,35"`
 	TakeProfitsBlockMinutes           []int     `env:"TAKE_PROFITS_BLOCK_MINUTES" envDefault:"40,-1,-1,-1"`
 	StopLossNotPickedHrs              []int     `env:"STOP_LOSS_NOT_PICKED_HRS" envDefault:"1,2,3,4,5"`
@@ -43,7 +43,7 @@ type Config struct {
 	MinInvestmentPerChunk             float64   `env:"MIN_INVESTMENT_PER_CHUNK" envDefault:"6"`
 	MaxCancelLossStrategyDeleted      float64   `env:"MAX_CANCEL_LOSS_STRATEGY_DELETED" envDefault:"-0.2"`
 	Mode                              string    `env:"MODE" envDefault:"trading"`
-	MaxLeverage                       int       `env:"LEVERAGE" envDefault:"25"`
+	MaxLeverage                       int       `env:"LEVERAGE" envDefault:"45"`
 	KeepTopNStrategiesOfSameSymbol    int       `env:"KEEP_TOP_N_STRATEGIES_OF_SAME_SYMBOL" envDefault:"99"`
 	Last3HrWeight                     float64   `env:"LAST_3_HR_WEIGHT" envDefault:"0"`
 	Last2HrWeight                     float64   `env:"LAST_2_HR_WEIGHT" envDefault:"1"`
@@ -57,4 +57,8 @@ func Init() {
 	if err != nil {
 		log.Fatalf("error parsing config: %v", err)
 	}
+}
+
+func GetScaledProfits(pf float64, leverage int) float64 {
+	return (pf / 23) * float64(leverage)
 }

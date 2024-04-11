@@ -68,6 +68,7 @@ func checkDirectionShrink(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 
 func checkMaxGain(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 	for c, gpMax := range config.TheConfig.TakeProfits {
+		gpMax = config.GetScaledProfits(gpMax, grid.InitialLeverage)
 		if grid.LastRoi >= gpMax {
 			gpLookBack := time.Duration(config.TheConfig.TakeProfitsMaxLookbackMinutes[c]) * time.Minute
 			gpBlock := time.Duration(config.TheConfig.TakeProfitsBlockMinutes[c]) * time.Minute
