@@ -99,6 +99,20 @@ func checkStopLossNotPicked(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 	}
 }
 
+func checkStopLoss(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
+	for c, sl := range config.TheConfig.StopLossMarkForRemoval {
+		slack := config.TheConfig.StopLossMarkForRemovalSlack[c]
+		if grid.LastRoi < sl {
+			gsp.GridMarkForRemoval(grid.GID, sl+slack)
+			discord.Infof(gsp.Display(nil, grid, fmt.Sprintf("**stop loss marked for removal**: %.2f%%", (sl+slack)*100), 0, 0))
+		}
+	}
+	maxLoss := gsp.GetMaxLoss(grid.GID)
+	if maxLoss != nil && grid.LastRoi > *maxLoss {
+		toCancel.AddGridToCancel(grid, *maxLoss, fmt.Sprintf("**stop loss reached**: %.2f%%", *maxLoss*100))
+	}
+}
+
 func tick() error {
 	utils.ResetTime()
 	sdk.ClearSessionSymbolPrice()
@@ -148,6 +162,7 @@ func tick() error {
 		checkMaxGain(grid, toCancel)
 		checkDirectionShrink(grid, toCancel)
 		checkOppositeDirections(grid, toCancel)
+		checkStopLoss(grid, toCancel)
 	}
 	if !toCancel.IsEmpty() {
 		discord.Infof("### Expired Strategies: %s", toCancel)

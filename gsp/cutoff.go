@@ -4,7 +4,6 @@ import (
 	"BinanceTopStrategies/blacklist"
 	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/discord"
-	"BinanceTopStrategies/persistence"
 	"BinanceTopStrategies/utils"
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
@@ -18,13 +17,6 @@ type sdCountPair struct {
 	SymbolDirection string
 	Count           int
 	MaxMetric       float64
-}
-
-func Init() {
-	err := persistence.Load(&gridEnv, persistence.GridStatesFileName)
-	if err != nil {
-		log.Fatalf("Error loading state on grid open: %v", err)
-	}
 }
 
 func sortBySDCount(filtered Strategies) Strategies {
