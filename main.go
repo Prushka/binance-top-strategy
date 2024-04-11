@@ -109,7 +109,9 @@ func checkStopLoss(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 	}
 	maxLoss := gsp.GetMaxLoss(grid.GID)
 	if maxLoss != nil && grid.LastRoi > *maxLoss {
-		toCancel.AddGridToCancel(grid, *maxLoss, fmt.Sprintf("**stop loss reached**: %.2f%%", *maxLoss*100))
+		reason := fmt.Sprintf("**stop loss reached**: %.2f%%", *maxLoss*100)
+		toCancel.AddGridToCancel(grid, *maxLoss, reason)
+		blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), reason)
 	}
 }
 
