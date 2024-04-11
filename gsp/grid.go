@@ -26,6 +26,7 @@ type GridTracking struct {
 	TimeHighestRoi        time.Time
 	TimeLowestRoi         time.Time
 	TimeLastChange        time.Time
+	LowestProfits         map[int]float64
 	ContinuousRoiGrowth   int
 	ContinuousRoiLoss     int
 	ContinuousRoiNoChange int
@@ -257,6 +258,7 @@ func (tracked *TrackedGrids) add(g *Grid, trackContinuous bool) {
 			TimeHighestRoi: updateTime,
 			TimeLowestRoi:  updateTime,
 			TimeLastChange: updateTime,
+			LowestProfits:  make(map[int]float64),
 		}
 		persistGridInitialEnvs(g.GID)
 	}
