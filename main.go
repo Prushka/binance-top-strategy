@@ -102,16 +102,12 @@ func checkStopLossNotPicked(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 func checkStopLoss(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 	for c, sl := range config.TheConfig.StopLossMarkForRemoval {
 		slack := config.TheConfig.StopLossMarkForRemovalSlack[c]
+		maxLoss := sl + slack
 		if grid.LastRoi < sl {
-			gsp.GridMarkForRemoval(grid.GID, sl+slack)
-			discord.Infof(fmt.Sprintf("**stop loss marked for removal**: %.2f%%", (sl+slack)*100))
+			reason := fmt.Sprintf("**stop loss marked for removal**: %.2f%%", maxLoss*100)
+			toCancel.AddGridToCancel(grid, maxLoss, reason)
+			blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), reason)
 		}
-	}
-	maxLoss := gsp.GetMaxLoss(grid.GID)
-	if maxLoss != nil && grid.LastRoi > *maxLoss {
-		reason := fmt.Sprintf("**stop loss reached**: %.2f%%", *maxLoss*100)
-		toCancel.AddGridToCancel(grid, *maxLoss, reason)
-		blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), reason)
 	}
 }
 
