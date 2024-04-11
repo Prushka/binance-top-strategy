@@ -14,6 +14,10 @@ var ForRemoval = MarkForRemoval{
 }
 
 func GridMarkForRemoval(gid int, maxLoss float64) {
+	prev, ok := ForRemoval.Grids[gid]
+	if ok && prev <= maxLoss {
+		return
+	}
 	ForRemoval.Grids[gid] = maxLoss
 	err := persistence.Save(ForRemoval, persistence.MarkForRemovalFileName)
 	if err != nil {
