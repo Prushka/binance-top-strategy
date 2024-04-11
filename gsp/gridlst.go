@@ -56,7 +56,7 @@ func UpdateOpenGrids(trackContinuous bool) error {
 			GGrids.remove(g.GID)
 		}
 	}
-	discord.Infof("Open Pairs: %v, Initial: %f, TotalPnL: %f, C: %f, L/S/N: %d/%d/%d",
+	discord.Infof("Open Pairs: %v, Initial: %.2f, TotalPnL: %.2f, C: %.2f, L/S/N: %d/%d/%d",
 		GGrids.ExistingSymbols, GGrids.TotalGridInitial, GGrids.TotalGridPnl, GGrids.TotalGridPnl+GGrids.TotalGridInitial,
 		GGrids.Longs.Cardinality(), GGrids.Shorts.Cardinality(), GGrids.Neutrals.Cardinality())
 	return nil

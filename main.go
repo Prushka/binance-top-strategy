@@ -313,9 +313,9 @@ func main() {
 	switch config.TheConfig.Mode {
 	case "trading":
 		if config.TheConfig.Paper {
-			discord.Infof("Paper Trading")
+			discord.Errorf("Paper Trading")
 		} else {
-			discord.Infof("Real Trading")
+			discord.Errorf("Real Trading")
 		}
 		sdk.Init()
 		gsp.Init()
