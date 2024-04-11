@@ -202,6 +202,7 @@ func tick() error {
 		discord.Infof("Investment too low (%f), Skip", invChunk)
 		return nil
 	}
+	invChunk = float64(int(invChunk))
 	discord.Infof("### Opening new grids:")
 	sessionSymbols := gsp.GGrids.ExistingSymbols.Clone()
 	blacklistedInPool := mapset.NewSet[string]()
