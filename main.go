@@ -139,13 +139,11 @@ func tick() error {
 	gsp.SessionCancelledGIDs.Clear()
 
 	utils.Time("Fetch grids")
+	toCancel := make(gsp.GridsToCancel)
 	count := 0
 	for _, grid := range gsp.GGrids.GridsByGid {
 		discord.Infof(gsp.Display(nil, grid, "", count+1, len(gsp.GGrids.GridsByGid)))
 		count++
-	}
-	toCancel := make(gsp.GridsToCancel)
-	for _, grid := range gsp.GGrids.GridsByGid {
 		if !gsp.Bundle.Raw.Exists(grid.SID) {
 			toCancel.AddGridToCancel(grid, config.TheConfig.MaxCancelLossStrategyDeleted, "strategy not found")
 			if grid.LastRoi < 0 {
