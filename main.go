@@ -123,6 +123,7 @@ func tick() error {
 	if err != nil {
 		return err
 	}
+	usdt -= config.TheConfig.LeavingAsset
 	err = gsp.UpdateTopStrategiesWithRoi()
 	if err != nil {
 		return err
@@ -192,7 +193,7 @@ func tick() error {
 	}
 	chunksInt := config.TheConfig.MaxChunks - gridsOpen
 	chunks := float64(config.TheConfig.MaxChunks - gridsOpen)
-	invChunk := (usdt - config.TheConfig.LeavingAsset) / chunks
+	invChunk := usdt / chunks
 	idealInvChunk := (usdt + gsp.GGrids.TotalGridPnl + gsp.GGrids.TotalGridInitial) / float64(config.TheConfig.MaxChunks)
 	log.Infof("Ideal Investment: %f, allowed Investment: %f, missing %f chunks", idealInvChunk, invChunk, chunks)
 	if invChunk > idealInvChunk {
