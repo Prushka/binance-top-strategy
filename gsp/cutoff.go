@@ -93,8 +93,9 @@ func UpdateTopStrategiesWithRoi() error {
 				if GGrids.ExistingSIDs.Contains(s.SID) {
 					grid := GGrids.GetGridBySID(s.SID)
 					if grid.Tracking.HighestRoi < 0 && grid.GetRunTime() > 1*time.Hour {
-						discord.Infof(Display(s, grid, "Grid has negative ROI", 0, 0))
-						blacklist.AddSID(s.SID, utils.TillNextRefresh(), "Grid has negative ROI")
+						reason := "Grid picked but has negative ROI"
+						discord.Infof(Display(s, grid, reason, 0, 0))
+						blacklist.AddSID(s.SID, utils.TillNextRefresh(), reason)
 						continue
 					}
 				}
