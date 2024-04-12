@@ -25,7 +25,7 @@ type Config struct {
 	ShiftMinutesAfterHour             int       `env:"SHIFT_MINUTES_AFTER_HOUR" envDefault:"0"`
 	LastNHoursNoDips                  int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"5"`
 	LastNHoursAllPositive             int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"5"`
-	LeavingAsset                      float64   `env:"LEAVING_ASSET" envDefault:"0"`
+	LeavingAsset                      float64   `env:"LEAVING_ASSET" envDefault:"150"`
 	CancelNoChangeMinutes             int       `env:"CANCEL_NO_CHANGE_MINUTES" envDefault:"15"`
 	MinOppositeDirectionHigherRanking int       `env:"MIN_OPPOSITE_DIRECTION_HIGHER_RANKING" envDefault:"2"`
 	SymbolDirectionShrinkMinConstant  int       `env:"SYMBOL_DIRECTION_SHRINK_MIN_CONSTANT" envDefault:"2"`
