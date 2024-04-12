@@ -4,6 +4,7 @@ import (
 	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/request"
+	"BinanceTopStrategies/utils"
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
 	log "github.com/sirupsen/logrus"
@@ -105,7 +106,7 @@ func (g GridsToCancel) CancelledGIDs() mapset.Set[int] {
 func (g GridsToCancel) String() string {
 	var s []string
 	for _, tc := range g {
-		s = append(s, fmt.Sprintf("%d: %s, %.2f%%", tc.Grid.GID, tc.Grid.Symbol, tc.MaxLoss*100))
+		s = append(s, fmt.Sprintf("%d: %s, %.2f%%", tc.Grid.GID, utils.FormatPair(tc.Grid.Symbol), tc.MaxLoss*100))
 	}
 	return strings.Join(s, " | ")
 }
