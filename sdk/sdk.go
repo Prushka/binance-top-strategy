@@ -60,6 +60,7 @@ func GetFutureUSDT() (float64, error) {
 	if err != nil {
 		return 0, err
 	}
+	usdt := 0.0
 	for _, b := range res {
 		log.Infof("Asset: %s, Balance: %s", b.Asset, b.Balance)
 		if b.Asset == "USDT" {
@@ -67,8 +68,14 @@ func GetFutureUSDT() (float64, error) {
 			if err != nil {
 				return 0, err
 			}
-			return i, nil
+			unPnl, err := strconv.ParseFloat(b.CrossUnPnl, 64)
+			if err != nil {
+				return 0, err
+			}
+			usdt = i + unPnl
+			log.Infof("USDT: %f", usdt)
+			break
 		}
 	}
-	return 0, nil
+	return usdt, nil
 }
