@@ -57,6 +57,11 @@ func UpdateOpenGrids(trackContinuous bool) error {
 			GGrids.remove(g.GID)
 		}
 	}
+	for gid := range gridEnv {
+		if !currentIds.Contains(gid) {
+			delete(gridEnv, gid)
+		}
+	}
 	err = persistence.Save(gridEnv, persistence.GridStatesFileName)
 	if err != nil {
 		discord.Errorf("**Error saving grid env**: %v", err)
