@@ -72,10 +72,11 @@ func checkMaxGain(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 		if grid.LastRoi >= gpMax {
 			gpLookBack := time.Duration(config.TheConfig.TakeProfitsMaxLookbackMinutes[c]) * time.Minute
 			gpBlock := time.Duration(config.TheConfig.TakeProfitsBlockMinutes[c]) * time.Minute
-			if time.Since(grid.Tracking.TimeHighestRoi) > gpLookBack {
+			gridTracking := grid.GetTracking()
+			if time.Since(gridTracking.TimeHighestRoi) > gpLookBack {
 				reason := fmt.Sprintf("max gain %.2f%%/%.2f%%, reached %s ago",
-					grid.LastRoi*100, grid.Tracking.HighestRoi*100,
-					time.Since(grid.Tracking.TimeHighestRoi).Round(time.Second))
+					grid.LastRoi*100, gridTracking.HighestRoi*100,
+					time.Since(gridTracking.TimeHighestRoi).Round(time.Second))
 				toCancel.AddGridToCancel(grid, gpMax, reason)
 				if gpBlock < 0 {
 					blacklist.AddSymbol(grid.Symbol, utils.TillNextRefresh(), reason)
@@ -155,9 +156,9 @@ func tick() error {
 			toCancel.AddGridToCancel(grid, 0, "strategy not picked")
 			checkStopLossNotPicked(grid, toCancel)
 		}
-
-		if time.Since(grid.Tracking.TimeLastChange) > time.Duration(config.TheConfig.CancelNoChangeMinutes)*time.Minute {
-			reason := fmt.Sprintf("no change, %s", utils.ShortDur(time.Since(grid.Tracking.TimeLastChange).Round(time.Second)))
+		gridTracking := grid.GetTracking()
+		if time.Since(gridTracking.TimeLastChange) > time.Duration(config.TheConfig.CancelNoChangeMinutes)*time.Minute {
+			reason := fmt.Sprintf("no change, %s", utils.ShortDur(time.Since(gridTracking.TimeLastChange).Round(time.Second)))
 			blacklist.AddSID(grid.SID, 10*time.Minute, reason)
 			toCancel.AddGridToCancel(grid, 0, reason)
 		}

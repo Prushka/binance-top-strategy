@@ -2,7 +2,6 @@ package gsp
 
 import (
 	"BinanceTopStrategies/discord"
-	"BinanceTopStrategies/persistence"
 	"BinanceTopStrategies/sdk"
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
@@ -18,6 +17,7 @@ type GridEnv struct {
 	SDFiltered            SDCount
 	SDPairSpecific        SDCount
 	StrategyLastNotPicked *time.Time
+	Tracking              *GridTracking
 }
 
 type GridTracking struct {
@@ -49,7 +49,6 @@ type Grid struct {
 	LastRoi                float64
 	BelowLowerLimit        bool
 	AboveUpperLimit        bool
-	Tracking               *GridTracking
 	GID                    int    `json:"strategyId"`
 	RootUserID             int    `json:"rootUserId"`
 	StrategyUserID         int    `json:"strategyUserId"`
@@ -90,6 +89,18 @@ type Grid struct {
 	MarginType             string `json:"marginType"`
 }
 
+func (grid *Grid) GetEnv() *GridEnv {
+	return gridEnv[grid.GID]
+}
+
+func (grid *Grid) SetEnv(env *GridEnv) {
+	gridEnv[grid.GID] = env
+}
+
+func (grid *Grid) GetTracking() *GridTracking {
+	return grid.GetEnv().Tracking
+}
+
 func GridNotPickedDuration(gid int) *time.Duration {
 	env := gridEnv[gid]
 	if env == nil {
@@ -102,47 +113,6 @@ func GridNotPickedDuration(gid int) *time.Duration {
 	now := time.Now()
 	duration := now.Sub(*env.StrategyLastNotPicked)
 	return &duration
-}
-
-func persistGridCurrEnvs(gid int, sid int) {
-	env := gridEnv[gid]
-	if env == nil {
-		discord.Errorf("Grid %d not found in gridEnv", gid)
-		return
-	}
-	var err error
-	picked := GetPool().Exists(sid)
-	if !picked && env.StrategyLastNotPicked == nil {
-		now := time.Now()
-		env.StrategyLastNotPicked = &now
-		err = persistence.Save(gridEnv, persistence.GridStatesFileName)
-	} else if picked && env.StrategyLastNotPicked != nil {
-		env.StrategyLastNotPicked = nil
-		err = persistence.Save(gridEnv, persistence.GridStatesFileName)
-	}
-	if err != nil {
-		discord.Errorf("Error saving state on grid close: %v", err)
-	}
-}
-
-func persistGridInitialEnvs(gid int) {
-	if _, ok := gridEnv[gid]; !ok {
-		gridEnv[gid] = &GridEnv{SDRaw: Bundle.Raw.SymbolDirectionCount,
-			SDFiltered:     GetPool().SymbolDirectionCount,
-			SDPairSpecific: Bundle.SDCountPairSpecific}
-		err := persistence.Save(gridEnv, persistence.GridStatesFileName)
-		if err != nil {
-			discord.Errorf("Error saving state on grid open: %v", err)
-		}
-	}
-}
-
-func persistGridRemoval(gid int) {
-	delete(gridEnv, gid)
-	err := persistence.Save(gridEnv, persistence.GridStatesFileName)
-	if err != nil {
-		discord.Errorf("Error saving state on grid removal: %v", err)
-	}
 }
 
 func GridSDCount(gid int, symbol, direction string, setType string) (int, int, float64) {
@@ -189,7 +159,7 @@ func (tracked *TrackedGrids) remove(id int) {
 	tracked.TotalGridInitial -= g.InitialValue
 	tracked.TotalGridPnl -= g.TotalPnl
 	delete(tracked.GridsByGid, g.GID)
-	persistGridRemoval(g.GID)
+	delete(gridEnv, g.GID)
 }
 
 func (tracked *TrackedGrids) add(g *Grid, trackContinuous bool) {
@@ -223,7 +193,7 @@ func (tracked *TrackedGrids) add(g *Grid, trackContinuous bool) {
 	if ok {
 		tracked.TotalGridInitial -= prevG.InitialValue
 		tracked.TotalGridPnl -= prevG.TotalPnl
-		tracking := prevG.Tracking
+		tracking := prevG.GetTracking()
 		if g.LastRoi < tracking.LowestRoi {
 			tracking.TimeLowestRoi = updateTime
 		}
@@ -250,19 +220,28 @@ func (tracked *TrackedGrids) add(g *Grid, trackContinuous bool) {
 				tracking.ContinuousRoiLoss = 0
 			}
 		}
-		g.Tracking = tracking
+		g.GetEnv().Tracking = tracking
 	} else {
-		g.Tracking = &GridTracking{
-			LowestRoi:      g.LastRoi,
-			HighestRoi:     g.LastRoi,
-			TimeHighestRoi: updateTime,
-			TimeLowestRoi:  updateTime,
-			TimeLastChange: updateTime,
-			LowestProfits:  make(map[int]float64),
-		}
-		persistGridInitialEnvs(g.GID)
+		g.SetEnv(&GridEnv{SDRaw: Bundle.Raw.SymbolDirectionCount,
+			SDFiltered:     GetPool().SymbolDirectionCount,
+			SDPairSpecific: Bundle.SDCountPairSpecific,
+			Tracking: &GridTracking{
+				LowestRoi:      g.LastRoi,
+				HighestRoi:     g.LastRoi,
+				TimeHighestRoi: updateTime,
+				TimeLowestRoi:  updateTime,
+				TimeLastChange: updateTime,
+				LowestProfits:  make(map[int]float64),
+			}})
 	}
-	persistGridCurrEnvs(g.GID, g.SID)
+	picked := GetPool().Exists(g.SID)
+	env := g.GetEnv()
+	if !picked && env.StrategyLastNotPicked == nil {
+		now := time.Now()
+		env.StrategyLastNotPicked = &now
+	} else if picked && env.StrategyLastNotPicked != nil {
+		env.StrategyLastNotPicked = nil
+	}
 	tracked.GridsByGid[g.GID] = g
 }
 
@@ -271,7 +250,7 @@ func (grid *Grid) GetRunTime() time.Duration {
 }
 
 func (grid *Grid) String() string {
-	tracking := grid.Tracking
+	tracking := grid.GetTracking()
 	extendedProfit := ""
 	extendedProfit = fmt.Sprintf(" [%.2f%% (%s), %.2f%% (%s)][+%d, -%d, %d (%s)]",
 		tracking.LowestRoi*100,
