@@ -240,7 +240,7 @@ func (t *TrackedStrategies) String() string {
 	sort.Strings(symbols)
 	for _, symbol := range symbols {
 		directionMap := t.SymbolDirectionCount[symbol]
-		tbl.AddRow(symbol[:len(symbol)-len(config.TheConfig.AssetSymbol)], fmt.Sprintf("%d", directionMap["LONG"]),
+		tbl.AddRow(utils.FormatPair(symbol), fmt.Sprintf("%d", directionMap["LONG"]),
 			fmt.Sprintf("%d", directionMap["SHORT"]), fmt.Sprintf("%d", directionMap["NEUTRAL"]))
 	}
 	return fmt.Sprintf("%d, H: %v, L: %v\n```\n%s```",
@@ -353,7 +353,7 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 	}
 
 	return fmt.Sprintf("* [%s%s%s, %s, %s, %s @ %f, %s Grids, %s] %s: %s%s",
-		seq, symbol, direction, leverage, runTime,
+		seq, utils.FormatPair(symbol), direction, leverage, runTime,
 		priceRange, marketPrice, grids, strategyId, action, ss, gg)
 }
 

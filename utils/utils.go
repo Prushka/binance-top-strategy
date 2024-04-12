@@ -23,6 +23,10 @@ func ShortDur(d time.Duration) string {
 	return s
 }
 
+func FormatPair(symbol string) string {
+	return symbol[:len(symbol)-len(config.TheConfig.AssetSymbol)]
+}
+
 func TillNextRefresh() time.Duration {
 	minutesTillNextHour := 60 - time.Now().Minute()
 	if minutesTillNextHour >= 30 {
