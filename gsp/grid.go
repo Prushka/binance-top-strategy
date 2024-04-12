@@ -215,24 +215,27 @@ func (tracked *TrackedGrids) add(g *Grid, trackContinuous bool) {
 		if g.LastRoi > tracking.HighestRoi {
 			tracking.TimeHighestRoi = updateTime
 		}
-		if g.LastRoi != prevG.LastRoi {
-			tracking.TimeLastChange = updateTime
-		}
 		tracking.LowestRoi = math.Min(g.LastRoi, tracking.LowestRoi)
 		tracking.HighestRoi = math.Max(g.LastRoi, tracking.HighestRoi)
-		if trackContinuous {
-			if g.LastRoi > prevG.LastRoi {
-				tracking.ContinuousRoiGrowth += 1
-				tracking.ContinuousRoiLoss = 0
-				tracking.ContinuousRoiNoChange = 0
-			} else if g.LastRoi < prevG.LastRoi {
-				tracking.ContinuousRoiLoss += 1
-				tracking.ContinuousRoiGrowth = 0
-				tracking.ContinuousRoiNoChange = 0
-			} else {
-				tracking.ContinuousRoiNoChange += 1
-				tracking.ContinuousRoiGrowth = 0
-				tracking.ContinuousRoiLoss = 0
+
+		if prevG != nil {
+			if g.LastRoi != prevG.LastRoi {
+				tracking.TimeLastChange = updateTime
+			}
+			if trackContinuous {
+				if g.LastRoi > prevG.LastRoi {
+					tracking.ContinuousRoiGrowth += 1
+					tracking.ContinuousRoiLoss = 0
+					tracking.ContinuousRoiNoChange = 0
+				} else if g.LastRoi < prevG.LastRoi {
+					tracking.ContinuousRoiLoss += 1
+					tracking.ContinuousRoiGrowth = 0
+					tracking.ContinuousRoiNoChange = 0
+				} else {
+					tracking.ContinuousRoiNoChange += 1
+					tracking.ContinuousRoiGrowth = 0
+					tracking.ContinuousRoiLoss = 0
+				}
 			}
 		}
 	}
