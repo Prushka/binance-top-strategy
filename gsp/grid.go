@@ -13,11 +13,11 @@ import (
 var gridEnv = make(map[int]*GridEnv)
 
 type GridEnv struct {
+	StrategyLastNotPicked *time.Time
+	Tracking              *GridTracking
 	SDRaw                 SDCount
 	SDFiltered            SDCount
 	SDPairSpecific        SDCount
-	StrategyLastNotPicked *time.Time
-	Tracking              *GridTracking
 }
 
 type GridTracking struct {
@@ -193,7 +193,22 @@ func (tracked *TrackedGrids) add(g *Grid, trackContinuous bool) {
 	if ok {
 		tracked.TotalGridInitial -= prevG.InitialValue
 		tracked.TotalGridPnl -= prevG.TotalPnl
-		tracking := prevG.GetTracking()
+	}
+
+	if g.GetEnv() == nil {
+		g.SetEnv(&GridEnv{SDRaw: Bundle.Raw.SymbolDirectionCount,
+			SDFiltered:     GetPool().SymbolDirectionCount,
+			SDPairSpecific: Bundle.SDCountPairSpecific,
+			Tracking: &GridTracking{
+				LowestRoi:      g.LastRoi,
+				HighestRoi:     g.LastRoi,
+				TimeHighestRoi: updateTime,
+				TimeLowestRoi:  updateTime,
+				TimeLastChange: updateTime,
+				LowestProfits:  make(map[int]float64),
+			}})
+	} else {
+		tracking := g.GetTracking()
 		if g.LastRoi < tracking.LowestRoi {
 			tracking.TimeLowestRoi = updateTime
 		}
@@ -220,19 +235,6 @@ func (tracked *TrackedGrids) add(g *Grid, trackContinuous bool) {
 				tracking.ContinuousRoiLoss = 0
 			}
 		}
-		g.GetEnv().Tracking = tracking
-	} else {
-		g.SetEnv(&GridEnv{SDRaw: Bundle.Raw.SymbolDirectionCount,
-			SDFiltered:     GetPool().SymbolDirectionCount,
-			SDPairSpecific: Bundle.SDCountPairSpecific,
-			Tracking: &GridTracking{
-				LowestRoi:      g.LastRoi,
-				HighestRoi:     g.LastRoi,
-				TimeHighestRoi: updateTime,
-				TimeLowestRoi:  updateTime,
-				TimeLastChange: updateTime,
-				LowestProfits:  make(map[int]float64),
-			}})
 	}
 	picked := GetPool().Exists(g.SID)
 	env := g.GetEnv()
