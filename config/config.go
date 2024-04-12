@@ -11,7 +11,7 @@ type Config struct {
 	CSRFToken                         string    `env:"CSRF"`
 	COOKIE                            string    `env:"COOKIE"`
 	MarginType                        string    `env:"MARGIN_TYPE" envDefault:"CROSSED"`
-	StrategiesCount                   int       `env:"STRATEGIES_COUNT" envDefault:"450"`
+	StrategiesCount                   int       `env:"STRATEGIES_COUNT" envDefault:"480"`
 	RuntimeMinHours                   int       `env:"RUNTIME_MIN_HOURS" envDefault:"3"`
 	RuntimeMaxHours                   int       `env:"RUNTIME_MAX_HOURS" envDefault:"168"`
 	Paper                             bool      `env:"PAPER" envDefault:"true"`
@@ -25,7 +25,7 @@ type Config struct {
 	ShiftMinutesAfterHour             int       `env:"SHIFT_MINUTES_AFTER_HOUR" envDefault:"0"`
 	LastNHoursNoDips                  int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"5"`
 	LastNHoursAllPositive             int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"5"`
-	LeavingAsset                      float64   `env:"LEAVING_ASSET" envDefault:"150"`
+	LeavingAsset                      float64   `env:"LEAVING_ASSET" envDefault:"0"`
 	CancelNoChangeMinutes             int       `env:"CANCEL_NO_CHANGE_MINUTES" envDefault:"15"`
 	MinOppositeDirectionHigherRanking int       `env:"MIN_OPPOSITE_DIRECTION_HIGHER_RANKING" envDefault:"2"`
 	SymbolDirectionShrinkMinConstant  int       `env:"SYMBOL_DIRECTION_SHRINK_MIN_CONSTANT" envDefault:"2"`
@@ -39,7 +39,7 @@ type Config struct {
 	StopLossNotPicked                 []float64 `env:"STOP_LOSS_NOT_PICKED" envDefault:"-0.05,-0.1,-0.15,-0.3,-0.4"`
 	TickEverySeconds                  int       `env:"TICK_EVERY_SECONDS" envDefault:"20"`
 	AssetSymbol                       string    `env:"ASSET_SYMBOL" envDefault:"USDT"`
-	MaxChunks                         int       `env:"MAX_CHUNKS" envDefault:"5"`
+	MaxChunks                         int       `env:"MAX_CHUNKS" envDefault:"6"`
 	MinInvestmentPerChunk             float64   `env:"MIN_INVESTMENT_PER_CHUNK" envDefault:"6"`
 	MaxCancelLossStrategyDeleted      float64   `env:"MAX_CANCEL_LOSS_STRATEGY_DELETED" envDefault:"-0.2"`
 	Mode                              string    `env:"MODE" envDefault:"trading"`
