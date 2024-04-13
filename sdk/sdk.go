@@ -8,6 +8,7 @@ import (
 	"github.com/adshao/go-binance/v2"
 	"github.com/adshao/go-binance/v2/futures"
 	log "github.com/sirupsen/logrus"
+	"math"
 	"strconv"
 )
 
@@ -72,7 +73,11 @@ func GetFutureUSDT() (float64, error) {
 			if err != nil {
 				return 0, err
 			}
-			usdt = i + unPnl
+			availableBalance, err := strconv.ParseFloat(b.AvailableBalance, 64)
+			if err != nil {
+				return 0, err
+			}
+			usdt = math.Min(i+unPnl, availableBalance)
 			log.Infof("USDT: %f", usdt)
 			break
 		}
