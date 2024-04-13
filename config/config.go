@@ -43,13 +43,13 @@ type Config struct {
 	MinInvestmentPerChunk             float64   `env:"MIN_INVESTMENT_PER_CHUNK" envDefault:"6"`
 	MaxCancelLossStrategyDeleted      float64   `env:"MAX_CANCEL_LOSS_STRATEGY_DELETED" envDefault:"-0.2"`
 	Mode                              string    `env:"MODE" envDefault:"trading"`
-	MaxLeverage                       int       `env:"LEVERAGE" envDefault:"35"`
+	MaxLeverage                       int       `env:"LEVERAGE" envDefault:"25"`
 	KeepTopNStrategiesOfSameSymbol    int       `env:"KEEP_TOP_N_STRATEGIES_OF_SAME_SYMBOL" envDefault:"99"`
 	Last3HrWeight                     float64   `env:"LAST_3_HR_WEIGHT" envDefault:"0"`
 	Last2HrWeight                     float64   `env:"LAST_2_HR_WEIGHT" envDefault:"1"`
 	LastHrWeight                      float64   `env:"LAST_1_HR_WEIGHT" envDefault:"0"`
 	StopLossMarkForRemoval            []float64 `env:"STOP_LOSS_MARK_FOR_REMOVAL" envDefault:"-0.7,-0.8,-0.9,-1"`
-	StopLossMarkForRemovalSlack       []float64 `env:"STOP_LOSS_MARK_FOR_REMOVAL_SLACK" envDefault:"0.3,0.2,0.1,-0.1"`
+	StopLossMarkForRemovalSlack       []float64 `env:"STOP_LOSS_MARK_FOR_REMOVAL_SLACK" envDefault:"0.3,0.2,0.1,-0.2"`
 }
 
 var TheConfig = &Config{}
