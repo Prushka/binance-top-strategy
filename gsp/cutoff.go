@@ -4,6 +4,7 @@ import (
 	"BinanceTopStrategies/blacklist"
 	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/discord"
+	"BinanceTopStrategies/sdk"
 	"BinanceTopStrategies/utils"
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
@@ -79,6 +80,7 @@ func UpdateTopStrategiesWithRoi() error {
 			s.lastNHrNoDip = s.Rois.NoDip(time.Duration(config.TheConfig.LastNHoursNoDips) * time.Hour)
 			s.lastNHrAllPositive = s.Rois.AllPositive(time.Duration(config.TheConfig.LastNHoursAllPositive)*time.Hour, 0)
 			s.roiPerHour = (s.roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
+			marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)
 			prefix := ""
 			if s.lastDayRoiChange > 0.1 &&
 				s.last3HrRoiChange > 0.03 &&
@@ -87,6 +89,7 @@ func UpdateTopStrategiesWithRoi() error {
 				s.lastDayRoiPerHr > 0.01 &&
 				s.last12HrRoiPerHr > 0.014 &&
 				s.priceDifference > 0.05 &&
+				lower < marketPrice && upper > marketPrice &&
 				//((s.Direction == SHORT && s.StrategyParams.StopUpperLimit != nil) || (s.Direction == LONG && s.StrategyParams.StopLowerLimit != nil) || (s.Direction == NEUTRAL && s.StrategyParams.StopLowerLimit != nil && s.StrategyParams.StopUpperLimit != nil)) &&
 				s.lastNHrAllPositive {
 				// TODO: price difference can shrink with trailing, e.g., 5.xx% -> 4.xx%
