@@ -36,12 +36,12 @@ type Config struct {
 	TakeProfitsMaxLookbackMinutes     []int     `env:"TAKE_PROFITS_MAX_LOOKBACK_MINUTES" envDefault:"5,15,25,35"`
 	TakeProfitsBlockMinutes           []int     `env:"TAKE_PROFITS_BLOCK_MINUTES" envDefault:"40,-1,-1,-1"`
 	StopLossNotPickedHrs              []int     `env:"STOP_LOSS_NOT_PICKED_HRS" envDefault:"1,2,3,4,5"`
-	StopLossNotPicked                 []float64 `env:"STOP_LOSS_NOT_PICKED" envDefault:"-0.05,-0.1,-0.15,-0.3,-0.4"`
+	StopLossNotPicked                 []float64 `env:"STOP_LOSS_NOT_PICKED" envDefault:"-0.05,-0.1,-0.15,-0.2,-0.3"`
 	TickEverySeconds                  int       `env:"TICK_EVERY_SECONDS" envDefault:"20"`
 	AssetSymbol                       string    `env:"ASSET_SYMBOL" envDefault:"USDT"`
 	MaxChunks                         int       `env:"MAX_CHUNKS" envDefault:"6"`
 	MinInvestmentPerChunk             float64   `env:"MIN_INVESTMENT_PER_CHUNK" envDefault:"6"`
-	MaxCancelLossStrategyDeleted      float64   `env:"MAX_CANCEL_LOSS_STRATEGY_DELETED" envDefault:"-0.2"`
+	MaxCancelLossStrategyDeleted      float64   `env:"MAX_CANCEL_LOSS_STRATEGY_DELETED" envDefault:"-0.05"`
 	Mode                              string    `env:"MODE" envDefault:"trading"`
 	MaxLeverage                       int       `env:"LEVERAGE" envDefault:"25"`
 	KeepTopNStrategiesOfSameSymbol    int       `env:"KEEP_TOP_N_STRATEGIES_OF_SAME_SYMBOL" envDefault:"99"`
