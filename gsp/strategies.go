@@ -266,7 +266,7 @@ func (s Strategy) String() string {
 }
 
 func (s Strategy) GetMetric() float64 {
-	return s.last9HrRoiPerHr
+	return s.last6HrRoiPerHr
 }
 
 func (s Strategy) SD() string {

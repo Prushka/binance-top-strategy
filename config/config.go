@@ -23,8 +23,8 @@ type Config struct {
 	DiscordName                       string    `env:"DISCORD_NAME" envDefault:"BTS"`
 	DataFolder                        string    `env:"DATA_FOLDER" envDefault:"./data"`
 	ShiftMinutesAfterHour             int       `env:"SHIFT_MINUTES_AFTER_HOUR" envDefault:"0"`
-	LastNHoursNoDips                  int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"5"`
-	LastNHoursAllPositive             int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"5"`
+	LastNHoursNoDips                  int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"6"`
+	LastNHoursAllPositive             int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"6"`
 	LeavingAsset                      float64   `env:"LEAVING_ASSET" envDefault:"20"`
 	CancelNoChangeMinutes             int       `env:"CANCEL_NO_CHANGE_MINUTES" envDefault:"15"`
 	MinOppositeDirectionHigherRanking int       `env:"MIN_OPPOSITE_DIRECTION_HIGHER_RANKING" envDefault:"2"`
