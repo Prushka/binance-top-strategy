@@ -252,9 +252,13 @@ func tick() error {
 		minInvestment, _ := strconv.ParseFloat(s.MinInvestment, 64)
 		notionalLeverage := notional.GetLeverage(s.Symbol, invChunk)
 		leverage := utils.IntMin(notionalLeverage, config.TheConfig.PreferredLeverage)
+		gap := s.StrategyParams.UpperLimit - s.StrategyParams.LowerLimit
 		switch s.Direction {
 		case gsp.LONG:
-
+			if marketPrice > s.StrategyParams.UpperLimit-gap*config.TheConfig.LongRangeDiff {
+				discord.Infof("Market Price too high for long, Skip")
+				continue
+			}
 		case gsp.NEUTRAL:
 			minInvestPerLeverage := minInvestment * float64(s.StrategyParams.Leverage)
 			minLeverage := int(math.Ceil(minInvestPerLeverage / invChunk))
@@ -264,20 +268,23 @@ func tick() error {
 			} else if minLeverage > leverage {
 				leverage = minLeverage
 			}
-			if s.PriceDifference < 0.1 {
+			if s.PriceDifference < 0.07 {
 				discord.Infof("Price difference too low for neutral, Skip")
 				continue
 			}
-			if marketPrice < s.StrategyParams.LowerLimit*(1+config.TheConfig.NeutralMinRangeDiff) {
+			if marketPrice < s.StrategyParams.LowerLimit+gap*config.TheConfig.NeutralMinRangeDiff {
 				discord.Infof("Market Price too low for neutral, Skip")
 				continue
 			}
-			if marketPrice > s.StrategyParams.UpperLimit*(1-config.TheConfig.NeutralMinRangeDiff) {
+			if marketPrice > s.StrategyParams.UpperLimit-gap*config.TheConfig.NeutralMinRangeDiff {
 				discord.Infof("Market Price too high for neutral, Skip")
 				continue
 			}
 		case gsp.SHORT:
-
+			if marketPrice < s.StrategyParams.LowerLimit+gap*config.TheConfig.ShortRangeDiff {
+				discord.Infof("Market Price too low for short, Skip")
+				continue
+			}
 		}
 
 		if s.StrategyParams.TriggerPrice != nil {

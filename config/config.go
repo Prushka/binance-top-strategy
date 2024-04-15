@@ -11,7 +11,7 @@ type Config struct {
 	CSRFToken                         string    `env:"CSRF"`
 	COOKIE                            string    `env:"COOKIE"`
 	MarginType                        string    `env:"MARGIN_TYPE" envDefault:"CROSSED"`
-	StrategiesCount                   int       `env:"STRATEGIES_COUNT" envDefault:"400"`
+	StrategiesCount                   int       `env:"STRATEGIES_COUNT" envDefault:"450"`
 	RuntimeMinHours                   int       `env:"RUNTIME_MIN_HOURS" envDefault:"3"`
 	RuntimeMaxHours                   int       `env:"RUNTIME_MAX_HOURS" envDefault:"168"`
 	Paper                             bool      `env:"PAPER" envDefault:"true"`
@@ -52,6 +52,8 @@ type Config struct {
 	StopLossMarkForRemoval            []float64 `env:"STOP_LOSS_MARK_FOR_REMOVAL" envDefault:"-0.7,-0.8,-0.9,-1"`
 	StopLossMarkForRemovalSlack       []float64 `env:"STOP_LOSS_MARK_FOR_REMOVAL_SLACK" envDefault:"0.4,0.4,0.3,-0.2"`
 	NeutralMinRangeDiff               float64   `env:"NEUTRAL_MIN_RANGE_DIFF" envDefault:"0.2"`
+	ShortRangeDiff                    float64   `env:"SHORT_RANGE_DIFF" envDefault:"0.2"`
+	LongRangeDiff                     float64   `env:"LONG_RANGE_DIFF" envDefault:"0.2"`
 }
 
 var TheConfig = &Config{}
