@@ -66,14 +66,15 @@ func checkDirectionShrink(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 	}
 }
 
-func checkMaxGain(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
+func checkTakeProfits(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 	for c, gpMax := range config.TheConfig.TakeProfits {
 		gpMax = config.GetScaledProfits(gpMax, grid.InitialLeverage)
 		if grid.LastRoi >= gpMax {
 			gpLookBack := time.Duration(config.TheConfig.TakeProfitsMaxLookbackMinutes[c]) * time.Minute
 			gpBlock := time.Duration(config.TheConfig.TakeProfitsBlockMinutes[c]) * time.Minute
 			gridTracking := grid.GetTracking()
-			if time.Since(gridTracking.TimeHighestRoi) > gpLookBack {
+			lowerBound := gridTracking.GetLowestWithin(gpLookBack)
+			if time.Since(gridTracking.TimeHighestRoi) > gpLookBack && lowerBound >= gpMax {
 				reason := fmt.Sprintf("max gain %.2f%%/%.2f%%, reached %s ago",
 					grid.LastRoi*100, gridTracking.HighestRoi*100,
 					time.Since(gridTracking.TimeHighestRoi).Round(time.Second))
@@ -161,7 +162,7 @@ func tick() error {
 			toCancel.AddGridToCancel(grid, 0, reason)
 		}
 
-		checkMaxGain(grid, toCancel)
+		checkTakeProfits(grid, toCancel)
 		checkDirectionShrink(grid, toCancel)
 		checkOppositeDirections(grid, toCancel)
 		checkStopLoss(grid, toCancel)

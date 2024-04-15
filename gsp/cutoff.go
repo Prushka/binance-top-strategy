@@ -76,6 +76,7 @@ func UpdateTopStrategiesWithRoi() error {
 			s.last12HrRoiPerHr = s.Rois.GetRoiPerHr(12 * time.Hour)
 			s.last9HrRoiPerHr = s.Rois.GetRoiPerHr(9 * time.Hour)
 			s.last6HrRoiPerHr = s.Rois.GetRoiPerHr(6 * time.Hour)
+			s.last3HrRoiPerHr = s.Rois.GetRoiPerHr(3 * time.Hour)
 			s.lastNHrNoDip = s.Rois.NoDip(time.Duration(config.TheConfig.LastNHoursNoDips) * time.Hour)
 			s.lastNHrAllPositive = s.Rois.AllPositive(time.Duration(config.TheConfig.LastNHoursAllPositive)*time.Hour, 0)
 			s.roiPerHour = (s.roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)

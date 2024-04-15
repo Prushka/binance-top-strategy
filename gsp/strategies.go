@@ -61,6 +61,7 @@ type Strategy struct {
 	last12HrRoiPerHr   float64
 	last9HrRoiPerHr    float64
 	last6HrRoiPerHr    float64
+	last3HrRoiPerHr    float64
 	lastNHrNoDip       bool
 	lastNHrAllPositive bool
 	roiPerHour         float64
@@ -259,14 +260,15 @@ func (s Strategy) String() string {
 		ranking = fmt.Sprintf(", Rank: Raw: %d, FilterdSD: %d", Bundle.Raw.findStrategyRanking(s),
 			GetPool().findStrategyRanking(s))
 	}
-	return fmt.Sprintf("Cpy: %d, Mch: [%d, %d], PnL: %.2f, Rois: %s, [H%%, A/Day/15H/12H/9H/6H: %.1f%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], [A/D/3/2/1H: %s%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s%s",
+	return fmt.Sprintf("Cpy: %d, Mch: [%d, %d], PnL: %.2f, Rois: %s, [H%%, A/Day/15H/12H/9H/6H/3H: %.1f%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], [A/D/3/2/1H: %s%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s%s",
 		s.CopyCount, s.MatchedCount, s.LatestMatchedCount, pnl, s.Rois.lastNRecords(config.TheConfig.LastNHoursNoDips),
-		s.roiPerHour*100, s.lastDayRoiPerHr*100, s.last15HrRoiPerHr*100, s.last12HrRoiPerHr*100, s.last9HrRoiPerHr*100, s.last6HrRoiPerHr*100, s.Roi,
+		s.roiPerHour*100, s.lastDayRoiPerHr*100, s.last15HrRoiPerHr*100, s.last12HrRoiPerHr*100,
+		s.last9HrRoiPerHr*100, s.last6HrRoiPerHr*100, s.last3HrRoiPerHr*100, s.Roi,
 		s.lastDayRoiChange*100, s.last3HrRoiChange*100, s.last2HrRoiChange*100, s.lastHrRoiChange*100, s.MinInvestment, ranking)
 }
 
 func (s Strategy) GetMetric() float64 {
-	return s.last6HrRoiPerHr
+	return s.last3HrRoiPerHr
 }
 
 func (s Strategy) SD() string {
