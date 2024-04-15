@@ -253,6 +253,13 @@ func (t *TrackedStrategies) Exists(id int) bool {
 	return t.Ids.Contains(id)
 }
 
+func (s Strategy) MarketPriceWithinRange() bool {
+	marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)
+	lowerLimit, _ := strconv.ParseFloat(s.StrategyParams.LowerLimit, 64)
+	upperLimit, _ := strconv.ParseFloat(s.StrategyParams.UpperLimit, 64)
+	return marketPrice > lowerLimit && marketPrice < upperLimit
+}
+
 func (s Strategy) String() string {
 	pnl, _ := strconv.ParseFloat(s.Pnl, 64)
 	ranking := ""

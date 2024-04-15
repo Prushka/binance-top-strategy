@@ -267,6 +267,11 @@ func tick() error {
 			}
 		}
 
+		if !s.MarketPriceWithinRange() {
+			discord.Infof("Market Price not within range, Skip")
+			continue
+		}
+
 		errr := gsp.PlaceGrid(*s, invChunk, leverage)
 		if config.TheConfig.Paper {
 
