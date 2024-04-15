@@ -26,7 +26,7 @@ type Config struct {
 	LastNHoursNoDips                  int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"6"`
 	LastNHoursAllPositive             int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"6"`
 	LeavingAsset                      float64   `env:"LEAVING_ASSET" envDefault:"20"`
-	CancelNoChangeMinutes             int       `env:"CANCEL_NO_CHANGE_MINUTES" envDefault:"25"`
+	CancelNoChangeMinutes             int       `env:"CANCEL_NO_CHANGE_MINUTES" envDefault:"30"`
 	MinOppositeDirectionHigherRanking int       `env:"MIN_OPPOSITE_DIRECTION_HIGHER_RANKING" envDefault:"2"`
 	SymbolDirectionShrinkMinConstant  int       `env:"SYMBOL_DIRECTION_SHRINK_MIN_CONSTANT" envDefault:"2"`
 	SymbolDirectionShrink             []float64 `env:"SYMBOL_DIRECTION_SHRINK" envDefault:"0.82,0.65,0.45"`
@@ -43,7 +43,8 @@ type Config struct {
 	MinInvestmentPerChunk             float64   `env:"MIN_INVESTMENT_PER_CHUNK" envDefault:"6"`
 	MaxCancelLossStrategyDeleted      float64   `env:"MAX_CANCEL_LOSS_STRATEGY_DELETED" envDefault:"0"`
 	Mode                              string    `env:"MODE" envDefault:"trading"`
-	MaxLeverage                       int       `env:"LEVERAGE" envDefault:"20"`
+	PreferredLeverage                 int       `env:"PREFERRED_LEVERAGE" envDefault:"20"`
+	MaxLeverage                       int       `env:"MAX_LEVERAGE" envDefault:"28"`
 	KeepTopNStrategiesOfSameSymbol    int       `env:"KEEP_TOP_N_STRATEGIES_OF_SAME_SYMBOL" envDefault:"99"`
 	Last3HrWeight                     float64   `env:"LAST_3_HR_WEIGHT" envDefault:"0"`
 	Last2HrWeight                     float64   `env:"LAST_2_HR_WEIGHT" envDefault:"1"`

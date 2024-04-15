@@ -210,6 +210,10 @@ func tick() error {
 		return nil
 	}
 	invChunk = float64(int(invChunk))
+	if time.Now().Minute() < 20 {
+		discord.Infof("Only trade after 20 min, Skip")
+		return nil
+	}
 	discord.Infof("### Opening new grids:")
 	sessionSymbols := gsp.GGrids.ExistingSymbols.Clone()
 	blacklistedInPool := mapset.NewSet[string]()

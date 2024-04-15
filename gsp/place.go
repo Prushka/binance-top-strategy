@@ -49,7 +49,7 @@ type placeGridResponse struct {
 }
 
 func (s Strategy) MaxLeverage(initialUSDT float64) int {
-	leverage := config.TheConfig.MaxLeverage
+	leverage := config.TheConfig.PreferredLeverage
 	if s.StrategyParams.Leverage < leverage {
 		leverage = s.StrategyParams.Leverage
 	}
