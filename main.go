@@ -75,7 +75,7 @@ func checkTakeProfits(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 			gpLookBack := time.Duration(config.TheConfig.TakeProfitsMaxLookbackMinutes[c]) * time.Minute
 			gpBlock := time.Duration(config.TheConfig.TakeProfitsBlockMinutes[c]) * time.Minute
 			gridTracking := grid.GetTracking()
-			lowerBound := gridTracking.GetLowestWithin(gpLookBack)
+			lowerBound, _ := gridTracking.GetLocalWithin(gpLookBack)
 			if time.Since(gridTracking.TimeHighestRoi) > gpLookBack && lowerBound >= gpMax {
 				reason := fmt.Sprintf("max gain %.2f%%/%.2f%%, reached %s ago",
 					grid.LastRoi*100, gridTracking.HighestRoi*100,
