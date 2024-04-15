@@ -4,7 +4,6 @@ import (
 	"BinanceTopStrategies/blacklist"
 	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/discord"
-	"BinanceTopStrategies/persistence"
 	"BinanceTopStrategies/request"
 	mapset "github.com/deckarep/golang-set/v2"
 	"time"
@@ -57,14 +56,10 @@ func UpdateOpenGrids(trackContinuous bool) error {
 			GGrids.remove(g.GID)
 		}
 	}
-	for gid := range gridEnv {
+	for gid := range TheGridEnv {
 		if !currentIds.Contains(gid) {
-			delete(gridEnv, gid)
+			delete(TheGridEnv, gid)
 		}
-	}
-	err = persistence.Save(gridEnv, persistence.GridStatesFileName)
-	if err != nil {
-		discord.Errorf("**Error saving grid env**: %v", err)
 	}
 	discord.Infof("Open Pairs: %v, Initial: %.2f, TotalPnL: %.2f, C: %.2f, L/S/N: %d/%d/%d",
 		GGrids.ExistingSymbols, GGrids.TotalGridInitial, GGrids.TotalGridPnl, GGrids.TotalGridPnl+GGrids.TotalGridInitial,

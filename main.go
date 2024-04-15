@@ -6,6 +6,7 @@ import (
 	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/gsp"
 	"BinanceTopStrategies/notional"
+	"BinanceTopStrategies/persistence"
 	"BinanceTopStrategies/sdk"
 	"BinanceTopStrategies/utils"
 	"context"
@@ -356,8 +357,7 @@ func main() {
 			discord.Errorf("Real Trading")
 		}
 		sdk.Init()
-		gsp.Init()
-		blacklist.Init()
+		persistence.Init()
 		_, err := scheduler.SingletonMode().Every(config.TheConfig.TickEverySeconds).Seconds().Do(
 			func() {
 				t := time.Now()

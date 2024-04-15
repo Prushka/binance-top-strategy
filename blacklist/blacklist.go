@@ -2,9 +2,7 @@ package blacklist
 
 import (
 	"BinanceTopStrategies/discord"
-	"BinanceTopStrategies/persistence"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -20,44 +18,26 @@ type content struct {
 	Reason string
 }
 
-var blacklist = &blacklists{BySID: make(map[int]*content), BySymbolDirection: make(map[string]*content), BySymbol: make(map[string]*content)}
-
-func persistBlacklist() {
-	err := persistence.Save(blacklist, persistence.BlacklistFileName)
-	if err != nil {
-		discord.Errorf("Error saving blacklist: %v", err)
-	}
-}
-
-func Init() {
-	err := persistence.Load(blacklist, persistence.BlacklistFileName)
-	if err != nil {
-		log.Fatalf("Error loading blacklist: %v", err)
-	}
-}
+var TheBlacklist = &blacklists{BySID: make(map[int]*content), BySymbolDirection: make(map[string]*content), BySymbol: make(map[string]*content)}
 
 func BlockTrading(d time.Duration, reason string) {
-	blacklist.Global = newContent(blacklist.Global, d, reason)
+	TheBlacklist.Global = newContent(TheBlacklist.Global, d, reason)
 	discord.Blacklistf(fmt.Sprintf("**Global block:** %s, %s", d, reason))
-	persistBlacklist()
 }
 
 func AddSymbolDirection(symbol, direction string, d time.Duration, reason string) {
-	blacklist.BySymbolDirection[symbol+direction] = newContent(blacklist.BySymbolDirection[symbol+direction], d, reason)
+	TheBlacklist.BySymbolDirection[symbol+direction] = newContent(TheBlacklist.BySymbolDirection[symbol+direction], d, reason)
 	discord.Blacklistf(fmt.Sprintf("**Add blacklist:** %s, %s, %s, %s", symbol, direction, d, reason))
-	persistBlacklist()
 }
 
 func AddSID(id int, d time.Duration, reason string) {
-	blacklist.BySID[id] = newContent(blacklist.BySID[id], d, reason)
+	TheBlacklist.BySID[id] = newContent(TheBlacklist.BySID[id], d, reason)
 	discord.Blacklistf(fmt.Sprintf("**Add blacklist:** %d, %s, %s", id, d, reason))
-	persistBlacklist()
 }
 
 func AddSymbol(symbol string, d time.Duration, reason string) {
-	blacklist.BySymbol[symbol] = newContent(blacklist.BySymbol[symbol], d, reason)
+	TheBlacklist.BySymbol[symbol] = newContent(TheBlacklist.BySymbol[symbol], d, reason)
 	discord.Blacklistf(fmt.Sprintf("**Add blacklist:** %s, %s, %s", symbol, d, reason))
-	persistBlacklist()
 }
 
 func newContent(c *content, d time.Duration, reason string) *content {
@@ -71,44 +51,44 @@ func newContent(c *content, d time.Duration, reason string) *content {
 }
 
 func IsTradingBlocked() (bool, time.Time) {
-	if blacklist.Global != nil {
-		if time.Now().Before(blacklist.Global.Till) {
-			return true, blacklist.Global.Till
+	if TheBlacklist.Global != nil {
+		if time.Now().Before(TheBlacklist.Global.Till) {
+			return true, TheBlacklist.Global.Till
 		} else {
-			blacklist.Global = nil
+			TheBlacklist.Global = nil
 		}
 	}
 	return false, time.Time{}
 }
 
 func SymbolDirectionBlacklisted(symbol, direction string) (bool, time.Time) {
-	if t, ok := blacklist.BySymbolDirection[symbol+direction]; ok {
+	if t, ok := TheBlacklist.BySymbolDirection[symbol+direction]; ok {
 		if time.Now().Before(t.Till) {
 			return true, t.Till
 		} else {
-			delete(blacklist.BySymbolDirection, symbol+direction)
+			delete(TheBlacklist.BySymbolDirection, symbol+direction)
 		}
 	}
 	return false, time.Time{}
 }
 
 func SIDBlacklisted(id int) (bool, time.Time) {
-	if t, ok := blacklist.BySID[id]; ok {
+	if t, ok := TheBlacklist.BySID[id]; ok {
 		if time.Now().Before(t.Till) {
 			return true, t.Till
 		} else {
-			delete(blacklist.BySID, id)
+			delete(TheBlacklist.BySID, id)
 		}
 	}
 	return false, time.Time{}
 }
 
 func SymbolBlacklisted(symbol string) (bool, time.Time) {
-	if t, ok := blacklist.BySymbol[symbol]; ok {
+	if t, ok := TheBlacklist.BySymbol[symbol]; ok {
 		if time.Now().Before(t.Till) {
 			return true, t.Till
 		} else {
-			delete(blacklist.BySymbol, symbol)
+			delete(TheBlacklist.BySymbol, symbol)
 		}
 	}
 	return false, time.Time{}

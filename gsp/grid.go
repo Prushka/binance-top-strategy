@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var gridEnv = make(map[int]*GridEnv)
+var TheGridEnv = make(map[int]*GridEnv)
 
 type Profit struct {
 	Profit float64
@@ -111,11 +111,11 @@ type Grid struct {
 }
 
 func (grid *Grid) GetEnv() *GridEnv {
-	return gridEnv[grid.GID]
+	return TheGridEnv[grid.GID]
 }
 
 func (grid *Grid) SetEnv(env *GridEnv) {
-	gridEnv[grid.GID] = env
+	TheGridEnv[grid.GID] = env
 }
 
 func (grid *Grid) GetTracking() *GridTracking {
@@ -123,7 +123,7 @@ func (grid *Grid) GetTracking() *GridTracking {
 }
 
 func GridNotPickedDuration(gid int) *time.Duration {
-	env := gridEnv[gid]
+	env := TheGridEnv[gid]
 	if env == nil {
 		discord.Errorf("Grid %d not found in gridEnv", gid)
 		return nil
@@ -142,13 +142,13 @@ func GridSDCount(gid int, symbol, direction string, setType string) (int, int, f
 	switch setType {
 	case SDRaw:
 		currentSDCount = Bundle.Raw.SymbolDirectionCount.GetSDCount(symbol, direction)
-		sdCountWhenOpen = gridEnv[gid].SDRaw.GetSDCount(symbol, direction)
+		sdCountWhenOpen = TheGridEnv[gid].SDRaw.GetSDCount(symbol, direction)
 	case SDFiltered:
 		currentSDCount = GetPool().SymbolDirectionCount.GetSDCount(symbol, direction)
-		sdCountWhenOpen = gridEnv[gid].SDFiltered.GetSDCount(symbol, direction)
+		sdCountWhenOpen = TheGridEnv[gid].SDFiltered.GetSDCount(symbol, direction)
 	case SDPairSpecific:
 		currentSDCount = Bundle.SDCountPairSpecific.GetSDCount(symbol, direction)
-		sdCountWhenOpen = gridEnv[gid].SDPairSpecific.GetSDCount(symbol, direction)
+		sdCountWhenOpen = TheGridEnv[gid].SDPairSpecific.GetSDCount(symbol, direction)
 	}
 	ratio := float64(currentSDCount) / float64(sdCountWhenOpen)
 	return currentSDCount, sdCountWhenOpen, ratio
@@ -180,7 +180,7 @@ func (tracked *TrackedGrids) remove(id int) {
 	tracked.TotalGridInitial -= g.InitialValue
 	tracked.TotalGridPnl -= g.TotalPnl
 	delete(tracked.GridsByGid, g.GID)
-	delete(gridEnv, g.GID)
+	delete(TheGridEnv, g.GID)
 }
 
 func (tracked *TrackedGrids) add(g *Grid, trackContinuous bool) {
