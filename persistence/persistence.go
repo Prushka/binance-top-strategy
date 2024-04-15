@@ -2,13 +2,12 @@ package persistence
 
 import (
 	"BinanceTopStrategies/blacklist"
+	"BinanceTopStrategies/cleanup"
 	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/gsp"
 	"encoding/json"
 	"os"
-	"os/signal"
-	"syscall"
 )
 
 const (
@@ -58,19 +57,14 @@ func Init() {
 			panic(err)
 		}
 	}
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan,
-		syscall.SIGHUP,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-		syscall.SIGQUIT)
-	go func() {
-		_ = <-sigChan
+	cleanup.AddOnStopFunc(cleanup.Persistence, func(_ os.Signal) {
+		discord.Infof("Saving data")
 		for _, r := range registries {
 			if err := save(r.DataPtr, r.FileName); err != nil {
 				discord.Errorf("Error saving %s: %v", r.FileName, err)
 				panic(err)
 			}
 		}
-	}()
+		discord.Infof("Saved data")
+	})
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"BinanceTopStrategies/blacklist"
+	"BinanceTopStrategies/cleanup"
 	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/gsp"
@@ -15,6 +16,7 @@ import (
 	"github.com/go-co-op/gocron"
 	log "github.com/sirupsen/logrus"
 	"math"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -351,6 +353,7 @@ func main() {
 	discord.Init()
 	switch config.TheConfig.Mode {
 	case "trading":
+		blocking := make(chan bool, 1)
 		if config.TheConfig.Paper {
 			discord.Errorf("Paper Trading")
 		} else {
@@ -358,6 +361,10 @@ func main() {
 		}
 		sdk.Init()
 		persistence.Init()
+		cleanup.InitSignalCallback(blocking)
+		cleanup.AddOnStopFunc(cleanup.Scheduler, func(_ os.Signal) {
+			scheduler.Stop()
+		})
 		_, err := scheduler.SingletonMode().Every(config.TheConfig.TickEverySeconds).Seconds().Do(
 			func() {
 				t := time.Now()
@@ -372,7 +379,8 @@ func main() {
 			discord.Errorf("Error: %v", err)
 			return
 		}
-		scheduler.StartBlocking()
+		scheduler.StartAsync()
+		<-blocking
 	case "playground":
 		sdk.Init()
 		timeAgo := 47 * time.Hour
