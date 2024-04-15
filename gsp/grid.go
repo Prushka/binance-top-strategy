@@ -33,35 +33,24 @@ type GridTracking struct {
 	TimeHighestRoi        time.Time
 	TimeLowestRoi         time.Time
 	TimeLastChange        time.Time
-	LowestProfits         Profits
-	HighestProfits        Profits
+	LocalProfits          Profits
 	ContinuousRoiGrowth   int
 	ContinuousRoiLoss     int
 	ContinuousRoiNoChange int
 }
 
-func (tracking *GridTracking) GetLowestWithin(duration time.Duration) float64 {
+func (tracking *GridTracking) GetLocalWithin(duration time.Duration) (float64, float64) {
 	earliest := time.Now().Add(-duration)
-	lowest := tracking.LowestRoi
-	for i := len(tracking.LowestProfits) - 1; i >= 0; i-- {
-		if tracking.LowestProfits[i].Time.Before(earliest) {
+	lowest := 10000000.0
+	highest := -10000000.0
+	for i := len(tracking.LocalProfits) - 1; i >= 0; i-- {
+		if tracking.LocalProfits[i].Time.Before(earliest) {
 			break
 		}
-		lowest = math.Min(lowest, tracking.LowestProfits[i].Profit)
+		lowest = math.Min(lowest, tracking.LocalProfits[i].Profit)
+		highest = math.Max(highest, tracking.LocalProfits[i].Profit)
 	}
-	return tracking.LowestRoi
-}
-
-func (tracking *GridTracking) GetHighestWithin(duration time.Duration) float64 {
-	earliest := time.Now().Add(-duration)
-	highest := tracking.HighestRoi
-	for i := len(tracking.HighestProfits) - 1; i >= 0; i-- {
-		if tracking.HighestProfits[i].Time.Before(earliest) {
-			break
-		}
-		highest = math.Max(highest, tracking.HighestProfits[i].Profit)
-	}
-	return tracking.HighestRoi
+	return lowest, highest
 }
 
 type TrackedGrids struct {
@@ -242,11 +231,9 @@ func (tracked *TrackedGrids) add(g *Grid, trackContinuous bool) {
 		tracking := g.GetTracking()
 		if g.LastRoi < tracking.LowestRoi {
 			tracking.TimeLowestRoi = updateTime
-			tracking.LowestProfits = append(tracking.LowestProfits, Profit{Profit: g.LastRoi, Time: updateTime})
 		}
 		if g.LastRoi > tracking.HighestRoi {
 			tracking.TimeHighestRoi = updateTime
-			tracking.HighestProfits = append(tracking.HighestProfits, Profit{Profit: g.LastRoi, Time: updateTime})
 		}
 		tracking.LowestRoi = math.Min(g.LastRoi, tracking.LowestRoi)
 		tracking.HighestRoi = math.Max(g.LastRoi, tracking.HighestRoi)
@@ -272,6 +259,8 @@ func (tracked *TrackedGrids) add(g *Grid, trackContinuous bool) {
 			}
 		}
 	}
+	tracking := g.GetTracking()
+	tracking.LocalProfits = append(tracking.LocalProfits, Profit{Profit: g.LastRoi, Time: updateTime})
 	picked := GetPool().Exists(g.SID)
 	env := g.GetEnv()
 	if !picked && env.StrategyLastNotPicked == nil {
