@@ -350,7 +350,6 @@ func tick() error {
 
 func main() {
 	config.Init()
-	discord.Init()
 	switch config.TheConfig.Mode {
 	case "trading":
 		blocking := make(chan bool, 1)
@@ -365,6 +364,7 @@ func main() {
 			scheduler.Stop()
 		})
 		persistence.Init()
+		discord.Init()
 		_, err := scheduler.SingletonMode().Every(config.TheConfig.TickEverySeconds).Seconds().Do(
 			func() {
 				t := time.Now()

@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"BinanceTopStrategies/cleanup"
 	"BinanceTopStrategies/config"
 	"encoding/json"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/gtuk/discordwebhook"
 	log "github.com/sirupsen/logrus"
+	"os"
 	"sync"
 	"time"
 )
@@ -66,40 +68,48 @@ func Webhooks(chat string, webhookTypes ...int) {
 	}
 }
 
-func Init() {
-	scheduler := gocron.NewScheduler(time.Now().Location())
-	_, err := scheduler.SingletonMode().Every(5).Seconds().Do(func() {
-		mutex.Lock()
-		currentMessages := make(map[int][]string)
-		for k, v := range messages {
-			currentMessages[k] = v
-		}
-		clear(messages)
-		mutex.Unlock()
-		for webhookType, messages := range currentMessages {
-			if len(messages) > 0 {
-				chunks := make([]string, 0)
-				for _, message := range messages {
-					if len(chunks) == 0 {
-						chunks = append(chunks, message)
-						continue
-					}
-					if len(chunks[len(chunks)-1])+len(message) > 1800 {
-						chunks = append(chunks, message)
-					} else {
-						chunks[len(chunks)-1] = chunks[len(chunks)-1] + "\n" + message
-					}
+func messageTick() {
+	mutex.Lock()
+	currentMessages := make(map[int][]string)
+	for k, v := range messages {
+		currentMessages[k] = v
+	}
+	clear(messages)
+	mutex.Unlock()
+	for webhookType, messages := range currentMessages {
+		if len(messages) > 0 {
+			chunks := make([]string, 0)
+			for _, message := range messages {
+				if len(chunks) == 0 {
+					chunks = append(chunks, message)
+					continue
 				}
-				for _, chunk := range chunks {
-					send(messagePayload{Content: chunk, WebhookType: webhookType})
+				if len(chunks[len(chunks)-1])+len(message) > 1800 {
+					chunks = append(chunks, message)
+				} else {
+					chunks[len(chunks)-1] = chunks[len(chunks)-1] + "\n" + message
 				}
 			}
+			for _, chunk := range chunks {
+				send(messagePayload{Content: chunk, WebhookType: webhookType})
+			}
 		}
-	})
+	}
+}
+
+func Init() {
+	scheduler := gocron.NewScheduler(time.Now().Location())
+	_, err := scheduler.SingletonMode().Every(5).Seconds().Do(messageTick)
 	if err != nil {
 		log.Fatalf("error scheduling discord service: %v", err)
 	}
 	scheduler.StartAsync()
+	cleanup.AddOnStopFunc(func(_ os.Signal) {
+		scheduler.Stop()
+		if len(messages) > 0 {
+			messageTick()
+		}
+	})
 }
 
 type errorResponse struct {
