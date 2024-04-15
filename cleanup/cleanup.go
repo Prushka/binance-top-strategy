@@ -19,18 +19,17 @@ type OnStop func(sig os.Signal)
 type stop struct {
 	isStopping bool
 	mutex      sync.Mutex
-	onStopFunc map[int]OnStop
+	onStopFunc []OnStop
 }
 
 var quitInstance = &stop{
 	isStopping: false,
-	onStopFunc: make(map[int]OnStop),
 }
 
-func AddOnStopFunc(key int, f OnStop) {
+func AddOnStopFunc(f OnStop) {
 	quitInstance.mutex.Lock()
 	defer quitInstance.mutex.Unlock()
-	quitInstance.onStopFunc[key] = f
+	quitInstance.onStopFunc = append(quitInstance.onStopFunc, f)
 	if quitInstance.isStopping {
 		f(syscall.SIGTERM)
 	}
@@ -41,9 +40,8 @@ func Stop(sig os.Signal) {
 	defer quitInstance.mutex.Unlock()
 	quitInstance.isStopping = true
 	log.Warnf("Received signal %d, terminating...", sig)
-	for k, f := range quitInstance.onStopFunc {
+	for _, f := range quitInstance.onStopFunc {
 		f(sig)
-		delete(quitInstance.onStopFunc, k)
 	}
 }
 

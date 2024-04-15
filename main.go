@@ -360,11 +360,11 @@ func main() {
 			discord.Errorf("Real Trading")
 		}
 		sdk.Init()
-		persistence.Init()
 		cleanup.InitSignalCallback(blocking)
-		cleanup.AddOnStopFunc(cleanup.Scheduler, func(_ os.Signal) {
+		cleanup.AddOnStopFunc(func(_ os.Signal) {
 			scheduler.Stop()
 		})
+		persistence.Init()
 		_, err := scheduler.SingletonMode().Every(config.TheConfig.TickEverySeconds).Seconds().Do(
 			func() {
 				t := time.Now()

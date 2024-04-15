@@ -57,7 +57,7 @@ func Init() {
 			panic(err)
 		}
 	}
-	cleanup.AddOnStopFunc(cleanup.Persistence, func(_ os.Signal) {
+	cleanup.AddOnStopFunc(func(_ os.Signal) {
 		discord.Infof("Saving data")
 		for _, r := range registries {
 			if err := save(r.DataPtr, r.FileName); err != nil {
