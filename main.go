@@ -212,7 +212,7 @@ func tick() error {
 	}
 	invChunk = float64(int(invChunk))
 	if time.Now().Minute() < 20 {
-		discord.Infof("Only trade after 20 min, Skip")
+		discord.Infof("Only trade after min 20, Skip")
 		return nil
 	}
 	discord.Infof("### Opening new grids:")
