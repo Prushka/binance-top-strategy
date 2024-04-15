@@ -272,6 +272,11 @@ func tick() error {
 			continue
 		}
 
+		if s.PriceDifference < 0.05 {
+			discord.Infof("Price difference too low, Skip")
+			continue
+		}
+
 		errr := gsp.PlaceGrid(*s, invChunk, leverage)
 		if config.TheConfig.Paper {
 

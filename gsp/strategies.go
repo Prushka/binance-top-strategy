@@ -65,7 +65,8 @@ type Strategy struct {
 	lastNHrNoDip       bool
 	lastNHrAllPositive bool
 	roiPerHour         float64
-	priceDifference    float64
+	PriceDifference    float64
+	ReasonNotPicked    string
 	StrategyParams     struct {
 		Type           string  `json:"type"`
 		LowerLimit     string  `json:"lowerLimit"`

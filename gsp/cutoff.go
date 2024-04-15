@@ -63,7 +63,7 @@ func UpdateTopStrategiesWithRoi() error {
 
 		lower, _ := strconv.ParseFloat(s.StrategyParams.LowerLimit, 64)
 		upper, _ := strconv.ParseFloat(s.StrategyParams.UpperLimit, 64)
-		s.priceDifference = upper/lower - 1
+		s.PriceDifference = upper/lower - 1
 		GStrats[s.SID] = s
 		if len(s.Rois) > 1 {
 			s.roi = s.Rois[0].Roi
@@ -80,26 +80,56 @@ func UpdateTopStrategiesWithRoi() error {
 			s.lastNHrNoDip = s.Rois.AllPositive(time.Duration(config.TheConfig.LastNHoursNoDips)*time.Hour, 0)
 			s.lastNHrAllPositive = s.Rois.AllPositive(time.Duration(config.TheConfig.LastNHoursAllPositive)*time.Hour, 0.005)
 			s.roiPerHour = (s.roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
-			//marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)
 			prefix := ""
-			if s.lastDayRoiChange > 0.1 &&
-				s.last3HrRoiChange > 0.03 &&
-				s.lastHrRoiChange > 0.016 &&
-				s.lastDayRoiPerHr > 0.01 &&
-				s.last12HrRoiPerHr > 0.014 &&
-				s.Rois.AllPositive(3*time.Hour, 0.01) &&
-				s.priceDifference > 0.05 &&
-				s.lastNHrNoDip && s.lastNHrAllPositive {
-				// TODO: price difference can shrink with trailing, e.g., 5.xx% -> 4.xx%
-				if GGrids.ExistingSIDs.Contains(s.SID) {
-					grid := GGrids.GetGridBySID(s.SID)
-					if grid.GetTracking().HighestRoi < 0 && grid.GetRunTime() > 1*time.Hour {
-						reason := "Grid picked but has negative ROI"
-						discord.Infof(Display(s, grid, reason, 0, 0))
-						blacklist.AddSID(s.SID, utils.TillNextRefresh(), reason)
-						continue
-					}
+			reasons := make([]string, 0)
+			picked := true
+			if s.lastDayRoiChange <= 0.1 {
+				reasons = append(reasons, "Last Day ROI <= 0.1")
+				picked = false
+			}
+			if s.last3HrRoiChange <= 0.03 {
+				reasons = append(reasons, "Last 3Hr ROI <= 0.03")
+				picked = false
+			}
+			if s.lastHrRoiChange <= 0.016 {
+				reasons = append(reasons, "Last Hr ROI <= 0.016")
+				picked = false
+			}
+			if s.lastDayRoiPerHr <= 0.01 {
+				reasons = append(reasons, "Last Day ROI/Hr <= 0.01")
+				picked = false
+			}
+			if s.last12HrRoiPerHr <= 0.014 {
+				reasons = append(reasons, "Last 12Hr ROI/Hr <= 0.014")
+				picked = false
+			}
+			if !s.Rois.AllPositive(3*time.Hour, 0.01) {
+				reasons = append(reasons, "Not all positive in last 3Hr (1% cutoff)")
+				picked = false
+			}
+			if s.PriceDifference <= 0.045 {
+				reasons = append(reasons, "Price difference <= 0.045")
+				picked = false
+			}
+			if !s.lastNHrNoDip {
+				reasons = append(reasons, "Last N Hr has dip")
+				picked = false
+			}
+			if !s.lastNHrAllPositive {
+				reasons = append(reasons, "Last N Hr not all positive")
+				picked = false
+			}
+			if GGrids.ExistingSIDs.Contains(s.SID) {
+				grid := GGrids.GetGridBySID(s.SID)
+				if grid.GetTracking().HighestRoi < 0 && grid.GetRunTime() > 1*time.Hour {
+					reason := "Grid picked but has negative ROI"
+					discord.Infof(Display(s, grid, reason, 0, 0))
+					blacklist.AddSID(s.SID, utils.TillNextRefresh(), reason)
+					reasons = append(reasons, reason)
+					picked = false
 				}
+			}
+			if picked {
 				filtered = append(filtered, s)
 				prefix += "Open"
 			}
