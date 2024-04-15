@@ -2,7 +2,6 @@ package sdk
 
 import (
 	"BinanceTopStrategies/config"
-	"BinanceTopStrategies/discord"
 	"context"
 	"fmt"
 	"github.com/adshao/go-binance/v2"
@@ -35,15 +34,6 @@ func Init() {
 }
 
 func fetchMarketPrice(symbol string) (float64, error) {
-	res, err := _fetchMarketPrice(symbol)
-	if err != nil {
-		discord.Infof("Error fetching market price: %v", err)
-		return 0, err
-	}
-	return res, nil
-}
-
-func _fetchMarketPrice(symbol string) (float64, error) {
 	res, err := FuturesClient.NewListPricesService().Symbol(symbol).Do(context.Background())
 	if err != nil {
 		return 0, err

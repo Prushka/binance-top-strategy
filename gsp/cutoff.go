@@ -60,10 +60,9 @@ func UpdateTopStrategiesWithRoi() error {
 		s.Rois = roi
 		s.roi, _ = strconv.ParseFloat(s.Roi, 64)
 		s.roi /= 100
-
-		lower, _ := strconv.ParseFloat(s.StrategyParams.LowerLimit, 64)
-		upper, _ := strconv.ParseFloat(s.StrategyParams.UpperLimit, 64)
-		s.PriceDifference = upper/lower - 1
+		s.StrategyParams.LowerLimit, _ = strconv.ParseFloat(s.StrategyParams.LowerLimitStr, 64)
+		s.StrategyParams.UpperLimit, _ = strconv.ParseFloat(s.StrategyParams.UpperLimitStr, 64)
+		s.PriceDifference = s.StrategyParams.UpperLimit/s.StrategyParams.LowerLimit - 1
 		GStrats[s.SID] = s
 		if len(s.Rois) > 1 {
 			s.roi = s.Rois[0].Roi

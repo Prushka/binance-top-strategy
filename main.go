@@ -240,7 +240,7 @@ func tick() error {
 		}
 
 		discord.Infof(gsp.Display(s, nil, "New", c+1, len(gsp.GetPool().Strategies)))
-
+		marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)
 		minInvestment, _ := strconv.ParseFloat(s.MinInvestment, 64)
 		leverage := s.MaxLeverage(invChunk)
 		switch s.Direction {
@@ -251,6 +251,18 @@ func tick() error {
 			realMinInvestment := minInvestPerLeverage / float64(leverage)
 			if invChunk < realMinInvestment {
 				discord.Infof("Investment too low (%f/%f), Skip", invChunk, realMinInvestment)
+				continue
+			}
+			if s.PriceDifference < 0.1 {
+				discord.Infof("Price difference too low for neutral, Skip")
+				continue
+			}
+			if marketPrice < s.StrategyParams.LowerLimit*(1+config.TheConfig.NeutralMinRangeDiff) {
+				discord.Infof("Market Price too low for neutral, Skip")
+				continue
+			}
+			if marketPrice > s.StrategyParams.UpperLimit*(1-config.TheConfig.NeutralMinRangeDiff) {
+				discord.Infof("Market Price too high for neutral, Skip")
 				continue
 			}
 		case gsp.SHORT:

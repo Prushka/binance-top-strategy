@@ -69,8 +69,10 @@ type Strategy struct {
 	ReasonNotPicked    []string
 	StrategyParams     struct {
 		Type           string  `json:"type"`
-		LowerLimit     string  `json:"lowerLimit"`
-		UpperLimit     string  `json:"upperLimit"`
+		LowerLimitStr  string  `json:"lowerLimit"`
+		UpperLimitStr  string  `json:"upperLimit"`
+		LowerLimit     float64 `json:"-"`
+		UpperLimit     float64 `json:"-"`
 		GridCount      int     `json:"gridCount"`
 		TriggerPrice   *string `json:"triggerPrice"`
 		StopLowerLimit *string `json:"stopLowerLimit"`
@@ -256,9 +258,7 @@ func (t *TrackedStrategies) Exists(id int) bool {
 
 func (s Strategy) MarketPriceWithinRange() bool {
 	marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)
-	lowerLimit, _ := strconv.ParseFloat(s.StrategyParams.LowerLimit, 64)
-	upperLimit, _ := strconv.ParseFloat(s.StrategyParams.UpperLimit, 64)
-	return marketPrice > lowerLimit && marketPrice < upperLimit
+	return marketPrice > s.StrategyParams.LowerLimit && marketPrice < s.StrategyParams.UpperLimit
 }
 
 func (s Strategy) String() string {
@@ -319,7 +319,7 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		strategyId = fmt.Sprintf("%d", s.SID)
 		leverage = fmt.Sprintf("%dX", s.StrategyParams.Leverage)
 		runTime = formatRunTime(int64(s.RunningTime))
-		priceRange = formatPriceRange(s.StrategyParams.LowerLimit, s.StrategyParams.UpperLimit)
+		priceRange = formatPriceRange(s.StrategyParams.LowerLimitStr, s.StrategyParams.UpperLimitStr)
 		grids = fmt.Sprintf("%d", s.StrategyParams.GridCount)
 	} else {
 		marketPrice, _ = sdk.GetSessionSymbolPrice(grid.Symbol)
@@ -346,8 +346,8 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 			}
 			leverage = fmt.Sprintf("%dX/%.2fX%d=%d", s.StrategyParams.Leverage, grid.InitialValue, grid.InitialLeverage, int(grid.InitialValue*float64(grid.InitialLeverage)))
 			runTime = fmt.Sprintf("%s/%s", formatRunTime(int64(s.RunningTime)), formatRunTime(time.Now().Unix()-grid.BookTime/1000))
-			if s.StrategyParams.LowerLimit != grid.GridLowerLimit || s.StrategyParams.UpperLimit != grid.GridUpperLimit {
-				priceRange = fmt.Sprintf("S/G: %s/%s", formatPriceRange(s.StrategyParams.LowerLimit, s.StrategyParams.UpperLimit),
+			if s.StrategyParams.LowerLimitStr != grid.GridLowerLimit || s.StrategyParams.UpperLimitStr != grid.GridUpperLimit {
+				priceRange = fmt.Sprintf("S/G: %s/%s", formatPriceRange(s.StrategyParams.LowerLimitStr, s.StrategyParams.UpperLimitStr),
 					formatPriceRange(grid.GridLowerLimit, grid.GridUpperLimit))
 			}
 		}
