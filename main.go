@@ -13,6 +13,7 @@ import (
 	"github.com/go-co-op/gocron"
 	log "github.com/sirupsen/logrus"
 	"math"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -142,7 +143,11 @@ func tick() error {
 	utils.Time("Fetch grids")
 	toCancel := make(gsp.GridsToCancel)
 	count := 0
-	for _, grid := range gsp.GGrids.GridsByGid {
+	grids := utils.MapValues(gsp.GGrids.GridsByGid)
+	sort.Slice(grids, func(i, j int) bool {
+		return grids[i].GID < grids[j].GID
+	})
+	for _, grid := range grids {
 		discord.Infof(gsp.Display(nil, grid, "", count+1, len(gsp.GGrids.GridsByGid)))
 		count++
 		if !gsp.Bundle.Raw.Exists(grid.SID) {

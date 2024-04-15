@@ -303,7 +303,7 @@ func (grid *Grid) String() string {
 		return fmt.Sprintf("%s: %d/%d/%.1f%%", setType, currentSD, sdWhenOpen, ratio*100)
 	}
 	realized, _ := strconv.ParseFloat(grid.GridProfit, 64)
-	return fmt.Sprintf("*%d*, Realized: %.2f, Total: %.2f, =%.2f%%%s, %s, %s, %s",
+	return fmt.Sprintf("*%d*, Realized: %.2f, Total: %.2f, **%.2f%%**%s, %s, %s, %s",
 		grid.GID,
 		realized, grid.TotalPnl, grid.LastRoi*100, extendedProfit,
 		formatSDRatio(SDRaw), formatSDRatio(SDFiltered), formatSDRatio(SDPairSpecific))

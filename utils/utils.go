@@ -27,6 +27,14 @@ func FormatPair(symbol string) string {
 	return symbol[:len(symbol)-len(config.TheConfig.AssetSymbol)]
 }
 
+func MapValues[T comparable, U any](m map[T]U) []U {
+	values := make([]U, 0)
+	for _, v := range m {
+		values = append(values, v)
+	}
+	return values
+}
+
 func TillNextRefresh() time.Duration {
 	minutesTillNextHour := 60 - time.Now().Minute()
 	if minutesTillNextHour >= 30 {
