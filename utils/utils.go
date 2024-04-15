@@ -43,6 +43,20 @@ func TillNextRefresh() time.Duration {
 	return time.Duration(minutesTillNextHour+config.TheConfig.ShiftMinutesAfterHour+60) * time.Minute
 }
 
+func IntMin(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func IntMax(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
 var timing = time.Now()
 
 func Time(s string) {

@@ -40,26 +40,23 @@ type response struct {
 	request.BinanceBaseResponse
 }
 
-func GetLeverage(symbol string, initialAsset float64, maxLeverage int) int {
+func GetLeverage(symbol string, initialAsset float64) int {
 	brackets, err := bracketsCache.Get()
 	if err != nil {
-		return maxLeverage
+		return -1
 	}
 	s, ok := brackets.SymbolMap[symbol]
 	if !ok {
-		return maxLeverage
+		return -1
 	}
 	for _, b := range s.RiskBrackets {
 		if float64(b.MinOpenPosLeverage)*initialAsset <= float64(b.BracketNotionalCap) { // fits in this bracket
 			leverage := int(math.Min(float64(b.BracketNotionalCap)/initialAsset, float64(b.MaxOpenPosLeverage)))
-			discord.Infof("Notional Leverage: %d, Initial: %f, Max Leverage: %d", leverage, initialAsset, maxLeverage)
-			if leverage > maxLeverage {
-				return maxLeverage
-			}
+			discord.Infof("Notional Leverage: %d, Initial: %f", leverage, initialAsset)
 			return leverage
 		}
 	}
-	return maxLeverage
+	return -1
 }
 
 func getBrackets() (*response, error) {

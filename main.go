@@ -5,6 +5,7 @@ import (
 	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/gsp"
+	"BinanceTopStrategies/notional"
 	"BinanceTopStrategies/sdk"
 	"BinanceTopStrategies/utils"
 	"context"
@@ -246,16 +247,19 @@ func tick() error {
 		discord.Infof(gsp.Display(s, nil, "New", c+1, len(gsp.GetPool().Strategies)))
 		marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)
 		minInvestment, _ := strconv.ParseFloat(s.MinInvestment, 64)
-		leverage := s.MaxLeverage(invChunk)
+		notionalLeverage := notional.GetLeverage(s.Symbol, invChunk)
+		leverage := utils.IntMin(notionalLeverage, config.TheConfig.PreferredLeverage)
 		switch s.Direction {
 		case gsp.LONG:
 
 		case gsp.NEUTRAL:
 			minInvestPerLeverage := minInvestment * float64(s.StrategyParams.Leverage)
-			realMinInvestment := minInvestPerLeverage / float64(leverage)
-			if invChunk < realMinInvestment {
-				discord.Infof("Investment too low (%f/%f), Skip", invChunk, realMinInvestment)
+			minLeverage := int(math.Ceil(minInvestPerLeverage / invChunk))
+			if minLeverage > config.TheConfig.MaxLeverage {
+				discord.Infof("Investment too low %f, Min leverage %d, Skip", invChunk, minLeverage)
 				continue
+			} else if minLeverage > leverage {
+				leverage = minLeverage
 			}
 			if s.PriceDifference < 0.1 {
 				discord.Infof("Price difference too low for neutral, Skip")

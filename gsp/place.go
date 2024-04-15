@@ -3,7 +3,6 @@ package gsp
 import (
 	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/discord"
-	"BinanceTopStrategies/notional"
 	"BinanceTopStrategies/request"
 	"BinanceTopStrategies/utils"
 	"encoding/json"
@@ -46,15 +45,6 @@ type placeGridResponse struct {
 		UpdateTime       int64  `json:"updateTime"`
 	} `json:"data"`
 	request.BinanceBaseResponse
-}
-
-func (s Strategy) MaxLeverage(initialUSDT float64) int {
-	leverage := config.TheConfig.PreferredLeverage
-	if s.StrategyParams.Leverage < leverage {
-		leverage = s.StrategyParams.Leverage
-	}
-	leverage = notional.GetLeverage(s.Symbol, initialUSDT, leverage)
-	return leverage
 }
 
 func PlaceGrid(strategy Strategy, initialUSDT float64, leverage int) error {
