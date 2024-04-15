@@ -157,7 +157,8 @@ func tick() error {
 			}
 			checkStopLossNotPicked(grid, toCancel)
 		} else if !gsp.GetPool().Exists(grid.SID) {
-			toCancel.AddGridToCancel(grid, 0, "strategy not picked")
+			reasons := gsp.Bundle.Raw.StrategiesById[grid.SID].ReasonNotPicked
+			toCancel.AddGridToCancel(grid, 0, "strategy not picked "+strings.Join(reasons, ", "))
 			checkStopLossNotPicked(grid, toCancel)
 		}
 		gridTracking := grid.GetTracking()

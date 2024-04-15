@@ -133,6 +133,7 @@ func UpdateTopStrategiesWithRoi() error {
 				filtered = append(filtered, s)
 				prefix += "Open"
 			}
+			s.ReasonNotPicked = reasons
 			log.Info(prefix + Display(s, nil, "Found", c+1, len(strategies.StrategiesById)))
 		}
 	}
