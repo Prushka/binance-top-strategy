@@ -272,11 +272,11 @@ func tick() error {
 				discord.Infof("Price difference too low for neutral, Skip")
 				continue
 			}
-			if marketPrice < s.StrategyParams.LowerLimit+gap*config.TheConfig.NeutralMinRangeDiff {
+			if marketPrice < s.StrategyParams.LowerLimit+gap*config.TheConfig.NeutralRangeDiff {
 				discord.Infof("Market Price too low for neutral, Skip")
 				continue
 			}
-			if marketPrice > s.StrategyParams.UpperLimit-gap*config.TheConfig.NeutralMinRangeDiff {
+			if marketPrice > s.StrategyParams.UpperLimit-gap*config.TheConfig.NeutralRangeDiff {
 				discord.Infof("Market Price too high for neutral, Skip")
 				continue
 			}
