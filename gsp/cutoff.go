@@ -77,21 +77,18 @@ func UpdateTopStrategiesWithRoi() error {
 			s.last9HrRoiPerHr = s.Rois.GetRoiPerHr(9 * time.Hour)
 			s.last6HrRoiPerHr = s.Rois.GetRoiPerHr(6 * time.Hour)
 			s.last3HrRoiPerHr = s.Rois.GetRoiPerHr(3 * time.Hour)
-			s.lastNHrNoDip = s.Rois.NoDip(time.Duration(config.TheConfig.LastNHoursNoDips) * time.Hour)
-			s.lastNHrAllPositive = s.Rois.AllPositive(time.Duration(config.TheConfig.LastNHoursAllPositive)*time.Hour, 0)
+			s.lastNHrNoDip = s.Rois.AllPositive(time.Duration(config.TheConfig.LastNHoursNoDips)*time.Hour, 0)
+			s.lastNHrAllPositive = s.Rois.AllPositive(time.Duration(config.TheConfig.LastNHoursAllPositive)*time.Hour, 0.001)
 			s.roiPerHour = (s.roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
 			//marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)
 			prefix := ""
 			if s.lastDayRoiChange > 0.1 &&
 				s.last3HrRoiChange > 0.03 &&
 				s.lastHrRoiChange > 0.016 &&
-				s.Rois.AllPositive(3*time.Hour, 0.01) &&
 				s.lastDayRoiPerHr > 0.01 &&
 				s.last12HrRoiPerHr > 0.014 &&
 				s.priceDifference > 0.05 &&
-				//lower < marketPrice && upper > marketPrice &&
-				//((s.Direction == SHORT && s.StrategyParams.StopUpperLimit != nil) || (s.Direction == LONG && s.StrategyParams.StopLowerLimit != nil) || (s.Direction == NEUTRAL && s.StrategyParams.StopLowerLimit != nil && s.StrategyParams.StopUpperLimit != nil)) &&
-				s.lastNHrAllPositive {
+				s.lastNHrNoDip && s.lastNHrAllPositive {
 				// TODO: price difference can shrink with trailing, e.g., 5.xx% -> 4.xx%
 				if GGrids.ExistingSIDs.Contains(s.SID) {
 					grid := GGrids.GetGridBySID(s.SID)

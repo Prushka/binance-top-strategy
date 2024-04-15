@@ -112,20 +112,6 @@ func (roi StrategyRoi) GetRoiPerHr(t time.Duration) float64 {
 	return (latestRoi - roi[len(roi)-1].Roi) / (float64(roi[0].Time-roi[len(roi)-1].Time) / 3600)
 }
 
-func (roi StrategyRoi) NoDip(t time.Duration) bool {
-	latestTimestamp := roi[0].Time
-	l := latestTimestamp - int64(t.Seconds())
-	for c, r := range roi {
-		if r.Time < l {
-			return true
-		}
-		if c > 0 && roi[c-1].Roi-r.Roi < 0 {
-			return false
-		}
-	}
-	return true
-}
-
 func (roi StrategyRoi) AllPositive(t time.Duration, cutoff float64) bool {
 	latestTimestamp := roi[0].Time
 	l := latestTimestamp - int64(t.Seconds())
@@ -133,7 +119,7 @@ func (roi StrategyRoi) AllPositive(t time.Duration, cutoff float64) bool {
 		if r.Time < l {
 			return true
 		}
-		if c > 0 && roi[c-1].Roi-r.Roi <= cutoff {
+		if c > 0 && roi[c-1].Roi-r.Roi < cutoff {
 			return false
 		}
 	}
