@@ -78,7 +78,7 @@ func UpdateTopStrategiesWithRoi() error {
 			s.last6HrRoiPerHr = s.Rois.GetRoiPerHr(6 * time.Hour)
 			s.last3HrRoiPerHr = s.Rois.GetRoiPerHr(3 * time.Hour)
 			s.lastNHrNoDip = s.Rois.AllPositive(time.Duration(config.TheConfig.LastNHoursNoDips)*time.Hour, 0)
-			s.lastNHrAllPositive = s.Rois.AllPositive(time.Duration(config.TheConfig.LastNHoursAllPositive)*time.Hour, 0.001)
+			s.lastNHrAllPositive = s.Rois.AllPositive(time.Duration(config.TheConfig.LastNHoursAllPositive)*time.Hour, 0.005)
 			s.roiPerHour = (s.roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
 			//marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)
 			prefix := ""
@@ -87,6 +87,7 @@ func UpdateTopStrategiesWithRoi() error {
 				s.lastHrRoiChange > 0.016 &&
 				s.lastDayRoiPerHr > 0.01 &&
 				s.last12HrRoiPerHr > 0.014 &&
+				s.Rois.AllPositive(3*time.Hour, 0.01) &&
 				s.priceDifference > 0.05 &&
 				s.lastNHrNoDip && s.lastNHrAllPositive {
 				// TODO: price difference can shrink with trailing, e.g., 5.xx% -> 4.xx%
