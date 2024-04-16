@@ -265,7 +265,7 @@ func (s Strategy) String() string {
 	pnl, _ := strconv.ParseFloat(s.Pnl, 64)
 	ranking := ""
 	if Bundle != nil {
-		ranking = fmt.Sprintf(", Rank: Raw: %d, FilterdSD: %d", Bundle.Raw.findStrategyRanking(s),
+		ranking = fmt.Sprintf(", Raw: %d, FilterdSD: %d", Bundle.Raw.findStrategyRanking(s),
 			GetPool().findStrategyRanking(s))
 	}
 	return fmt.Sprintf("Cpy: %d, Mch: [%d, %d], PnL: %.2f, Rois: %s, [H%%, A/Day/15H/12H/9H/6H/3H: %.1f%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], [A/D/3/2/1H: %s%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s%s",

@@ -121,8 +121,8 @@ func UpdateTopStrategiesWithRoi() error {
 			if GGrids.ExistingSIDs.Contains(s.SID) {
 				grid := GGrids.GetGridBySID(s.SID)
 				_, localHighest := grid.GetTracking().GetLocalWithin(1 * time.Hour)
-				if grid.GetRunTime() > 1*time.Hour && localHighest < 0.03 {
-					reason := "Grid ROI < 0.03"
+				if grid.GetRunTime() > 1*time.Hour && localHighest < 0.01 {
+					reason := "Grid ROI < 0.01"
 					blacklist.AddSID(s.SID, utils.TillNextRefresh(), reason)
 					reasons = append(reasons, reason)
 					picked = false
