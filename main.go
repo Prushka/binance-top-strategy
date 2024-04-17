@@ -268,7 +268,7 @@ func tick() error {
 			} else if minLeverage > leverage {
 				leverage = minLeverage
 			}
-			if s.PriceDifference < 0.07 {
+			if s.PriceDifference < 0.05 {
 				discord.Infof("Price difference too low for neutral, Skip")
 				continue
 			}
