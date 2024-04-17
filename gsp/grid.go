@@ -276,6 +276,13 @@ func (grid *Grid) GetRunTime() time.Duration {
 	return time.Duration(time.Now().Unix()-grid.BookTime/1000) * time.Second
 }
 
+func (grid *Grid) MarketPriceWithinRange() bool {
+	marketPrice, _ := sdk.GetSessionSymbolPrice(grid.Symbol)
+	lowerLimit, _ := strconv.ParseFloat(grid.GridLowerLimit, 64)
+	upperLimit, _ := strconv.ParseFloat(grid.GridUpperLimit, 64)
+	return marketPrice > lowerLimit && marketPrice < upperLimit
+}
+
 func (grid *Grid) String() string {
 	tracking := grid.GetTracking()
 	extendedProfit := ""

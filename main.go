@@ -166,7 +166,7 @@ func tick() error {
 			checkStopLossNotPicked(grid, toCancel)
 		}
 		gridTracking := grid.GetTracking()
-		if time.Since(gridTracking.TimeLastChange) > time.Duration(config.TheConfig.CancelNoChangeMinutes)*time.Minute {
+		if time.Since(gridTracking.TimeLastChange) > time.Duration(config.TheConfig.CancelNoChangeMinutes)*time.Minute && !grid.MarketPriceWithinRange() {
 			reason := fmt.Sprintf("no change, %s", utils.ShortDur(time.Since(gridTracking.TimeLastChange).Round(time.Second)))
 			blacklist.AddSID(grid.SID, 10*time.Minute, reason)
 			toCancel.AddGridToCancel(grid, 0, reason)
