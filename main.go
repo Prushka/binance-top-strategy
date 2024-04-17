@@ -291,7 +291,7 @@ func tick() error {
 			triggerPrice, _ := strconv.ParseFloat(*s.StrategyParams.TriggerPrice, 64)
 			marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)
 			diff := math.Abs((triggerPrice - marketPrice) / marketPrice)
-			if diff > 0.08 {
+			if diff > config.TheConfig.TriggerRangeDiff {
 				discord.Infof("Trigger Price difference too high, Skip, Trigger: %f, Market: %f, Diff: %f",
 					triggerPrice, marketPrice, diff)
 				continue

@@ -54,6 +54,7 @@ type Config struct {
 	NeutralRangeDiff                  float64   `env:"NEUTRAL_RANGE_DIFF" envDefault:"0.2"`
 	ShortRangeDiff                    float64   `env:"SHORT_RANGE_DIFF" envDefault:"0.2"`
 	LongRangeDiff                     float64   `env:"LONG_RANGE_DIFF" envDefault:"0.2"`
+	TriggerRangeDiff                  float64   `env:"TRIGGER_RANGE_DIFF" envDefault:"0.04"`
 }
 
 var TheConfig = &Config{}
