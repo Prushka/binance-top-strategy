@@ -43,14 +43,14 @@ type Config struct {
 	MinInvestmentPerChunk             float64   `env:"MIN_INVESTMENT_PER_CHUNK" envDefault:"6"`
 	MaxCancelLossStrategyDeleted      float64   `env:"MAX_CANCEL_LOSS_STRATEGY_DELETED" envDefault:"0"`
 	Mode                              string    `env:"MODE" envDefault:"trading"`
-	PreferredLeverage                 int       `env:"PREFERRED_LEVERAGE" envDefault:"30"`
-	MaxLeverage                       int       `env:"MAX_LEVERAGE" envDefault:"35"`
+	PreferredLeverage                 int       `env:"PREFERRED_LEVERAGE" envDefault:"20"`
+	MaxLeverage                       int       `env:"MAX_LEVERAGE" envDefault:"28"`
 	KeepTopNStrategiesOfSameSymbol    int       `env:"KEEP_TOP_N_STRATEGIES_OF_SAME_SYMBOL" envDefault:"99"`
 	Last3HrWeight                     float64   `env:"LAST_3_HR_WEIGHT" envDefault:"0"`
 	Last2HrWeight                     float64   `env:"LAST_2_HR_WEIGHT" envDefault:"1"`
 	LastHrWeight                      float64   `env:"LAST_1_HR_WEIGHT" envDefault:"0"`
 	StopLossMarkForRemoval            []float64 `env:"STOP_LOSS_MARK_FOR_REMOVAL" envDefault:"-0.9,-1.1"`
-	StopLossMarkForRemovalSlack       []float64 `env:"STOP_LOSS_MARK_FOR_REMOVAL_SLACK" envDefault:"0.5,-0.2"`
+	StopLossMarkForRemovalSlack       []float64 `env:"STOP_LOSS_MARK_FOR_REMOVAL_SLACK" envDefault:"0.5,0.2"`
 	NeutralRangeDiff                  float64   `env:"NEUTRAL_RANGE_DIFF" envDefault:"0.2"`
 	ShortRangeDiff                    float64   `env:"SHORT_RANGE_DIFF" envDefault:"0.2"`
 	LongRangeDiff                     float64   `env:"LONG_RANGE_DIFF" envDefault:"0.2"`
