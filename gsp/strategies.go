@@ -417,8 +417,8 @@ func mergeStrategies(strategyType int, sps ...StrategyQuery) (*TrackedStrategies
 func getTopStrategies(strategyType int, symbol string) (*TrackedStrategies, error) {
 	merged, err := mergeStrategies(strategyType,
 		StrategyQuery{Sort: SortByRoi, RuntimeMin: 5 * time.Hour, RuntimeMax: 24 * time.Hour, Symbol: symbol},
-		StrategyQuery{Sort: SortByRoi, RuntimeMin: 24 * time.Hour, RuntimeMax: 48 * time.Hour, Symbol: symbol},
-		StrategyQuery{Sort: SortByRoi, RuntimeMin: 48 * time.Hour, RuntimeMax: 168 * time.Hour, Symbol: symbol},
+		StrategyQuery{Sort: SortByRoi, RuntimeMin: 24 * time.Hour, RuntimeMax: 34 * time.Hour, Symbol: symbol},
+		//StrategyQuery{Sort: SortByRoi, RuntimeMin: 48 * time.Hour, RuntimeMax: 168 * time.Hour, Symbol: symbol},
 		//StrategyQuery{Sort: SortByRoi, RuntimeMin: 168 * time.Hour, RuntimeMax: 360 * time.Hour, Symbol: symbol, Count: 60},
 		//SortPair{Sort: SortByRoi, Direction: IntPointer(SHORT), Count: 15},
 		//SortPair{Sort: SortByRoi, Direction: IntPointer(NEUTRAL), Count: 15},
