@@ -204,6 +204,9 @@ func tick() error {
 	chunksInt := config.TheConfig.MaxChunks - gridsOpen
 	chunks := float64(config.TheConfig.MaxChunks - gridsOpen)
 	invChunk := usdt / chunks
+	if config.TheConfig.MaxPerChunk != -1 {
+		invChunk = math.Min(usdt/chunks, config.TheConfig.MaxPerChunk)
+	}
 	idealInvChunk := (usdt + gsp.GGrids.TotalGridPnl + gsp.GGrids.TotalGridInitial) / float64(config.TheConfig.MaxChunks)
 	log.Infof("Ideal Investment: %f, allowed Investment: %f, missing %f chunks", idealInvChunk, invChunk, chunks)
 	if invChunk > idealInvChunk {
