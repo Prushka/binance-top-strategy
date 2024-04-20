@@ -250,7 +250,6 @@ func tick() error {
 			continue
 		}
 
-		discord.Infof(gsp.Display(s, nil, "New", c+1, len(gsp.GetPool().Strategies)))
 		marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)
 		minInvestment, _ := strconv.ParseFloat(s.MinInvestment, 64)
 		notionalLeverage := notional.GetLeverage(s.Symbol, invChunk)
@@ -311,6 +310,7 @@ func tick() error {
 			continue
 		}
 
+		discord.Infof(gsp.Display(s, nil, "New", c+1, len(gsp.GetPool().Strategies)))
 		errr := gsp.PlaceGrid(*s, invChunk, leverage)
 		if config.TheConfig.Paper {
 
