@@ -41,7 +41,11 @@ func Elect() []UserMetrics {
 	for user, strats := range TheRankingStore.StrategiesByUser {
 		score := 0.0
 		for _, s := range strats {
-			if s.TimeNotFound.IsZero() {
+			if s.TimeNotFound.IsZero() || len(s.Rois) == 0 {
+				continue
+			}
+			latestTime := time.Unix(s.Rois[0].Time, 0)
+			if time.Now().Sub(latestTime) <= 65*time.Minute {
 				continue
 			}
 			if s.Roi < 0 {

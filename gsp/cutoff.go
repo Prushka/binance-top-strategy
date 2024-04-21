@@ -148,7 +148,6 @@ func UpdateTopStrategiesWithRoi() error {
 		FilteredSortedBySD:     sortBySDCount(filtered).toTrackedStrategies(),
 		FilteredSortedByMetric: filtered.toTrackedStrategies(),
 		SDCountPairSpecific:    make(SDCount)}
-	discord.Infof("* New: " + strategies.String())
 	discord.Infof("* Open: " + GetPool().String())
 	filteredSymbols := mapset.NewSetFromMapKeys(GetPool().SymbolCount)
 	var gridSymbols mapset.Set[string]
