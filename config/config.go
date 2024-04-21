@@ -75,7 +75,6 @@ func Init() {
 	if err != nil {
 		log.Fatalf("error parsing config: %v", err)
 	}
-	//	get all fields with tag redis set
 	redisFields := make(map[string]reflect.StructField)
 	for i := 0; i < reflect.ValueOf(TheConfig).Elem().NumField(); i++ {
 		field := reflect.ValueOf(TheConfig).Elem().Field(i)

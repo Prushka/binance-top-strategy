@@ -14,6 +14,7 @@ const (
 	GridStatesFileName     = "grid_states.json"
 	BlacklistFileName      = "blacklist.json"
 	MarkForRemovalFileName = "mark_for_removal.json"
+	RankingStoreFileName   = "ranking_store.json"
 )
 
 type Registry struct {
@@ -48,6 +49,7 @@ var registries = []Registry{
 	{FileName: GridStatesFileName, DataPtr: &gsp.TheGridEnv},
 	{FileName: BlacklistFileName, DataPtr: &blacklist.TheBlacklist},
 	{FileName: MarkForRemovalFileName, DataPtr: &gsp.ForRemoval},
+	{FileName: RankingStoreFileName, DataPtr: &gsp.TheRankingStore},
 }
 
 func Init() {

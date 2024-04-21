@@ -42,31 +42,33 @@ type StrategiesResponse struct {
 
 type Strategy struct {
 	Rois               StrategyRoi
-	Symbol             string `json:"symbol"`
-	CopyCount          int    `json:"copyCount"`
-	Roi                string `json:"roi"`
-	Pnl                string `json:"pnl"`
-	RunningTime        int    `json:"runningTime"`
-	SID                int    `json:"strategyId"`
-	StrategyType       int    `json:"strategyType"`
-	Direction          int    `json:"direction"`
-	UserID             int    `json:"userId"`
-	roi                float64
-	lastDayRoiChange   float64
-	last3HrRoiChange   float64
-	last2HrRoiChange   float64
-	lastHrRoiChange    float64
-	lastDayRoiPerHr    float64
-	last15HrRoiPerHr   float64
-	last12HrRoiPerHr   float64
-	last9HrRoiPerHr    float64
-	last6HrRoiPerHr    float64
-	last3HrRoiPerHr    float64
-	lastNHrNoDip       bool
-	lastNHrAllPositive bool
-	roiPerHour         float64
+	Symbol             string  `json:"symbol"`
+	CopyCount          int     `json:"copyCount"`
+	RoiStr             string  `json:"roi"`
+	Pnl                string  `json:"pnl"`
+	RunningTime        int     `json:"runningTime"`
+	SID                int     `json:"strategyId"`
+	StrategyType       int     `json:"strategyType"`
+	Direction          int     `json:"direction"`
+	UserID             int     `json:"userId"`
+	Roi                float64 `json:"-"`
+	LastDayRoiChange   float64
+	Last3HrRoiChange   float64
+	Last2HrRoiChange   float64
+	LastHrRoiChange    float64
+	LastDayRoiPerHr    float64
+	Last15HrRoiPerHr   float64
+	Last12HrRoiPerHr   float64
+	Last9HrRoiPerHr    float64
+	Last6HrRoiPerHr    float64
+	Last3HrRoiPerHr    float64
+	LastNHrNoDip       bool
+	LastNHrAllPositive bool
+	RoiPerHour         float64
 	PriceDifference    float64
 	ReasonNotPicked    []string
+	TimeDiscovered     time.Time
+	TimeNotFound       time.Time
 	StrategyParams     struct {
 		Type           string  `json:"type"`
 		LowerLimitStr  string  `json:"lowerLimit"`
@@ -158,7 +160,7 @@ func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 		} else {
 			sss.Neutrals.Add(s.SID)
 		}
-		roi, _ := strconv.ParseFloat(s.Roi, 64)
+		roi, _ := strconv.ParseFloat(s.RoiStr, 64)
 		pnl, _ := strconv.ParseFloat(s.Pnl, 64)
 		if sss.Highest.CopyCount == nil || s.CopyCount > *sss.Highest.CopyCount {
 			sss.Highest.CopyCount = &s.CopyCount
@@ -247,9 +249,9 @@ func (t *TrackedStrategies) String() string {
 		tbl.AddRow(utils.FormatPair(symbol), fmt.Sprintf("%d", directionMap["LONG"]),
 			fmt.Sprintf("%d", directionMap["SHORT"]), fmt.Sprintf("%d", directionMap["NEUTRAL"]))
 	}
-	return fmt.Sprintf("%d, H: %v, L: %v\n```\n%s```",
+	return fmt.Sprintf("%d, H: %v, L: %v\n```\n%s```\n%v",
 		len(t.StrategiesById), utils.AsJson(t.Highest), utils.AsJson(t.Lowest),
-		tbl.Draw())
+		tbl.Draw(), t.UsersWithMoreThan1Strategy)
 }
 
 func (t *TrackedStrategies) Exists(id int) bool {
@@ -270,13 +272,13 @@ func (s Strategy) String() string {
 	}
 	return fmt.Sprintf("Cpy: %d, Mch: [%d, %d], PnL: %.2f, Rois: %s, [H%%, A/Day/15H/12H/9H/6H/3H: %.1f%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], [A/D/3/2/1H: %s%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s%s",
 		s.CopyCount, s.MatchedCount, s.LatestMatchedCount, pnl, s.Rois.lastNRecords(config.TheConfig.LastNHoursNoDips),
-		s.roiPerHour*100, s.lastDayRoiPerHr*100, s.last15HrRoiPerHr*100, s.last12HrRoiPerHr*100,
-		s.last9HrRoiPerHr*100, s.last6HrRoiPerHr*100, s.last3HrRoiPerHr*100, s.Roi,
-		s.lastDayRoiChange*100, s.last3HrRoiChange*100, s.last2HrRoiChange*100, s.lastHrRoiChange*100, s.MinInvestment, ranking)
+		s.RoiPerHour*100, s.LastDayRoiPerHr*100, s.Last15HrRoiPerHr*100, s.Last12HrRoiPerHr*100,
+		s.Last9HrRoiPerHr*100, s.Last6HrRoiPerHr*100, s.Last3HrRoiPerHr*100, s.RoiStr,
+		s.LastDayRoiChange*100, s.Last3HrRoiChange*100, s.Last2HrRoiChange*100, s.LastHrRoiChange*100, s.MinInvestment, ranking)
 }
 
 func (s Strategy) GetMetric() float64 {
-	return s.last3HrRoiPerHr
+	return s.Last3HrRoiPerHr
 }
 
 func (s Strategy) SD() string {
@@ -394,10 +396,10 @@ func mergeStrategies(strategyType int, sps ...StrategyQuery) (*TrackedStrategies
 		if sp.Count == 0 {
 			sp.Count = config.TheConfig.StrategiesCount
 		}
-		if sp.RuntimeMin == 0 {
+		if sp.RuntimeMin == -1 {
 			sp.RuntimeMin = time.Duration(config.TheConfig.RuntimeMinHours) * time.Hour
 		}
-		if sp.RuntimeMax == 0 {
+		if sp.RuntimeMax == -1 {
 			sp.RuntimeMax = time.Duration(config.TheConfig.RuntimeMaxHours) * time.Hour
 		}
 		by, err := _getTopStrategies(sp.Sort, sp.Direction, strategyType, sp.RuntimeMin, sp.RuntimeMax, sp.Count, sp.Symbol)
@@ -407,8 +409,8 @@ func mergeStrategies(strategyType int, sps ...StrategyQuery) (*TrackedStrategies
 		sss = append(sss, by...)
 	}
 	sort.Slice(sss, func(i, j int) bool {
-		roiI, _ := strconv.ParseFloat(sss[i].Roi, 64)
-		roiJ, _ := strconv.ParseFloat(sss[j].Roi, 64)
+		roiI, _ := strconv.ParseFloat(sss[i].RoiStr, 64)
+		roiJ, _ := strconv.ParseFloat(sss[j].RoiStr, 64)
 		return roiI > roiJ
 	})
 	return sss.toTrackedStrategies(), nil
@@ -416,8 +418,9 @@ func mergeStrategies(strategyType int, sps ...StrategyQuery) (*TrackedStrategies
 
 func getTopStrategies(strategyType int, symbol string) (*TrackedStrategies, error) {
 	merged, err := mergeStrategies(strategyType,
-		StrategyQuery{Sort: SortByRoi, RuntimeMin: 5 * time.Hour, RuntimeMax: 24 * time.Hour, Symbol: symbol},
-		StrategyQuery{Sort: SortByRoi, RuntimeMin: 24 * time.Hour, RuntimeMax: 34 * time.Hour, Symbol: symbol},
+		StrategyQuery{Sort: SortByRoi, RuntimeMin: 0, RuntimeMax: 2 * time.Hour, Symbol: symbol},
+		//StrategyQuery{Sort: SortByRoi, RuntimeMin: 5 * time.Hour, RuntimeMax: 24 * time.Hour, Symbol: symbol},
+		//StrategyQuery{Sort: SortByRoi, RuntimeMin: 24 * time.Hour, RuntimeMax: 34 * time.Hour, Symbol: symbol},
 		//StrategyQuery{Sort: SortByRoi, RuntimeMin: 48 * time.Hour, RuntimeMax: 168 * time.Hour, Symbol: symbol},
 		//StrategyQuery{Sort: SortByRoi, RuntimeMin: 168 * time.Hour, RuntimeMax: 360 * time.Hour, Symbol: symbol, Count: 60},
 		//SortPair{Sort: SortByRoi, Direction: IntPointer(SHORT), Count: 15},
@@ -443,8 +446,8 @@ func _getTopStrategies(sort string, direction *int, strategyType int, runningTim
 		Direction:      direction,
 		Symbol:         symbol,
 	}
-	strategies, res, err := request.PrivateRequest(
-		"https://www.binance.com/bapi/futures/v1/public/future/common/strategy/landing-page/queryTopStrategy", "POST",
+	strategies, res, err := request.Request(
+		"https://www.binance.com/bapi/futures/v1/public/future/common/strategy/landing-page/queryTopStrategy",
 		query, &StrategiesResponse{})
 	// this API returns different results based on if user agents or another header is passed to it
 	// if no such header is passed to it, it returns grids count min 2 (high risk)

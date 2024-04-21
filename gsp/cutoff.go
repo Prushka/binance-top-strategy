@@ -51,6 +51,8 @@ func UpdateTopStrategiesWithRoi() error {
 		return err
 	}
 	filtered := make(Strategies, 0)
+
+	discord.Infof("* New: " + strategies.String())
 	for c, s := range strategies.Strategies {
 		id := s.SID
 		roi, err := RoisCache.Get(fmt.Sprintf("%d-%d", id, s.UserID))
@@ -58,47 +60,47 @@ func UpdateTopStrategiesWithRoi() error {
 			return err
 		}
 		s.Rois = roi
-		s.roi, _ = strconv.ParseFloat(s.Roi, 64)
-		s.roi /= 100
+		s.Roi, _ = strconv.ParseFloat(s.RoiStr, 64)
+		s.Roi /= 100
 		s.StrategyParams.LowerLimit, _ = strconv.ParseFloat(s.StrategyParams.LowerLimitStr, 64)
 		s.StrategyParams.UpperLimit, _ = strconv.ParseFloat(s.StrategyParams.UpperLimitStr, 64)
 		s.PriceDifference = s.StrategyParams.UpperLimit/s.StrategyParams.LowerLimit - 1
 		GStrats[s.SID] = s
 		if len(s.Rois) > 1 {
-			s.roi = s.Rois[0].Roi
-			s.lastDayRoiChange = s.Rois.GetRoiChange(24 * time.Hour)
-			s.last3HrRoiChange = s.Rois.GetRoiChange(3 * time.Hour)
-			s.last2HrRoiChange = s.Rois.GetRoiChange(2 * time.Hour)
-			s.lastHrRoiChange = s.Rois.GetRoiChange(1 * time.Hour)
-			s.lastDayRoiPerHr = s.Rois.GetRoiPerHr(24 * time.Hour)
-			s.last15HrRoiPerHr = s.Rois.GetRoiPerHr(15 * time.Hour)
-			s.last12HrRoiPerHr = s.Rois.GetRoiPerHr(12 * time.Hour)
-			s.last9HrRoiPerHr = s.Rois.GetRoiPerHr(9 * time.Hour)
-			s.last6HrRoiPerHr = s.Rois.GetRoiPerHr(6 * time.Hour)
-			s.last3HrRoiPerHr = s.Rois.GetRoiPerHr(3 * time.Hour)
-			s.lastNHrNoDip = s.Rois.AllPositive(time.Duration(config.TheConfig.LastNHoursNoDips)*time.Hour, 0)
-			s.lastNHrAllPositive = s.Rois.AllPositive(time.Duration(config.TheConfig.LastNHoursAllPositive)*time.Hour, 0.005)
-			s.roiPerHour = (s.roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
+			s.Roi = s.Rois[0].Roi
+			s.LastDayRoiChange = s.Rois.GetRoiChange(24 * time.Hour)
+			s.Last3HrRoiChange = s.Rois.GetRoiChange(3 * time.Hour)
+			s.Last2HrRoiChange = s.Rois.GetRoiChange(2 * time.Hour)
+			s.LastHrRoiChange = s.Rois.GetRoiChange(1 * time.Hour)
+			s.LastDayRoiPerHr = s.Rois.GetRoiPerHr(24 * time.Hour)
+			s.Last15HrRoiPerHr = s.Rois.GetRoiPerHr(15 * time.Hour)
+			s.Last12HrRoiPerHr = s.Rois.GetRoiPerHr(12 * time.Hour)
+			s.Last9HrRoiPerHr = s.Rois.GetRoiPerHr(9 * time.Hour)
+			s.Last6HrRoiPerHr = s.Rois.GetRoiPerHr(6 * time.Hour)
+			s.Last3HrRoiPerHr = s.Rois.GetRoiPerHr(3 * time.Hour)
+			s.LastNHrNoDip = s.Rois.AllPositive(time.Duration(config.TheConfig.LastNHoursNoDips)*time.Hour, 0)
+			s.LastNHrAllPositive = s.Rois.AllPositive(time.Duration(config.TheConfig.LastNHoursAllPositive)*time.Hour, 0.005)
+			s.RoiPerHour = (s.Roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
 			prefix := ""
 			reasons := make([]string, 0)
 			picked := true
-			if s.lastDayRoiChange <= 0.1 {
+			if s.LastDayRoiChange <= 0.1 {
 				reasons = append(reasons, "Last Day ROI <= 0.1")
 				picked = false
 			}
-			if s.last3HrRoiChange <= 0.03 {
+			if s.Last3HrRoiChange <= 0.03 {
 				reasons = append(reasons, "Last 3Hr ROI <= 0.03")
 				picked = false
 			}
-			if s.lastHrRoiChange <= 0.016 {
+			if s.LastHrRoiChange <= 0.016 {
 				reasons = append(reasons, "Last Hr ROI <= 0.016")
 				picked = false
 			}
-			if s.lastDayRoiPerHr <= 0.01 {
+			if s.LastDayRoiPerHr <= 0.01 {
 				reasons = append(reasons, "Last Day ROI/Hr <= 0.01")
 				picked = false
 			}
-			if s.last12HrRoiPerHr <= 0.014 {
+			if s.Last12HrRoiPerHr <= 0.014 {
 				reasons = append(reasons, "Last 12Hr ROI/Hr <= 0.014")
 				picked = false
 			}
@@ -110,11 +112,11 @@ func UpdateTopStrategiesWithRoi() error {
 				reasons = append(reasons, "Price difference <= 0.045")
 				picked = false
 			}
-			if !s.lastNHrNoDip {
+			if !s.LastNHrNoDip {
 				reasons = append(reasons, "Last N Hr has dip")
 				picked = false
 			}
-			if !s.lastNHrAllPositive {
+			if !s.LastNHrAllPositive {
 				reasons = append(reasons, "Last N Hr not all positive")
 				picked = false
 			}
@@ -135,6 +137,7 @@ func UpdateTopStrategiesWithRoi() error {
 			s.ReasonNotPicked = reasons
 			log.Info(prefix + Display(s, nil, "Found", c+1, len(strategies.StrategiesById)))
 		}
+		s.addToRankingStore()
 	}
 	sort.Slice(filtered, func(i, j int) bool {
 		I := filtered[i].GetMetric()
@@ -145,6 +148,7 @@ func UpdateTopStrategiesWithRoi() error {
 		FilteredSortedBySD:     sortBySDCount(filtered).toTrackedStrategies(),
 		FilteredSortedByMetric: filtered.toTrackedStrategies(),
 		SDCountPairSpecific:    make(SDCount)}
+	discord.Infof("* New: " + strategies.String())
 	discord.Infof("* Open: " + GetPool().String())
 	filteredSymbols := mapset.NewSetFromMapKeys(GetPool().SymbolCount)
 	var gridSymbols mapset.Set[string]
