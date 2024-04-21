@@ -417,22 +417,21 @@ func mergeStrategies(strategyType int, sps ...StrategyQuery) (*TrackedStrategies
 }
 
 func getTopStrategies(strategyType int, symbol string) (*TrackedStrategies, error) {
-	merged, err := mergeStrategies(strategyType,
-		StrategyQuery{Sort: SortByRoi, RuntimeMin: 0, RuntimeMax: 2 * time.Hour, Symbol: symbol},
-		StrategyQuery{Sort: SortByRoi, RuntimeMin: 2, RuntimeMax: 4 * time.Hour, Symbol: symbol},
-		StrategyQuery{Sort: SortByRoi, RuntimeMin: 4, RuntimeMax: 6 * time.Hour, Symbol: symbol},
-		StrategyQuery{Sort: SortByRoi, RuntimeMin: 6, RuntimeMax: 8 * time.Hour, Symbol: symbol},
-		StrategyQuery{Sort: SortByRoi, RuntimeMin: 8, RuntimeMax: 10 * time.Hour, Symbol: symbol},
-		StrategyQuery{Sort: SortByRoi, RuntimeMin: 10, RuntimeMax: 12 * time.Hour, Symbol: symbol},
-		//StrategyQuery{Sort: SortByRoi, RuntimeMin: 5 * time.Hour, RuntimeMax: 24 * time.Hour, Symbol: symbol},
-		//StrategyQuery{Sort: SortByRoi, RuntimeMin: 24 * time.Hour, RuntimeMax: 34 * time.Hour, Symbol: symbol},
-		//StrategyQuery{Sort: SortByRoi, RuntimeMin: 48 * time.Hour, RuntimeMax: 168 * time.Hour, Symbol: symbol},
-		//StrategyQuery{Sort: SortByRoi, RuntimeMin: 168 * time.Hour, RuntimeMax: 360 * time.Hour, Symbol: symbol, Count: 60},
-		//SortPair{Sort: SortByRoi, Direction: IntPointer(SHORT), Count: 15},
-		//SortPair{Sort: SortByRoi, Direction: IntPointer(NEUTRAL), Count: 15},
-		//SortPair{Sort: SortByMatched},
-		//SortPair{Sort: SortByPnl},
-		//SortPair{Sort: SortByCopyCount},
+	var queries []StrategyQuery
+	for i := 0; i < 48; i += 2 {
+		queries = append(queries, StrategyQuery{Sort: SortByRoi, RuntimeMin: time.Duration(i) * time.Hour, RuntimeMax: time.Duration(i+2) * time.Hour, Symbol: symbol})
+
+	}
+	merged, err := mergeStrategies(strategyType, queries...,
+	//StrategyQuery{Sort: SortByRoi, RuntimeMin: 5 * time.Hour, RuntimeMax: 24 * time.Hour, Symbol: symbol},
+	//StrategyQuery{Sort: SortByRoi, RuntimeMin: 24 * time.Hour, RuntimeMax: 34 * time.Hour, Symbol: symbol},
+	//StrategyQuery{Sort: SortByRoi, RuntimeMin: 48 * time.Hour, RuntimeMax: 168 * time.Hour, Symbol: symbol},
+	//StrategyQuery{Sort: SortByRoi, RuntimeMin: 168 * time.Hour, RuntimeMax: 360 * time.Hour, Symbol: symbol, Count: 60},
+	//SortPair{Sort: SortByRoi, Direction: IntPointer(SHORT), Count: 15},
+	//SortPair{Sort: SortByRoi, Direction: IntPointer(NEUTRAL), Count: 15},
+	//SortPair{Sort: SortByMatched},
+	//SortPair{Sort: SortByPnl},
+	//SortPair{Sort: SortByCopyCount},
 	)
 	if err != nil {
 		return nil, err
