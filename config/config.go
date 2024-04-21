@@ -1,15 +1,23 @@
 package config
 
 import (
+	"BinanceTopStrategies/cleanup"
+	"context"
 	"github.com/caarlos0/env"
+	"github.com/redis/rueidis"
 	log "github.com/sirupsen/logrus"
+	"os"
+	"reflect"
+	"strings"
 )
 
 type Config struct {
+	Redis                             string    `env:"REDIS" envDefault:"localhost:6379"`
+	RedisPassword                     string    `env:"REDIS_PASSWORD" envDefault:""`
 	ApiKey                            string    `env:"API_KEY"`
 	SecretKey                         string    `env:"SECRET_KEY"`
-	CSRFToken                         string    `env:"CSRF"`
-	COOKIE                            string    `env:"COOKIE"`
+	CSRFToken                         string    `redis:"CSRF"`
+	COOKIE                            string    `redis:"COOKIE"`
 	MarginType                        string    `env:"MARGIN_TYPE" envDefault:"CROSSED"`
 	StrategiesCount                   int       `env:"STRATEGIES_COUNT" envDefault:"450"`
 	RuntimeMinHours                   int       `env:"RUNTIME_MIN_HOURS" envDefault:"3"`
@@ -60,10 +68,43 @@ type Config struct {
 
 var TheConfig = &Config{}
 
+var rdb rueidis.Client
+
 func Init() {
 	err := env.Parse(TheConfig)
 	if err != nil {
 		log.Fatalf("error parsing config: %v", err)
+	}
+	//	get all fields with tag redis set
+	redisFields := make(map[string]reflect.StructField)
+	for i := 0; i < reflect.ValueOf(TheConfig).Elem().NumField(); i++ {
+		field := reflect.ValueOf(TheConfig).Elem().Field(i)
+		tag := reflect.TypeOf(TheConfig).Elem().Field(i).Tag.Get("redis")
+		if tag == "" {
+			continue
+		}
+		if field.Kind() == reflect.String {
+			redisFields[tag] = reflect.TypeOf(TheConfig).Elem().Field(i)
+		}
+	}
+	rdb, err = rueidis.NewClient(rueidis.ClientOption{
+		InitAddress: []string{TheConfig.Redis},
+		Password:    TheConfig.RedisPassword,
+	})
+	if err != nil {
+		panic(err)
+	}
+	cleanup.AddOnStopFunc(func(_ os.Signal) {
+		rdb.Close()
+	})
+	for k, v := range redisFields {
+		ctx := context.Background()
+		s, err := rdb.Do(ctx, rdb.B().Get().Key(k).Build()).ToString()
+		if err != nil {
+			panic(err)
+		}
+		s = strings.ReplaceAll(s, "\n", "")
+		reflect.ValueOf(TheConfig).Elem().FieldByName(v.Name).SetString(s)
 	}
 }
 
