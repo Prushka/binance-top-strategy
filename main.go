@@ -123,7 +123,7 @@ func checkStopLoss(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 }
 
 func tick() error {
-	log.Info(utils.AsJson(gsp.Elect()))
+	discord.Infof(utils.AsJson(gsp.Elect()))
 	utils.ResetTime()
 	sdk.ClearSessionSymbolPrice()
 	discord.Infof("## Run: %v", time.Now().Format("2006-01-02 15:04:05"))

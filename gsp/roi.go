@@ -30,6 +30,9 @@ var RoisCache = cache.CreateMapCache[[]*Roi](
 		return roi, nil
 	},
 	func(rois []*Roi) bool {
+		if len(rois) == 0 {
+			return true
+		}
 		latestTime := time.Unix(rois[0].Time, 0)
 		if time.Now().Sub(latestTime) > time.Duration(60+config.TheConfig.ShiftMinutesAfterHour)*time.Minute {
 			return true
