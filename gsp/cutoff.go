@@ -54,6 +54,8 @@ func UpdateTopStrategiesWithRoi() error {
 
 	discord.Infof("* New: " + strategies.String())
 	for c, s := range strategies.Strategies {
+		s.addToRankingStore()
+		continue
 		id := s.SID
 		roi, err := RoisCache.Get(fmt.Sprintf("%d-%d", id, s.UserID))
 		if err != nil {
@@ -137,7 +139,6 @@ func UpdateTopStrategiesWithRoi() error {
 			s.ReasonNotPicked = reasons
 			log.Info(prefix + Display(s, nil, "Found", c+1, len(strategies.StrategiesById)))
 		}
-		s.addToRankingStore()
 	}
 	sort.Slice(filtered, func(i, j int) bool {
 		I := filtered[i].GetMetric()
