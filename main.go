@@ -137,6 +137,7 @@ func tick() error {
 		return err
 	}
 	utils.Time("Fetch strategies")
+	return nil
 	discord.Infof("### Current Grids:")
 	sdk.ClearSessionSymbolPrice()
 	err = gsp.UpdateOpenGrids(true)

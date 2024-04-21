@@ -149,20 +149,20 @@ func UpdateTopStrategiesWithRoi() error {
 		FilteredSortedByMetric: filtered.toTrackedStrategies(),
 		SDCountPairSpecific:    make(SDCount)}
 	discord.Infof("* Open: " + GetPool().String())
-	filteredSymbols := mapset.NewSetFromMapKeys(GetPool().SymbolCount)
-	var gridSymbols mapset.Set[string]
-	if GGrids.ExistingSymbols.Cardinality() > 0 {
-		gridSymbols = GGrids.ExistingSymbols
-	} else {
-		gridSymbols, err = getGridSymbols()
-		if err != nil {
-			return err
-		}
-	}
-	err = updateSDCountPairSpecific(filteredSymbols.Union(gridSymbols))
-	if err != nil {
-		return err
-	}
+	//filteredSymbols := mapset.NewSetFromMapKeys(GetPool().SymbolCount)
+	//var gridSymbols mapset.Set[string]
+	//if GGrids.ExistingSymbols.Cardinality() > 0 {
+	//	gridSymbols = GGrids.ExistingSymbols
+	//} else {
+	//	gridSymbols, err = getGridSymbols()
+	//	if err != nil {
+	//		return err
+	//	}
+	//}
+	//err = updateSDCountPairSpecific(filteredSymbols.Union(gridSymbols))
+	//if err != nil {
+	//	return err
+	//}
 	return nil
 }
 
