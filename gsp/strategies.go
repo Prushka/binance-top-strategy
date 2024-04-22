@@ -42,16 +42,17 @@ type StrategiesResponse struct {
 
 type Strategy struct {
 	Rois               StrategyRoi
-	Symbol             string  `json:"symbol"`
-	CopyCount          int     `json:"copyCount"`
-	RoiStr             string  `json:"roi"`
-	Pnl                string  `json:"pnl"`
-	RunningTime        int     `json:"runningTime"`
-	SID                int     `json:"strategyId"`
-	StrategyType       int     `json:"strategyType"`
-	Direction          int     `json:"direction"`
-	UserID             int     `json:"userId"`
-	Roi                float64 `json:"-"`
+	Symbol             string `json:"symbol"`
+	CopyCount          int    `json:"copyCount"`
+	RoiStr             string `json:"roi"`
+	PnlStr             string `json:"pnl"`
+	RunningTime        int    `json:"runningTime"`
+	SID                int    `json:"strategyId"`
+	StrategyType       int    `json:"strategyType"`
+	Direction          int    `json:"direction"`
+	UserID             int    `json:"userId"`
+	Roi                float64
+	Pnl                float64
 	LastDayRoiChange   float64
 	Last3HrRoiChange   float64
 	Last2HrRoiChange   float64
@@ -69,6 +70,7 @@ type Strategy struct {
 	ReasonNotPicked    []string
 	TimeDiscovered     time.Time
 	TimeNotFound       time.Time
+	RoisFetchedAt      time.Time
 	StrategyParams     struct {
 		Type           string  `json:"type"`
 		LowerLimitStr  string  `json:"lowerLimit"`
@@ -160,25 +162,23 @@ func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 		} else {
 			sss.Neutrals.Add(s.SID)
 		}
-		roi, _ := strconv.ParseFloat(s.RoiStr, 64)
-		pnl, _ := strconv.ParseFloat(s.Pnl, 64)
 		if sss.Highest.CopyCount == nil || s.CopyCount > *sss.Highest.CopyCount {
 			sss.Highest.CopyCount = &s.CopyCount
 		}
 		if sss.Lowest.CopyCount == nil || s.CopyCount < *sss.Lowest.CopyCount {
 			sss.Lowest.CopyCount = &s.CopyCount
 		}
-		if sss.Highest.Roi == nil || roi > *sss.Highest.Roi {
-			sss.Highest.Roi = &roi
+		if sss.Highest.Roi == nil || s.Roi > *sss.Highest.Roi {
+			sss.Highest.Roi = &s.Roi
 		}
-		if sss.Lowest.Roi == nil || roi < *sss.Lowest.Roi {
-			sss.Lowest.Roi = &roi
+		if sss.Lowest.Roi == nil || s.Roi < *sss.Lowest.Roi {
+			sss.Lowest.Roi = &s.Roi
 		}
-		if sss.Highest.Pnl == nil || pnl > *sss.Highest.Pnl {
-			sss.Highest.Pnl = &pnl
+		if sss.Highest.Pnl == nil || s.Pnl > *sss.Highest.Pnl {
+			sss.Highest.Pnl = &s.Pnl
 		}
-		if sss.Lowest.Pnl == nil || pnl < *sss.Lowest.Pnl {
-			sss.Lowest.Pnl = &pnl
+		if sss.Lowest.Pnl == nil || s.Pnl < *sss.Lowest.Pnl {
+			sss.Lowest.Pnl = &s.Pnl
 		}
 		if sss.Highest.runningTime == nil || s.RunningTime > *sss.Highest.runningTime {
 			sss.Highest.runningTime = &s.RunningTime
@@ -258,31 +258,57 @@ func (t *TrackedStrategies) Exists(id int) bool {
 	return t.Ids.Contains(id)
 }
 
-func (s Strategy) MarketPriceWithinRange() bool {
+func (s *Strategy) populateRois() error {
+	rois, err := RoisCache.Get(fmt.Sprintf("%d-%d", s.SID, s.UserID))
+	if err != nil {
+		return err
+	}
+	s.Rois = rois
+	return nil
+}
+
+func (s *Strategy) MarketPriceWithinRange() bool {
 	marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)
 	return marketPrice > s.StrategyParams.LowerLimit && marketPrice < s.StrategyParams.UpperLimit
 }
 
-func (s Strategy) String() string {
-	pnl, _ := strconv.ParseFloat(s.Pnl, 64)
+func (s *Strategy) String() string {
 	ranking := ""
+	ended := ""
 	if Bundle != nil {
-		ranking = fmt.Sprintf(", Raw: %d, FilterdSD: %d", Bundle.Raw.findStrategyRanking(s),
-			GetPool().findStrategyRanking(s))
+		ranking = fmt.Sprintf(", Raw: %d, FilterdSD: %d", Bundle.Raw.findStrategyRanking(*s),
+			GetPool().findStrategyRanking(*s))
 	}
-	return fmt.Sprintf("Cpy: %d, Mch: [%d, %d], PnL: %.2f, Rois: %s, [H%%, A/Day/15H/12H/9H/6H/3H: %.1f%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], [A/D/3/2/1H: %s%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s%s",
-		s.CopyCount, s.MatchedCount, s.LatestMatchedCount, pnl, s.Rois.lastNRecords(config.TheConfig.LastNHoursNoDips),
+	if !s.isRunning() {
+		ended = "Ended: " + time.Unix(s.Rois[0].Time, 0).Format("2006-01-02 15:04:05") + " ,"
+	}
+	return fmt.Sprintf("%sCpy: %d, Mch: [%d, %d], PnL: %.2f, Rois: %s, [H%%, A/Day/15H/12H/9H/6H/3H: %.1f%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], [A/D/3/2/1H: %s%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s%s",
+		ended, s.CopyCount, s.MatchedCount, s.LatestMatchedCount, s.Pnl, s.Rois.lastNRecords(config.TheConfig.LastNHoursNoDips),
 		s.RoiPerHour*100, s.LastDayRoiPerHr*100, s.Last15HrRoiPerHr*100, s.Last12HrRoiPerHr*100,
 		s.Last9HrRoiPerHr*100, s.Last6HrRoiPerHr*100, s.Last3HrRoiPerHr*100, s.RoiStr,
 		s.LastDayRoiChange*100, s.Last3HrRoiChange*100, s.Last2HrRoiChange*100, s.LastHrRoiChange*100, s.MinInvestment, ranking)
 }
 
-func (s Strategy) GetMetric() float64 {
+func (s *Strategy) GetMetric() float64 {
 	return s.Last3HrRoiPerHr
 }
 
-func (s Strategy) SD() string {
+func (s *Strategy) SD() string {
 	return s.Symbol + DirectionMap[s.Direction]
+}
+
+func (s *Strategy) Sanitize() {
+	s.Roi, _ = strconv.ParseFloat(s.RoiStr, 64)
+	s.Roi /= 100
+	s.Pnl, _ = strconv.ParseFloat(s.PnlStr, 64)
+
+	s.StrategyParams.LowerLimit, _ = strconv.ParseFloat(s.StrategyParams.LowerLimitStr, 64)
+	s.StrategyParams.UpperLimit, _ = strconv.ParseFloat(s.StrategyParams.UpperLimitStr, 64)
+}
+
+func (s *Strategy) isRunning() bool {
+	latestTime := time.Unix(s.Rois[0].Time, 0)
+	return time.Now().Sub(latestTime) <= 100*time.Minute
 }
 
 func Display(s *Strategy, grid *Grid, action string, index int, length int) string {
@@ -409,9 +435,7 @@ func mergeStrategies(strategyType int, sps ...StrategyQuery) (*TrackedStrategies
 		sss = append(sss, by...)
 	}
 	sort.Slice(sss, func(i, j int) bool {
-		roiI, _ := strconv.ParseFloat(sss[i].RoiStr, 64)
-		roiJ, _ := strconv.ParseFloat(sss[j].RoiStr, 64)
-		return roiI > roiJ
+		return sss[i].Roi > sss[j].Roi
 	})
 	return sss.toTrackedStrategies(), nil
 }

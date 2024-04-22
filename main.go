@@ -123,7 +123,6 @@ func checkStopLoss(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 }
 
 func tick() error {
-	discord.Infof(utils.AsJson(gsp.Elect()))
 	utils.ResetTime()
 	sdk.ClearSessionSymbolPrice()
 	discord.Infof("## Run: %v", time.Now().Format("2006-01-02 15:04:05"))
@@ -137,6 +136,17 @@ func tick() error {
 		return err
 	}
 	utils.Time("Fetch strategies")
+
+	//elected, err := gsp.Elect()
+	//if err != nil {
+	//	return err
+	//}
+	//for _, u := range elected {
+	//	discord.Infof(u.String())
+	//	for _, s := range u.Strategies {
+	//		discord.Infof(gsp.Display(s, nil, "Found", 0, 0))
+	//	}
+	//}
 	return nil
 	discord.Infof("### Current Grids:")
 	sdk.ClearSessionSymbolPrice()

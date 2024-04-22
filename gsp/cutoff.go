@@ -9,7 +9,6 @@ import (
 	mapset "github.com/deckarep/golang-set/v2"
 	log "github.com/sirupsen/logrus"
 	"sort"
-	"strconv"
 	"time"
 )
 
@@ -54,18 +53,18 @@ func UpdateTopStrategiesWithRoi() error {
 
 	discord.Infof("* New: " + strategies.String())
 	for c, s := range strategies.Strategies {
-		s.addToRankingStore()
-		continue
-		id := s.SID
-		roi, err := RoisCache.Get(fmt.Sprintf("%d-%d", id, s.UserID))
+		err := s.addToRankingStore()
 		if err != nil {
 			return err
 		}
-		s.Rois = roi
-		s.Roi, _ = strconv.ParseFloat(s.RoiStr, 64)
-		s.Roi /= 100
-		s.StrategyParams.LowerLimit, _ = strconv.ParseFloat(s.StrategyParams.LowerLimitStr, 64)
-		s.StrategyParams.UpperLimit, _ = strconv.ParseFloat(s.StrategyParams.UpperLimitStr, 64)
+		continue
+		id := s.SID
+		rois, err := RoisCache.Get(fmt.Sprintf("%d-%d", id, s.UserID))
+		if err != nil {
+			return err
+		}
+		s.Sanitize()
+		s.Rois = rois
 		s.PriceDifference = s.StrategyParams.UpperLimit/s.StrategyParams.LowerLimit - 1
 		GStrats[s.SID] = s
 		if len(s.Rois) > 1 {
@@ -149,7 +148,7 @@ func UpdateTopStrategiesWithRoi() error {
 		FilteredSortedBySD:     sortBySDCount(filtered).toTrackedStrategies(),
 		FilteredSortedByMetric: filtered.toTrackedStrategies(),
 		SDCountPairSpecific:    make(SDCount)}
-	discord.Infof("* Open: " + GetPool().String())
+	//discord.Infof("* Open: " + GetPool().String())
 	//filteredSymbols := mapset.NewSetFromMapKeys(GetPool().SymbolCount)
 	//var gridSymbols mapset.Set[string]
 	//if GGrids.ExistingSymbols.Cardinality() > 0 {
