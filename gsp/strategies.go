@@ -489,5 +489,8 @@ func _getTopStrategies(sort string, direction *int, strategyType int, runningTim
 				v)
 		}
 	}
+	for _, strategies := range strategies.Data {
+		strategies.Sanitize()
+	}
 	return strategies.Data, nil
 }

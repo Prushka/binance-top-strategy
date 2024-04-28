@@ -51,7 +51,6 @@ func Scrape() error {
 	}
 	discord.Infof("* New: " + strategies.String())
 	for _, s := range strategies.Strategies {
-		s.Sanitize()
 		err := s.addToRankingStore()
 		if err != nil {
 			return err
@@ -79,7 +78,6 @@ func UpdateTopStrategiesWithRoi() error {
 		if err != nil {
 			return err
 		}
-		s.Sanitize()
 		s.Rois = rois
 		s.PriceDifference = s.StrategyParams.UpperLimit/s.StrategyParams.LowerLimit - 1
 		GStrats[s.SID] = s
