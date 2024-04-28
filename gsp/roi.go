@@ -72,7 +72,7 @@ func getStrategyRois(strategyID int64, rootUserId int64) (StrategyRoi, error) {
 	for _, r := range roiData {
 		r.Time = r.Time / 1000
 	}
-	sort.Slice(roi, func(i, j int) bool {
+	sort.Slice(roiData, func(i, j int) bool {
 		return roiData[i].Time > roiData[j].Time
 	})
 	return roiData, nil
