@@ -3,8 +3,11 @@ package gsp
 import (
 	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/discord"
+	"BinanceTopStrategies/sql"
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/jackc/pgx/v5"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
@@ -65,8 +68,153 @@ func (u UserMetrics) String() string {
 	)
 }
 
+func ToSQL() error {
+	root := config.TheConfig.DataFolder + "/strategies"
+
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() && filepath.Ext(path) == ".json" {
+			s := &Strategy{}
+			err = s.loadFromFile(path)
+			if err != nil {
+				return err
+			}
+			s.Sanitize()
+			log.Infof("%d, %s", s.SID, s.Symbol)
+			mErr, err := sql.SimpleTransaction(func(tx pgx.Tx) error {
+				_, err := tx.Exec(context.Background(),
+					`INSERT INTO bts.b_user (user_id) VALUES ($1) ON CONFLICT DO NOTHING`,
+					s.UserID)
+				if err != nil {
+					return err
+				}
+				_, err = tx.Exec(context.Background(),
+					`INSERT INTO bts.strategy (
+            symbol,
+            copy_count,
+            roi,
+            pnl,
+            running_time,
+            strategy_id,
+            strategy_type,
+            direction,
+            user_id,
+            price_difference,
+            time_discovered,
+            time_not_found,
+            rois_fetched_at,
+            type,
+            lower_limit,
+            upper_limit,
+            grid_count,
+            trigger_price,
+            stop_lower_limit,
+            stop_upper_limit,
+            base_asset,
+            quote_asset,
+            leverage,
+            trailing_up,
+            trailing_down,
+            trailing_type,
+            latest_matched_count,
+            matched_count,
+            min_investment
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29) ON CONFLICT DO NOTHING`,
+					s.Symbol,
+					s.CopyCount,
+					s.Roi,
+					s.Pnl,
+					s.RunningTime,
+					s.SID,
+					s.StrategyType,
+					s.Direction,
+					s.UserID,
+					s.PriceDifference,
+					s.TimeDiscovered,
+					s.TimeNotFound,
+					s.RoisFetchedAt,
+					s.StrategyParams.Type,
+					s.StrategyParams.LowerLimit,
+					s.StrategyParams.UpperLimit,
+					s.StrategyParams.GridCount,
+					s.StrategyParams.TriggerPrice,
+					s.StrategyParams.StopLowerLimit,
+					s.StrategyParams.StopUpperLimit,
+					s.StrategyParams.BaseAsset,
+					s.StrategyParams.QuoteAsset,
+					s.StrategyParams.Leverage,
+					s.StrategyParams.TrailingUp,
+					s.StrategyParams.TrailingDown,
+					s.TrailingType,
+					s.LatestMatchedCount,
+					s.MatchedCount,
+					s.MinInvestment,
+				)
+				if err != nil {
+					return err
+				}
+				if len(s.Rois) == 0 && !s.RoisFetchedAt.IsZero() && time.Now().Sub(s.RoisFetchedAt) < 100*time.Minute {
+					return nil
+				}
+				if len(s.Rois) == 0 || s.RoisFetchedAt.Sub(time.Unix(s.Rois[0].Time, 0)) < 100*time.Minute {
+					log.Info("Fetching Roi: ", s.SID)
+					err = s.populateRois()
+					if err != nil {
+						return err
+					}
+					s.RoisFetchedAt = time.Now()
+					err = s.saveToStore()
+					if err != nil {
+						return err
+					}
+					_, err := tx.Exec(context.Background(),
+						`UPDATE bts.strategy SET rois_fetched_at = $1 WHERE strategy_id = $2`,
+						s.RoisFetchedAt,
+						s.SID,
+					)
+					if err != nil {
+						return err
+					}
+				}
+
+				for _, r := range s.Rois {
+					_, err := tx.Exec(context.Background(),
+						`INSERT INTO bts.roi (
+				root_user_id,
+				strategy_id,
+				roi,
+				pnl,
+				time
+			 ) VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING`,
+						r.RootUserID,
+						s.SID,
+						r.Roi,
+						r.Pnl,
+						time.Unix(r.Time, 0),
+					)
+					if err != nil {
+						return err
+					}
+				}
+				return nil
+			})
+			if mErr.ToError() != nil {
+				return mErr.ToError()
+			}
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	return err
+}
+
 func Elect() ([]UserMetrics, error) {
 	root := config.TheConfig.DataFolder + "/strategies"
+
 	byUser := make(map[int]*UserMetrics)
 	count := 0
 	runningOnes := 0

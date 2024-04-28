@@ -64,6 +64,7 @@ type Config struct {
 	ShortRangeDiff                    float64   `env:"SHORT_RANGE_DIFF" envDefault:"0.2"`
 	LongRangeDiff                     float64   `env:"LONG_RANGE_DIFF" envDefault:"0.2"`
 	TriggerRangeDiff                  float64   `env:"TRIGGER_RANGE_DIFF" envDefault:"0.04"`
+	PGUrl                             string    `env:"PGURL" envDefault:"postgresql://postgres:password@localhost:5432"`
 }
 
 var TheConfig = &Config{}
@@ -99,11 +100,10 @@ func Init() {
 	for k, v := range redisFields {
 		ctx := context.Background()
 		s, err := rdb.Do(ctx, rdb.B().Get().Key(k).Build()).ToString()
-		if err != nil {
-			panic(err)
+		if err == nil {
+			s = strings.ReplaceAll(s, "\n", "")
+			reflect.ValueOf(TheConfig).Elem().FieldByName(v.Name).SetString(s)
 		}
-		s = strings.ReplaceAll(s, "\n", "")
-		reflect.ValueOf(TheConfig).Elem().FieldByName(v.Name).SetString(s)
 	}
 }
 

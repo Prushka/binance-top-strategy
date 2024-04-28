@@ -9,8 +9,8 @@ import (
 	"BinanceTopStrategies/notional"
 	"BinanceTopStrategies/persistence"
 	"BinanceTopStrategies/sdk"
+	"BinanceTopStrategies/sql"
 	"BinanceTopStrategies/utils"
-	"context"
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/go-co-op/gocron"
@@ -372,16 +372,16 @@ func tick() error {
 
 func main() {
 	config.Init()
+	blocking := make(chan bool, 1)
+	cleanup.InitSignalCallback(blocking)
 	switch config.TheConfig.Mode {
 	case "trading":
-		blocking := make(chan bool, 1)
 		if config.TheConfig.Paper {
 			discord.Errorf("Paper Trading")
 		} else {
 			discord.Errorf("Real Trading")
 		}
 		sdk.Init()
-		cleanup.InitSignalCallback(blocking)
 		cleanup.AddOnStopFunc(func(_ os.Signal) {
 			scheduler.Stop()
 		})
@@ -402,17 +402,18 @@ func main() {
 			return
 		}
 		scheduler.StartAsync()
-		<-blocking
-	case "playground":
+	case "SQL":
 		sdk.Init()
-		timeAgo := 47 * time.Hour
-		res, err := sdk.FuturesClient.NewMarkPriceKlinesService().
-			Symbol("BCHUSDT").Interval("1m").StartTime(time.Now().Add(-timeAgo).Unix() * 1000).
-			EndTime(time.Now().Add(-timeAgo+time.Minute).Unix() * 1000).Do(context.Background())
-		if err != nil {
-			discord.Errorf("Error: %v", err)
-			return
-		}
-		log.Info(utils.AsJson(res))
+		persistence.Init()
+		discord.Init()
+		panicOnError(sql.Init())
+		panicOnError(gsp.ToSQL())
+	}
+	<-blocking
+}
+
+func panicOnError(err error) {
+	if err != nil {
+		panic(err)
 	}
 }
