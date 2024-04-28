@@ -73,8 +73,8 @@ WHERE
 	}
 	discord.Infof("Populating roi for %d strategies", len(strategies))
 	for _, s := range strategies {
-		err = sql.SimpleTransaction(func(tx pgx.Tx) error {
-			if time.Now().Sub(s.RoisFetchedAt) > 30*time.Minute {
+		if time.Now().Sub(s.RoisFetchedAt) > 30*time.Minute {
+			err = sql.SimpleTransaction(func(tx pgx.Tx) error {
 				log.Info("Fetching Roi: ", s.StrategyID)
 				rois, err := getStrategyRois(s.StrategyID, s.UserID)
 				if err != nil {
@@ -119,9 +119,9 @@ WHERE
 					}
 					discord.Infof("Concluded: %d", s.StrategyID)
 				}
-			}
-			return nil
-		})
+				return nil
+			})
+		}
 		if err != nil && strings.Contains(err.Error(), "unexpected end of JSON input") {
 			break
 		}
@@ -137,6 +137,7 @@ func (s *Strategy) addToRankingStore() error {
 		if err != nil {
 			return err
 		}
+		s.TimeDiscovered = time.Now()
 		_, err = tx.Exec(context.Background(),
 			`INSERT INTO bts.strategy (
             symbol,
