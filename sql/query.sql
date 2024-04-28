@@ -57,6 +57,17 @@ FROM
 WHERE
     (s.concluded = FALSE OR s.concluded IS NULL);
 
+SELECT
+    r.time AS latest_roi_time
+FROM
+    bts.strategy s
+        JOIN
+    bts.roi r ON s.strategy_id = r.strategy_id
+WHERE
+    s.concluded = TRUE
+ORDER BY
+    r.time DESC
+LIMIT 1;
 
-UPDATE bts.strategy
-SET concluded = FALSE;
+
+select count(*) FROM strategy WHERE concluded = TRUE;

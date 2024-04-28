@@ -51,9 +51,8 @@ func (s *StrategyDB) fetchRois() (StrategyRoi, error) {
 }
 
 func PopulateRoi() error {
-	return sql.SimpleTransaction(func(tx pgx.Tx) error {
-		strategies := make([]*StrategyDB, 0)
-		err := sql.Scan(tx, &strategies, `SELECT
+	strategies := make([]*StrategyDB, 0)
+	err := sql.GetDB().Scan(&strategies, `SELECT
     s.*,
     r.roi as latest_roi,
     r.pnl as latest_pnl,
@@ -72,11 +71,12 @@ FROM
     ) r ON s.strategy_id = r.strategy_id AND r.rn = 1
 WHERE
     (s.concluded = FALSE OR s.concluded IS NULL);`)
-		if err != nil {
-			return err
-		}
-		discord.Infof("Populating roi for %d strategies", len(strategies))
-		for _, s := range strategies {
+	if err != nil {
+		return err
+	}
+	for _, s := range strategies {
+		err = sql.SimpleTransaction(func(tx pgx.Tx) error {
+			discord.Infof("Populating roi for %d strategies", len(strategies))
 			if time.Now().Sub(s.RoisFetchedAt) > 30*time.Minute {
 				log.Info("Fetching Roi: ", s.StrategyID)
 				rois, err := s.fetchRois()
@@ -123,9 +123,10 @@ WHERE
 					discord.Infof("Concluded: %d", s.StrategyID)
 				}
 			}
-		}
-		return nil
-	})
+			return nil
+		})
+	}
+	return err
 }
 
 func (s *Strategy) addToRankingStore() error {
