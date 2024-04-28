@@ -45,7 +45,7 @@ func sortBySDCount(filtered Strategies) Strategies {
 }
 
 func Scrape() error {
-	strategies, err := getTopStrategies(FUTURE, "")
+	strategies, err := getTopStrategies("")
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func Scrape() error {
 }
 
 func UpdateTopStrategiesWithRoi() error {
-	strategies, err := getTopStrategies(FUTURE, "")
+	strategies, err := getTopStrategies("")
 	if err != nil {
 		return err
 	}
@@ -183,7 +183,7 @@ func UpdateTopStrategiesWithRoi() error {
 func updateSDCountPairSpecific(symbols mapset.Set[string]) error {
 	log.Infof("Strategy with Symbol Specifics: %v", symbols)
 	for _, symbol := range symbols.ToSlice() {
-		strategies, err := getTopStrategies(FUTURE, symbol)
+		strategies, err := getTopStrategies(symbol)
 		if err != nil {
 			return err
 		}

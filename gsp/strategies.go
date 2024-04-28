@@ -22,6 +22,7 @@ type StrategyQuery struct {
 	RuntimeMax time.Duration
 	RuntimeMin time.Duration
 	Symbol     string
+	Type       int
 }
 
 type StrategyMetrics struct {
@@ -419,7 +420,7 @@ var DirectionMap = map[int]string{
 	SHORT:   "SHORT",
 }
 
-func mergeStrategies(strategyType int, sps ...StrategyQuery) (*TrackedStrategies, error) {
+func mergeStrategies(sps ...StrategyQuery) (*TrackedStrategies, error) {
 	sss := make(Strategies, 0)
 	for _, sp := range sps {
 		if sp.Count == 0 {
@@ -431,7 +432,7 @@ func mergeStrategies(strategyType int, sps ...StrategyQuery) (*TrackedStrategies
 		if sp.RuntimeMax == -1 {
 			sp.RuntimeMax = time.Duration(config.TheConfig.RuntimeMaxHours) * time.Hour
 		}
-		by, err := _getTopStrategies(sp.Sort, sp.Direction, strategyType, sp.RuntimeMin, sp.RuntimeMax, sp.Count, sp.Symbol)
+		by, err := _getTopStrategies(sp.Sort, sp.Direction, sp.Type, sp.RuntimeMin, sp.RuntimeMax, sp.Count, sp.Symbol)
 		if err != nil {
 			return nil, err
 		}
@@ -443,12 +444,13 @@ func mergeStrategies(strategyType int, sps ...StrategyQuery) (*TrackedStrategies
 	return sss.toTrackedStrategies(), nil
 }
 
-func getTopStrategies(strategyType int, symbol string) (*TrackedStrategies, error) {
+func getTopStrategies(symbol string) (*TrackedStrategies, error) {
 	var queries []StrategyQuery
 	for i := 0; i < 48; i += 2 {
-		queries = append(queries, StrategyQuery{Sort: SortByRoi, RuntimeMin: time.Duration(i) * time.Hour, RuntimeMax: time.Duration(i+2) * time.Hour, Symbol: symbol})
+		queries = append(queries, StrategyQuery{Type: FUTURE, Sort: SortByRoi, RuntimeMin: time.Duration(i) * time.Hour, RuntimeMax: time.Duration(i+2) * time.Hour, Symbol: symbol})
+		queries = append(queries, StrategyQuery{Type: SPOT, Sort: SortByRoi, RuntimeMin: time.Duration(i) * time.Hour, RuntimeMax: time.Duration(i+2) * time.Hour, Symbol: symbol})
 	}
-	merged, err := mergeStrategies(strategyType, queries...)
+	merged, err := mergeStrategies(queries...)
 	if err != nil {
 		return nil, err
 	}
