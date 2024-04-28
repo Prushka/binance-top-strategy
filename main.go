@@ -374,6 +374,11 @@ func main() {
 	config.Init()
 	blocking := make(chan bool, 1)
 	cleanup.InitSignalCallback(blocking)
+	cleanup.AddOnStopFunc(func(_ os.Signal) {
+		scheduler.Stop()
+	})
+	discord.Init()
+	panicOnError(sql.Init())
 	switch config.TheConfig.Mode {
 	case "trading":
 		if config.TheConfig.Paper {
@@ -382,13 +387,10 @@ func main() {
 			discord.Errorf("Real Trading")
 		}
 		sdk.Init()
-		cleanup.AddOnStopFunc(func(_ os.Signal) {
-			scheduler.Stop()
-		})
 		persistence.Init()
-		discord.Init()
 		_, err := scheduler.SingletonMode().Every(config.TheConfig.TickEverySeconds).Seconds().Do(
 			func() {
+				utils.ResetTime()
 				t := time.Now()
 				err := tick()
 				if err != nil {
@@ -401,18 +403,49 @@ func main() {
 			discord.Errorf("Error: %v", err)
 			return
 		}
-		scheduler.StartAsync()
-	case "SQL":
-		sdk.Init()
-		persistence.Init()
-		discord.Init()
-		panicOnError(sql.Init())
-		err := gsp.ToSQL()
+	case "playground":
+		utils.ResetTime()
+		t := time.Now()
+		discord.Infof("## Roi: %v", time.Now().Format("2006-01-02 15:04:05"))
+		err := gsp.PopulateRoi()
 		if err != nil {
 			discord.Errorf("Error: %v", err)
 		}
+		discord.Infof("*Run took: %v*", time.Since(t))
+	case "SQL":
+		panicOnErrorSecond(scheduler.SingletonMode().Every(1).Minutes().Do(
+			func() {
+				utils.ResetTime()
+				t := time.Now()
+				discord.Infof("## Strategies: %v", time.Now().Format("2006-01-02 15:04:05"))
+				err := gsp.Scrape()
+				if err != nil {
+					discord.Errorf("Error: %v", err)
+				}
+				discord.Infof("*Run took: %v*", time.Since(t))
+			},
+		))
+		panicOnErrorSecond(scheduler.SingletonMode().Every(5).Minutes().Do(
+			func() {
+				utils.ResetTime()
+				t := time.Now()
+				discord.Infof("## Roi: %v", time.Now().Format("2006-01-02 15:04:05"))
+				err := gsp.PopulateRoi()
+				if err != nil {
+					discord.Errorf("Error: %v", err)
+				}
+				discord.Infof("*Run took: %v*", time.Since(t))
+			},
+		))
 	}
+	scheduler.StartAsync()
 	<-blocking
+}
+
+func panicOnErrorSecond(a interface{}, err error) {
+	if err != nil {
+		panic(err)
+	}
 }
 
 func panicOnError(err error) {

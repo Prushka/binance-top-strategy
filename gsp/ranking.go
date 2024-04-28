@@ -1,100 +1,143 @@
 package gsp
 
 import (
-	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/sql"
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	log "github.com/sirupsen/logrus"
-	"os"
-	"path/filepath"
-	"sort"
 	"time"
 )
 
-func (s *Strategy) addToRankingStore() error {
-	path := fmt.Sprintf(config.TheConfig.DataFolder+"/strategies/%d.json", s.SID)
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		s.TimeDiscovered = time.Now()
-		err := s.saveToStore()
+type StrategyDB struct {
+	Symbol             string     `db:"symbol"`
+	CopyCount          int        `db:"copy_count"`
+	ROI                float64    `db:"roi"`
+	PNL                float64    `db:"pnl"`
+	RunningTime        int        `db:"running_time"`
+	StrategyID         int64      `db:"strategy_id"` // Use int64 for BIGINT
+	StrategyType       int        `db:"strategy_type"`
+	Direction          int        `db:"direction"`
+	UserID             int64      `db:"user_id"` // Use int64 for BIGINT
+	PriceDifference    float64    `db:"price_difference"`
+	TimeDiscovered     time.Time  `db:"time_discovered"`
+	TimeNotFound       *time.Time `db:"time_not_found"`
+	RoisFetchedAt      time.Time  `db:"rois_fetched_at"`
+	Type               string     `db:"type"`
+	LowerLimit         float64    `db:"lower_limit"`
+	UpperLimit         float64    `db:"upper_limit"`
+	GridCount          int        `db:"grid_count"`
+	TriggerPrice       *float64   `db:"trigger_price"` // Use pointer for nullable columns
+	StopLowerLimit     *float64   `db:"stop_lower_limit"`
+	StopUpperLimit     *float64   `db:"stop_upper_limit"`
+	BaseAsset          *string    `db:"base_asset"` // Use pointer for nullable columns
+	QuoteAsset         *string    `db:"quote_asset"`
+	Leverage           *int       `db:"leverage"`
+	TrailingUp         *bool      `db:"trailing_up"`
+	TrailingDown       *bool      `db:"trailing_down"`
+	TrailingType       *string    `db:"trailing_type"`
+	LatestMatchedCount *int       `db:"latest_matched_count"`
+	MatchedCount       *int       `db:"matched_count"`
+	MinInvestment      *float64   `db:"min_investment"`
+	Concluded          *bool      `db:"concluded"`
+	LatestRoi          *float64   `db:"latest_roi"`
+	LatestPnl          *float64   `db:"latest_pnl"`
+	LatestTime         *time.Time `db:"latest_roi_time"`
+}
+
+func (s *StrategyDB) fetchRois() (StrategyRoi, error) {
+	return RoisCache.Get(fmt.Sprintf("%d-%d", s.StrategyID, s.UserID))
+}
+
+func PopulateRoi() error {
+	return sql.SimpleTransaction(func(tx pgx.Tx) error {
+		strategies := make([]*StrategyDB, 0)
+		err := sql.Scan(tx, &strategies, `SELECT
+    s.*,
+    r.roi as latest_roi,
+    r.pnl as latest_pnl,
+    r.time as latest_roi_time
+FROM
+    bts.strategy s
+        LEFT JOIN (
+        SELECT
+            roi.strategy_id,
+            roi.roi,
+            roi.pnl,
+            roi.time,
+            ROW_NUMBER() OVER (PARTITION BY roi.strategy_id ORDER BY roi.time DESC) AS rn
+        FROM
+            bts.roi
+    ) r ON s.strategy_id = r.strategy_id AND r.rn = 1
+WHERE
+    (s.concluded = FALSE OR s.concluded IS NULL);`)
 		if err != nil {
 			return err
 		}
-	}
-	return nil
-}
-
-func (s *Strategy) loadFromFile(path string) error {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(b, s)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *Strategy) saveToStore() error {
-	path := fmt.Sprintf(config.TheConfig.DataFolder+"/strategies/%d.json", s.SID)
-	b, err := json.MarshalIndent(s, "", "  ")
-	if err != nil {
-		return err
-	}
-	err = os.WriteFile(path, b, 0666)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-type UserMetrics struct {
-	UserId       int
-	Strategies   map[int]*Strategy `json:"-"`
-	NegativeOnes int
-	TotalRois    float64
-	TotalPnl     float64
-	MinRuntime   time.Duration
-	MaxRuntime   time.Duration
-}
-
-func (u UserMetrics) String() string {
-	return fmt.Sprintf("UserId: %d, NegativeOnes: %d, Rois: %.2f, Pnl: %.2f, TotalStrategies: %d, MinRuntime: %s, MaxRuntime: %s",
-		u.UserId, u.NegativeOnes, u.TotalRois*100, u.TotalPnl, len(u.Strategies), u.MinRuntime, u.MaxRuntime,
-	)
-}
-
-func ToSQL() error {
-	root := config.TheConfig.DataFolder + "/strategies"
-
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() && filepath.Ext(path) == ".json" {
-			s := &Strategy{}
-			err = s.loadFromFile(path)
-			if err != nil {
-				return err
-			}
-			if s.Concluded {
-				return nil
-			}
-			s.Sanitize()
-			log.Infof("%d, %s", s.SID, s.Symbol)
-			mErr, err := sql.SimpleTransaction(func(tx pgx.Tx) error {
-				_, err := tx.Exec(context.Background(),
-					`INSERT INTO bts.b_user (user_id) VALUES ($1) ON CONFLICT DO NOTHING`,
-					s.UserID)
+		discord.Infof("Populating roi for %d strategies", len(strategies))
+		for _, s := range strategies {
+			if time.Now().Sub(s.RoisFetchedAt) > 30*time.Minute {
+				log.Info("Fetching Roi: ", s.StrategyID)
+				rois, err := s.fetchRois()
 				if err != nil {
 					return err
 				}
+				s.RoisFetchedAt = time.Now()
+				for _, r := range rois {
+					_, err := tx.Exec(context.Background(),
+						`INSERT INTO bts.roi (
+				root_user_id,
+				strategy_id,
+				roi,
+				pnl,
+				time
+			 ) VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING`,
+						r.RootUserID,
+						s.StrategyID,
+						r.Roi,
+						r.Pnl,
+						time.Unix(r.Time, 0),
+					)
+					if err != nil {
+						return err
+					}
+				}
 				_, err = tx.Exec(context.Background(),
-					`INSERT INTO bts.strategy (
+					`UPDATE bts.strategy SET rois_fetched_at = $1 WHERE strategy_id = $2`,
+					s.RoisFetchedAt,
+					s.StrategyID,
+				)
+				if err != nil {
+					return err
+				}
+				if len(rois) != 0 && s.RoisFetchedAt.Sub(time.Unix(rois[0].Time, 0)) > 130*time.Minute {
+					_, err := tx.Exec(context.Background(),
+						`UPDATE bts.strategy SET concluded = $1 WHERE strategy_id = $2`,
+						true,
+						s.StrategyID,
+					)
+					if err != nil {
+						return err
+					}
+					discord.Infof("Concluded: %d", s.StrategyID)
+				}
+			}
+		}
+		return nil
+	})
+}
+
+func (s *Strategy) addToRankingStore() error {
+	return sql.SimpleTransaction(func(tx pgx.Tx) error {
+		_, err := tx.Exec(context.Background(),
+			`INSERT INTO bts.b_user (user_id) VALUES ($1) ON CONFLICT DO NOTHING`,
+			s.UserID)
+		if err != nil {
+			return err
+		}
+		_, err = tx.Exec(context.Background(),
+			`INSERT INTO bts.strategy (
             symbol,
             copy_count,
             roi,
@@ -125,204 +168,54 @@ func ToSQL() error {
             matched_count,
             min_investment
          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29) ON CONFLICT DO NOTHING`,
-					s.Symbol,
-					s.CopyCount,
-					s.Roi,
-					s.Pnl,
-					s.RunningTime,
-					s.SID,
-					s.StrategyType,
-					s.Direction,
-					s.UserID,
-					s.PriceDifference,
-					s.TimeDiscovered,
-					s.TimeNotFound,
-					s.RoisFetchedAt,
-					s.StrategyParams.Type,
-					s.StrategyParams.LowerLimit,
-					s.StrategyParams.UpperLimit,
-					s.StrategyParams.GridCount,
-					s.StrategyParams.TriggerPrice,
-					s.StrategyParams.StopLowerLimit,
-					s.StrategyParams.StopUpperLimit,
-					s.StrategyParams.BaseAsset,
-					s.StrategyParams.QuoteAsset,
-					s.StrategyParams.Leverage,
-					s.StrategyParams.TrailingUp,
-					s.StrategyParams.TrailingDown,
-					s.TrailingType,
-					s.LatestMatchedCount,
-					s.MatchedCount,
-					s.MinInvestment,
-				)
-				if err != nil {
-					return err
-				}
-				if len(s.Rois) == 0 && !s.RoisFetchedAt.IsZero() && time.Now().Sub(s.RoisFetchedAt) < 100*time.Minute {
-					return nil
-				}
-				if len(s.Rois) == 0 || s.RoisFetchedAt.Sub(time.Unix(s.Rois[0].Time, 0)) < 100*time.Minute {
-					log.Info("Fetching Roi: ", s.SID)
-					err = s.populateRois()
-					if err != nil {
-						return err
-					}
-					s.RoisFetchedAt = time.Now()
-					err = s.saveToStore()
-					if err != nil {
-						return err
-					}
-					_, err := tx.Exec(context.Background(),
-						`UPDATE bts.strategy SET rois_fetched_at = $1 WHERE strategy_id = $2`,
-						s.RoisFetchedAt,
-						s.SID,
-					)
-					if err != nil {
-						return err
-					}
-				}
-
-				for _, r := range s.Rois {
-					_, err := tx.Exec(context.Background(),
-						`INSERT INTO bts.roi (
-				root_user_id,
-				strategy_id,
-				roi,
-				pnl,
-				time
-			 ) VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING`,
-						r.RootUserID,
-						s.SID,
-						r.Roi,
-						r.Pnl,
-						time.Unix(r.Time, 0),
-					)
-					if err != nil {
-						return err
-					}
-				}
-
-				if len(s.Rois) != 0 && s.RoisFetchedAt.Sub(time.Unix(s.Rois[0].Time, 0)) > 100*time.Minute {
-					_, err := tx.Exec(context.Background(),
-						`UPDATE bts.strategy SET concluded = $1 WHERE strategy_id = $2`,
-						true,
-						s.SID,
-					)
-					if err != nil {
-						return err
-					}
-					s.Concluded = true
-					err = s.saveToStore()
-					if err != nil {
-						return err
-					}
-					discord.Infof("Concluded: %d", s.SID)
-				}
-				return nil
-			})
-			if mErr.ToError() != nil {
-				return mErr.ToError()
-			}
-			if err != nil {
-				return err
-			}
-		}
-		return nil
+			s.Symbol,
+			s.CopyCount,
+			s.Roi,
+			s.Pnl,
+			s.RunningTime,
+			s.SID,
+			s.StrategyType,
+			s.Direction,
+			s.UserID,
+			s.PriceDifference,
+			s.TimeDiscovered,
+			s.TimeNotFound,
+			s.RoisFetchedAt,
+			s.StrategyParams.Type,
+			s.StrategyParams.LowerLimit,
+			s.StrategyParams.UpperLimit,
+			s.StrategyParams.GridCount,
+			s.StrategyParams.TriggerPrice,
+			s.StrategyParams.StopLowerLimit,
+			s.StrategyParams.StopUpperLimit,
+			s.StrategyParams.BaseAsset,
+			s.StrategyParams.QuoteAsset,
+			s.StrategyParams.Leverage,
+			s.StrategyParams.TrailingUp,
+			s.StrategyParams.TrailingDown,
+			s.TrailingType,
+			s.LatestMatchedCount,
+			s.MatchedCount,
+			s.MinInvestment,
+		)
+		return err
 	})
-	return err
 }
 
-func Elect() ([]UserMetrics, error) {
-	root := config.TheConfig.DataFolder + "/strategies"
-
-	byUser := make(map[int]*UserMetrics)
-	count := 0
-	runningOnes := 0
-	negativeOnes := 0
-	timeFoundMin := 99
-	timeFoundMax := 0
-	withNoRois := 0
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() && filepath.Ext(path) == ".json" {
-			count++
-			s := &Strategy{}
-			err = s.loadFromFile(path)
-			if err != nil {
-				return err
-			}
-			if len(s.Rois) == 0 && !s.RoisFetchedAt.IsZero() {
-				withNoRois++
-				return nil
-			}
-			lastestTime := time.Unix(s.Rois[0].Time, 0)
-			if len(s.Rois) == 0 || s.RoisFetchedAt.Sub(lastestTime) < 100*time.Minute {
-				log.Info("No rois for strategy: ", s.SID)
-				err = s.populateRois()
-				if err != nil {
-					return err
-				}
-				s.RoisFetchedAt = time.Now()
-				err = s.saveToStore()
-				if err != nil {
-					return err
-				}
-			}
-			if len(s.Rois) == 0 && !s.RoisFetchedAt.IsZero() {
-				withNoRois++
-				return nil
-			}
-			timeFound := s.TimeDiscovered.Minute()
-			if timeFound < timeFoundMin {
-				timeFoundMin = timeFound
-			}
-			if timeFound > timeFoundMax {
-				timeFoundMax = timeFound
-			}
-			if s.isRunning() {
-				runningOnes++
-				return nil
-			}
-			s.Sanitize()
-			if _, ok := byUser[s.UserID]; !ok {
-				byUser[s.UserID] = &UserMetrics{
-					UserId:     s.UserID,
-					Strategies: make(map[int]*Strategy),
-					MinRuntime: 99 * time.Hour,
-				}
-			}
-			metrics := byUser[s.UserID]
-			metrics.Strategies[s.SID] = s
-			if s.Roi < 0 {
-				metrics.NegativeOnes++
-			}
-			metrics.TotalRois += s.Roi
-			metrics.TotalPnl += s.Pnl
-			r := time.Duration(s.RunningTime) * time.Second
-			if metrics.MinRuntime > r {
-				metrics.MinRuntime = r
-			}
-			if metrics.MaxRuntime < r {
-				metrics.MaxRuntime = r
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	selected := make([]UserMetrics, 0)
-	for _, v := range byUser {
-		if v.NegativeOnes <= 0 {
-			selected = append(selected, *v)
-		}
-	}
-	discord.Infof("Total strategies: %d, running: %d, negative: %d, users: %d, timeFound: %d/%d, withNoRois: %d",
-		count, runningOnes, negativeOnes, len(byUser), timeFoundMin, timeFoundMax, withNoRois)
-	sort.Slice(selected, func(i, j int) bool {
-		return selected[i].TotalPnl > selected[j].TotalPnl
-	})
-	return selected[:10], nil
+type UserMetrics struct {
+	UserId       int
+	Strategies   map[int]*Strategy `json:"-"`
+	NegativeOnes int
+	TotalRois    float64
+	TotalPnl     float64
+	MinRuntime   time.Duration
+	MaxRuntime   time.Duration
 }
+
+func (u UserMetrics) String() string {
+	return fmt.Sprintf("UserId: %d, NegativeOnes: %d, Rois: %.2f, Pnl: %.2f, TotalStrategies: %d, MinRuntime: %s, MaxRuntime: %s",
+		u.UserId, u.NegativeOnes, u.TotalRois*100, u.TotalPnl, len(u.Strategies), u.MinRuntime, u.MaxRuntime,
+	)
+}
+
+// use roi and pnl from the latest roi and pnl in roi table, as roi and pnl in strategy table may not be up to date

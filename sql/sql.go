@@ -171,8 +171,17 @@ func ExecWithPanic(ctx context.Context, sql string, args ...any) pgconn.CommandT
 	return wrappedPgx.ExecWithPanic(ctx, sql, args...)
 }
 
+func SimpleTransaction(f func(tx pgx.Tx) error) error {
+	mErr, fErr := _simpleTransaction(f)
+	if mErr != nil && mErr.ToError() != nil {
+		mErr.Add(fErr)
+		return mErr.ToError()
+	}
+	return fErr
+}
+
 // SimpleTransaction runs the given function in a transaction. If the function returns an error or panics, the transaction is rolled back.
-func SimpleTransaction(f func(tx pgx.Tx) error) (mErr *multierr.MultiErr, fErr error) {
+func _simpleTransaction(f func(tx pgx.Tx) error) (mErr *multierr.MultiErr, fErr error) {
 	mErr = multierr.NewMultiErr()
 	tx, txErr := dbPool.BeginTx(context.Background(), pgx.TxOptions{})
 	if txErr != nil {

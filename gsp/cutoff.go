@@ -44,6 +44,22 @@ func sortBySDCount(filtered Strategies) Strategies {
 	return sortedBySDCount
 }
 
+func Scrape() error {
+	strategies, err := getTopStrategies(FUTURE, "")
+	if err != nil {
+		return err
+	}
+	discord.Infof("* New: " + strategies.String())
+	for _, s := range strategies.Strategies {
+		s.Sanitize()
+		err := s.addToRankingStore()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func UpdateTopStrategiesWithRoi() error {
 	strategies, err := getTopStrategies(FUTURE, "")
 	if err != nil {
