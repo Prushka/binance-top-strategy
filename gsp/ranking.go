@@ -81,6 +81,9 @@ func ToSQL() error {
 			if err != nil {
 				return err
 			}
+			if s.Concluded {
+				return nil
+			}
 			s.Sanitize()
 			log.Infof("%d, %s", s.SID, s.Symbol)
 			mErr, err := sql.SimpleTransaction(func(tx pgx.Tx) error {
@@ -197,6 +200,23 @@ func ToSQL() error {
 					if err != nil {
 						return err
 					}
+				}
+
+				if len(s.Rois) != 0 && s.RoisFetchedAt.Sub(time.Unix(s.Rois[0].Time, 0)) > 100*time.Minute {
+					_, err := tx.Exec(context.Background(),
+						`UPDATE bts.strategy SET concluded = $1 WHERE strategy_id = $2`,
+						true,
+						s.SID,
+					)
+					if err != nil {
+						return err
+					}
+					s.Concluded = true
+					err = s.saveToStore()
+					if err != nil {
+						return err
+					}
+					discord.Infof("Concluded: %d", s.SID)
 				}
 				return nil
 			})

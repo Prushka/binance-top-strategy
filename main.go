@@ -407,7 +407,10 @@ func main() {
 		persistence.Init()
 		discord.Init()
 		panicOnError(sql.Init())
-		panicOnError(gsp.ToSQL())
+		err := gsp.ToSQL()
+		if err != nil {
+			discord.Errorf("Error: %v", err)
+		}
 	}
 	<-blocking
 }

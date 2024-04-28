@@ -71,6 +71,7 @@ type Strategy struct {
 	TimeDiscovered     time.Time
 	TimeNotFound       time.Time
 	RoisFetchedAt      time.Time
+	Concluded          bool
 	StrategyParams     struct {
 		Type           string  `json:"type"`
 		LowerLimitStr  string  `json:"lowerLimit"`
