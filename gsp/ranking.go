@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	log "github.com/sirupsen/logrus"
+	"strings"
 	"time"
 )
 
@@ -46,10 +47,6 @@ type StrategyDB struct {
 	LatestTime         *time.Time `db:"latest_roi_time"`
 }
 
-func (s *StrategyDB) fetchRois() (StrategyRoi, error) {
-	return RoisCache.Get(fmt.Sprintf("%d-%d", s.StrategyID, s.UserID))
-}
-
 func PopulateRoi() error {
 	strategies := make([]*StrategyDB, 0)
 	err := sql.GetDB().Scan(&strategies, `SELECT
@@ -79,7 +76,7 @@ WHERE
 		err = sql.SimpleTransaction(func(tx pgx.Tx) error {
 			if time.Now().Sub(s.RoisFetchedAt) > 30*time.Minute {
 				log.Info("Fetching Roi: ", s.StrategyID)
-				rois, err := s.fetchRois()
+				rois, err := getStrategyRois(s.StrategyID, s.UserID)
 				if err != nil {
 					return err
 				}
@@ -125,6 +122,9 @@ WHERE
 			}
 			return nil
 		})
+		if err != nil && strings.Contains(err.Error(), "unexpected end of JSON input") {
+			break
+		}
 	}
 	return err
 }

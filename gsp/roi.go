@@ -17,16 +17,10 @@ var RoisCache = cache.CreateMapCache[[]*Roi](
 		split := strings.Split(key, "-")
 		SID, _ := strconv.Atoi(split[0])
 		UserId, _ := strconv.Atoi(split[1])
-		roi, err := getStrategyRois(SID, UserId)
+		roi, err := getStrategyRois(int64(SID), int64(UserId))
 		if err != nil {
 			return nil, err
 		}
-		for _, r := range roi {
-			r.Time = r.Time / 1000
-		}
-		sort.Slice(roi, func(i, j int) bool {
-			return roi[i].Time > roi[j].Time
-		})
 		return roi, nil
 	},
 	func(rois []*Roi) bool {
@@ -57,12 +51,12 @@ type StrategyRoiResponse struct {
 }
 
 type QueryStrategyRoi struct {
-	RootUserID           int    `json:"rootUserId"`
-	StrategyID           int    `json:"strategyId"`
+	RootUserID           int64  `json:"rootUserId"`
+	StrategyID           int64  `json:"strategyId"`
 	StreamerStrategyType string `json:"streamerStrategyType"`
 }
 
-func getStrategyRois(strategyID int, rootUserId int) (StrategyRoi, error) {
+func getStrategyRois(strategyID int64, rootUserId int64) (StrategyRoi, error) {
 	query := &QueryStrategyRoi{
 		RootUserID:           rootUserId,
 		StrategyID:           strategyID,
@@ -74,7 +68,14 @@ func getStrategyRois(strategyID int, rootUserId int) (StrategyRoi, error) {
 	if err != nil {
 		return nil, err
 	}
-	return roi.Data, nil
+	roiData := roi.Data
+	for _, r := range roiData {
+		r.Time = r.Time / 1000
+	}
+	sort.Slice(roi, func(i, j int) bool {
+		return roiData[i].Time > roiData[j].Time
+	})
+	return roiData, nil
 }
 
 func (roi StrategyRoi) lastNRecords(n int) string {
