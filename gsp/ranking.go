@@ -74,9 +74,9 @@ WHERE
 	if err != nil {
 		return err
 	}
+	discord.Infof("Populating roi for %d strategies", len(strategies))
 	for _, s := range strategies {
 		err = sql.SimpleTransaction(func(tx pgx.Tx) error {
-			discord.Infof("Populating roi for %d strategies", len(strategies))
 			if time.Now().Sub(s.RoisFetchedAt) > 30*time.Minute {
 				log.Info("Fetching Roi: ", s.StrategyID)
 				rois, err := s.fetchRois()

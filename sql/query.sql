@@ -58,7 +58,8 @@ WHERE
     (s.concluded = FALSE OR s.concluded IS NULL);
 
 SELECT
-    r.time AS latest_roi_time
+    r.time AS latest_roi_time,
+    s.rois_fetched_at
 FROM
     bts.strategy s
         JOIN
@@ -67,7 +68,9 @@ WHERE
     s.concluded = TRUE
 ORDER BY
     r.time DESC
-LIMIT 1;
+LIMIT 10;
 
 
 select count(*) FROM strategy WHERE concluded = TRUE;
+
+INSERT INTO bts.roi (strategy_id, roi, pnl, time) VALUES (391829570, 0.1, 100, '2020-01-01 00:00:00');

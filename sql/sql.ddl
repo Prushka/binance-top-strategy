@@ -59,7 +59,8 @@ CREATE TABLE roi
     CONSTRAINT fk_user FOREIGN KEY (root_user_id)
         REFERENCES b_user (user_id)
         ON DELETE CASCADE
-        ON UPDATE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT pk_roi PRIMARY KEY (strategy_id, time)
 );
 
 SELECT public.create_hypertable('bts.roi', 'time', if_not_exists => TRUE);
