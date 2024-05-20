@@ -67,7 +67,7 @@ FROM
             bts.roi
     ) r ON s.strategy_id = r.strategy_id AND r.rn = 1
 WHERE
-    (s.concluded = FALSE OR s.concluded IS NULL);`)
+    (s.concluded = FALSE OR s.concluded IS NULL) ORDER BY s.time_discovered;`)
 	if err != nil {
 		return err
 	}

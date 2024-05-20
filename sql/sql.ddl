@@ -65,3 +65,10 @@ CREATE TABLE roi
 
 SELECT public.create_hypertable('bts.roi', 'time', if_not_exists => TRUE);
 CREATE INDEX IF NOT EXISTS roi_pnl_idx ON bts.roi (time, strategy_id);
+
+ALTER TABLE roi SET (
+    timescaledb.compress,
+timescaledb.compress_segmentby = 'strategy_id,root_user_id'
+    );
+SELECT public.add_compression_policy('roi', INTERVAL '2 days', if_not_exists => TRUE);
+
