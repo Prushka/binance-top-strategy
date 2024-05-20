@@ -60,9 +60,12 @@ SELECT public.create_hypertable('bts.roi', 'time', if_not_exists => TRUE);
 CREATE INDEX IF NOT EXISTS roi_pnl_idx ON bts.roi (time, strategy_id);
 
 ALTER TABLE roi SET (
-    timescaledb.compress,
+    timescaledb.compress=false,
     timescaledb.compress_segmentby = 'strategy_id'
     );
-SELECT public.add_compression_policy('roi', INTERVAL '2 days', if_not_exists => TRUE);
+SELECT public.decompress_chunk(c, true)
+FROM public.show_chunks('bts.roi') c;
 
-SELECT * FROM public.timescaledb_information.jobs;
+SELECT public.add_compression_policy('roi', INTERVAL '2 days', if_not_exists => TRUE);
+SELECT public.remove_compression_policy('roi');
+SELECT * FROM timescaledb_information.jobs;

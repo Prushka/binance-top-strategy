@@ -3,6 +3,7 @@ package gsp
 import (
 	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/sql"
+	"BinanceTopStrategies/utils"
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5"
@@ -146,6 +147,7 @@ WHERE
 		if time.Now().Sub(s.RoisFetchedAt) > 25*time.Minute {
 			err = sql.SimpleTransaction(func(tx pgx.Tx) error {
 				log.Info("Fetching Roi: ", s.StrategyID)
+				utils.ResetTime()
 				rois, err := getStrategyRois(s.StrategyID, s.UserID)
 				if err != nil {
 					return err
