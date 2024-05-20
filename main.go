@@ -122,6 +122,21 @@ func checkStopLoss(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 	}
 }
 
+type UserDB struct {
+	UserID         int     `db:"root_user_id"`
+	TotalInput     float64 `db:"total_original_input"`
+	TotalPnl       float64 `db:"total_pnl"`
+	AvgRoi         float64 `db:"avg_roi"`
+	MaxRoi         float64 `db:"max_roi"`
+	MinRoi         float64 `db:"min_roi"`
+	TotalRoi       float64 `db:"total_roi"`
+	AvgRuntime     float64 `db:"avg_runtime"`
+	MaxRuntime     float64 `db:"max_runtime"`
+	MinRuntime     float64 `db:"min_runtime"`
+	StrategyCount  int     `db:"strategy_count"`
+	ConcludedCount int     `db:"concluded_count"`
+}
+
 func tick() error {
 	utils.ResetTime()
 	sdk.ClearSessionSymbolPrice()
@@ -131,12 +146,23 @@ func tick() error {
 		return err
 	}
 	usdt -= config.TheConfig.LeavingAsset
-	err = gsp.UpdateTopStrategiesWithRoi()
+	pool := make([]*gsp.ChosenStrategyDB, 0)
+	err = sql.GetDB().Scan(&pool, `SELECT * FROM bts.ThePool`)
 	if err != nil {
 		return err
 	}
-	utils.Time("Fetch strategies")
+	utils.Time("Fetch the chosen")
+	for _, s := range pool {
+		log.Info(utils.AsJson(s))
+	}
 
+	discord.Infof("### Current Grids:")
+	sdk.ClearSessionSymbolPrice()
+	err = gsp.UpdateOpenGrids(true)
+	if err != nil {
+		return err
+	}
+	toCancel := make(gsp.GridsToCancel)
 	//elected, err := gsp.Elect()
 	//if err != nil {
 	//	return err
@@ -148,16 +174,9 @@ func tick() error {
 	//	}
 	//}
 	return nil
-	discord.Infof("### Current Grids:")
-	sdk.ClearSessionSymbolPrice()
-	err = gsp.UpdateOpenGrids(true)
-	if err != nil {
-		return err
-	}
 	gsp.SessionCancelledGIDs.Clear()
 
 	utils.Time("Fetch grids")
-	toCancel := make(gsp.GridsToCancel)
 	count := 0
 	grids := utils.MapValues(gsp.GGrids.GridsByGid)
 	sort.Slice(grids, func(i, j int) bool {
@@ -388,7 +407,7 @@ func main() {
 		}
 		sdk.Init()
 		persistence.Init()
-		_, err := scheduler.SingletonMode().Every(config.TheConfig.TickEverySeconds).Seconds().Do(
+		panicOnErrorSec(scheduler.SingletonMode().Every(config.TheConfig.TickEverySeconds).Seconds().Do(
 			func() {
 				utils.ResetTime()
 				t := time.Now()
@@ -398,24 +417,10 @@ func main() {
 				}
 				discord.Infof("*Run took: %v*", time.Since(t))
 			},
-		)
-		if err != nil {
-			discord.Errorf("Error: %v", err)
-			return
-		}
-	case "playground":
-		utils.ResetTime()
-		t := time.Now()
-		discord.Infof("## Roi: %v", time.Now().Format("2006-01-02 15:04:05"))
-		err := gsp.PopulateRoi()
-		if err != nil {
-			discord.Errorf("Error: %v", err)
-		}
-		discord.Infof("*Run took: %v*", time.Since(t))
+		))
 	case "SQL":
-		panicOnErrorSecond(scheduler.SingletonMode().Every(1).Minutes().Do(
+		panicOnErrorSec(scheduler.SingletonMode().Every(1).Minutes().Do(
 			func() {
-				utils.ResetTime()
 				t := time.Now()
 				discord.Infof("## Strategies: %v", time.Now().Format("2006-01-02 15:04:05"))
 				err := gsp.Scrape()
@@ -425,9 +430,8 @@ func main() {
 				discord.Infof("*Run took: %v*", time.Since(t))
 			},
 		))
-		panicOnErrorSecond(scheduler.SingletonMode().Every(5).Minutes().Do(
+		panicOnErrorSec(scheduler.SingletonMode().Every(5).Minutes().Do(
 			func() {
-				utils.ResetTime()
 				t := time.Now()
 				discord.Infof("## Roi: %v", time.Now().Format("2006-01-02 15:04:05"))
 				err := gsp.PopulateRoi()
@@ -437,12 +441,21 @@ func main() {
 				discord.Infof("*Run took: %v*", time.Since(t))
 			},
 		))
+	case "playground":
+		utils.ResetTime()
+		t := time.Now()
+		discord.Infof("## Roi: %v", time.Now().Format("2006-01-02 15:04:05"))
+		err := gsp.PopulateRoi()
+		if err != nil {
+			discord.Errorf("Error: %v", err)
+		}
+		discord.Infof("*Run took: %v*", time.Since(t))
 	}
 	scheduler.StartAsync()
 	<-blocking
 }
 
-func panicOnErrorSecond(a interface{}, err error) {
+func panicOnErrorSec(a interface{}, err error) {
 	if err != nil {
 		panic(err)
 	}

@@ -145,7 +145,66 @@ ORDER BY
 
 SELECT * FROM TheChosen;
 
+SELECT * FROm strategy WHERE user_id=215777793;
+SELECT * FROM strategy WHERE user_id = 215777793 AND (concluded IS NULL OR concluded = false);
 
+CREATE OR REPLACE VIEW ThePool AS WITH Pool AS (
+    SELECT
+        strategy.*, TheChosen.total_roi, TheChosen.total_original_input,
+        TheChosen.strategy_count
+    FROM strategy
+        JOIN TheChosen ON strategy.user_id = TheChosen.root_user_id
+    WHERE (concluded IS NULL OR concluded = false) AND strategy_type = 2
+), LatestRoi AS (
+    SELECT
+        r.root_user_id,
+        r.strategy_id,
+        r.roi as roi,
+        r.pnl,
+        r.time,
+        ROW_NUMBER() OVER (PARTITION BY r.strategy_id ORDER BY time DESC) AS rn
+    FROM
+        bts.roi r
+    JOIN Pool ON Pool.strategy_id = r.strategy_id
+), EarliestRoi AS (
+    SELECT
+        r.strategy_id,
+        r.time,
+        ROW_NUMBER() OVER (PARTITION BY r.strategy_id ORDER BY time) AS rn
+    FROM
+        bts.roi r
+    JOIN Pool ON Pool.strategy_id = r.strategy_id
+),
+     FilteredStrategies AS (
+         SELECT
+             l.root_user_id,
+             l.strategy_id,
+             l.roi,
+             l.pnl,
+             l.pnl / NULLIF(l.roi, 0) as original_input,
+             EXTRACT(EPOCH FROM (l.time - e.time)) as runtime
+         FROM
+             LatestRoi l
+                 JOIN
+             EarliestRoi e ON l.strategy_id = e.strategy_id
+         WHERE
+             l.rn = 1 AND e.rn = 1
+     )
+SELECT
+    f.roi as roi, f.pnl as pnl, f.original_input, f.runtime as running_time, p.strategy_count,
+    p.total_roi, p.total_original_input,
+    p.symbol, p.copy_count, p.strategy_id, p.strategy_type, p.direction, p.time_discovered,
+    p.user_id, p.price_difference, p.rois_fetched_at, p.type, p.lower_limit, p.upper_limit,
+    p.grid_count, p.trigger_price, p.stop_lower_limit, p.stop_upper_limit, p.base_asset, p.quote_asset,
+    p.leverage, p.trailing_down, p.trailing_up, p.trailing_type, p.latest_matched_count, p.matched_count, p.min_investment,
+    p.concluded
+    FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id
+        WHERE f.original_input > 498
+        ORDER BY p.total_roi DESC;
+
+SELECT * FROM ThePool;
+
+-- TODO: min possible roi in any strategy whose original input is greater than 500
 
 WITH LatestRoi AS (
     SELECT
@@ -158,7 +217,7 @@ WITH LatestRoi AS (
     FROM
         bts.roi
     WHERE
-        root_user_id = 16576522
+        root_user_id = 215777793
 ),
      EarliestRoi AS (
          SELECT
@@ -168,7 +227,7 @@ WITH LatestRoi AS (
          FROM
              bts.roi
          WHERE
-             root_user_id = 16576522
+             root_user_id = 215777793
      ),
      FilteredStrategies AS (
          SELECT

@@ -11,6 +11,22 @@ import (
 	"time"
 )
 
+type RoiDB struct {
+	RootUserID int     `db:"root_user_id"`
+	StrategyID int     `db:"strategy_id"`
+	Roi        float64 `db:"roi"`
+	Pnl        float64 `db:"pnl"`
+	Time       int64   `db:"time"`
+}
+
+type ChosenStrategyDB struct {
+	StrategyDB
+	UserRoi        float64 `db:"total_roi"`
+	UserInput      float64 `db:"original_input"`
+	UserTotalInput float64 `db:"total_original_input"`
+	UserStrategies int     `db:"total_strategies"`
+}
+
 type StrategyDB struct {
 	Symbol             string     `db:"symbol"`
 	CopyCount          int        `db:"copy_count"`
@@ -73,7 +89,7 @@ WHERE
 	}
 	discord.Infof("Populating roi for %d strategies", len(strategies))
 	for _, s := range strategies {
-		if time.Now().Sub(s.RoisFetchedAt) > 30*time.Minute {
+		if time.Now().Sub(s.RoisFetchedAt) > 25*time.Minute {
 			err = sql.SimpleTransaction(func(tx pgx.Tx) error {
 				log.Info("Fetching Roi: ", s.StrategyID)
 				rois, err := getStrategyRois(s.StrategyID, s.UserID)
@@ -109,6 +125,7 @@ WHERE
 					return err
 				}
 				if len(rois) != 0 && s.RoisFetchedAt.Sub(time.Unix(rois[0].Time, 0)) > 130*time.Minute {
+					// concluded: if no new roi fetched in 2 hours
 					_, err := tx.Exec(context.Background(),
 						`UPDATE bts.strategy SET concluded = $1 WHERE strategy_id = $2`,
 						true,
