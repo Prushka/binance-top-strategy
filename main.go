@@ -171,6 +171,35 @@ func tick() error {
 	}
 	gsp.SessionCancelledGIDs.Clear()
 	toCancel := make(gsp.GridsToCancel)
+
+	utils.Time("Fetch grids")
+	count := 0
+	grids := utils.MapValues(gsp.GGrids.GridsByGid)
+	sort.Slice(grids, func(i, j int) bool {
+		return grids[i].GID < grids[j].GID
+	})
+	for _, grid := range grids {
+		discord.Infof(gsp.Display(nil, grid, "", count+1, len(gsp.GGrids.GridsByGid)))
+		count++
+		if !gsp.Bundle.Raw.Exists(grid.SID) {
+			toCancel.AddGridToCancel(grid, config.TheConfig.MaxCancelLossStrategyDeleted, "strategy not found")
+			if grid.LastRoi < 0 {
+				blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), "strategy not found, lastRoi loss")
+			}
+			//checkStopLossNotPicked(grid, toCancel)
+		}
+	}
+	if !toCancel.IsEmpty() {
+		discord.Infof("### Expired Strategies: %s", toCancel)
+		toCancel.CancelAll()
+	}
+
+	if toCancel.HasCancelled() && !config.TheConfig.Paper {
+		discord.Infof("Cancelled expired grids - Skip current run")
+		gsp.SessionCancelledGIDs = toCancel.CancelledGIDs()
+		return nil
+	}
+
 	gridsOpen := len(gsp.GGrids.GridsByGid)
 	if config.TheConfig.MaxChunks-gridsOpen <= 0 && !config.TheConfig.Paper {
 		discord.Infof("Max Chunks reached, No cancel - Skip current run")
@@ -317,51 +346,6 @@ func tick() error {
 	if err != nil {
 		return err
 	}
-	return nil
-
-	utils.Time("Fetch grids")
-	count := 0
-	grids := utils.MapValues(gsp.GGrids.GridsByGid)
-	sort.Slice(grids, func(i, j int) bool {
-		return grids[i].GID < grids[j].GID
-	})
-	for _, grid := range grids {
-		discord.Infof(gsp.Display(nil, grid, "", count+1, len(gsp.GGrids.GridsByGid)))
-		count++
-		if !gsp.Bundle.Raw.Exists(grid.SID) {
-			toCancel.AddGridToCancel(grid, config.TheConfig.MaxCancelLossStrategyDeleted, "strategy not found")
-			if grid.LastRoi < 0 {
-				blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), "strategy not found, lastRoi loss")
-			}
-			checkStopLossNotPicked(grid, toCancel)
-		} else if !gsp.GetPool().Exists(grid.SID) {
-			reasons := gsp.Bundle.Raw.StrategiesById[grid.SID].ReasonNotPicked
-			toCancel.AddGridToCancel(grid, 0, "strategy not picked "+strings.Join(reasons, ", "))
-			checkStopLossNotPicked(grid, toCancel)
-		}
-		gridTracking := grid.GetTracking()
-		if time.Since(gridTracking.TimeLastChange) > time.Duration(config.TheConfig.CancelNoChangeMinutes)*time.Minute && !grid.MarketPriceWithinRange() {
-			reason := fmt.Sprintf("no change, %s", utils.ShortDur(time.Since(gridTracking.TimeLastChange).Round(time.Second)))
-			blacklist.AddSID(grid.SID, 10*time.Minute, reason)
-			toCancel.AddGridToCancel(grid, 0, reason)
-		}
-
-		checkTakeProfits(grid, toCancel)
-		checkDirectionShrink(grid, toCancel)
-		checkOppositeDirections(grid, toCancel)
-		checkStopLoss(grid, toCancel)
-	}
-	if !toCancel.IsEmpty() {
-		discord.Infof("### Expired Strategies: %s", toCancel)
-		toCancel.CancelAll()
-	}
-
-	if toCancel.HasCancelled() && !config.TheConfig.Paper {
-		discord.Infof("Cancelled expired grids - Skip current run")
-		gsp.SessionCancelledGIDs = toCancel.CancelledGIDs()
-		return nil
-	}
-
 	return nil
 }
 
