@@ -21,7 +21,7 @@ type RoiDB struct {
 
 type ChosenStrategyDB struct {
 	StrategyDB
-	UserRoi        float64 `db:"total_roi"`
+	UserTotalRoi   float64 `db:"total_roi"`
 	UserInput      float64 `db:"original_input"`
 	UserTotalInput float64 `db:"total_original_input"`
 	UserStrategies int     `db:"strategy_count"`
@@ -61,6 +61,58 @@ type StrategyDB struct {
 	LatestRoi          *float64   `db:"latest_roi"`
 	LatestPnl          *float64   `db:"latest_pnl"`
 	LatestTime         *time.Time `db:"latest_roi_time"`
+}
+
+func floatPtrToStringPtr(f *float64) *string {
+	if f == nil {
+		return nil
+	}
+	s := fmt.Sprintf("%f", *f)
+	return &s
+}
+
+func ToStrategies(dbSs []*ChosenStrategyDB) Strategies {
+	ss := make(Strategies, 0)
+	for _, dbS := range dbSs {
+		ss = append(ss, dbS.ToStrategy())
+	}
+	return ss
+}
+
+func (db *StrategyDB) ToStrategy() *Strategy {
+	s := &Strategy{
+		Symbol:             db.Symbol,
+		CopyCount:          db.CopyCount,
+		RoiStr:             fmt.Sprintf("%f", db.ROI*100),
+		PnlStr:             fmt.Sprintf("%f", db.PNL),
+		RunningTime:        db.RunningTime,
+		SID:                int(db.StrategyID),
+		StrategyType:       db.StrategyType,
+		Direction:          db.Direction,
+		UserID:             int(db.UserID),
+		TrailingType:       *db.TrailingType,
+		LatestMatchedCount: *db.LatestMatchedCount,
+		MatchedCount:       *db.MatchedCount,
+		MinInvestment:      *floatPtrToStringPtr(db.MinInvestment),
+		StrategyParams: StrategyParams{
+			Type:           db.Type,
+			LowerLimitStr:  fmt.Sprintf("%f", db.LowerLimit),
+			UpperLimitStr:  fmt.Sprintf("%f", db.UpperLimit),
+			LowerLimit:     db.LowerLimit,
+			UpperLimit:     db.UpperLimit,
+			GridCount:      db.GridCount,
+			TriggerPrice:   floatPtrToStringPtr(db.TriggerPrice),
+			StopLowerLimit: floatPtrToStringPtr(db.StopLowerLimit),
+			StopUpperLimit: floatPtrToStringPtr(db.StopUpperLimit),
+			BaseAsset:      db.BaseAsset,
+			QuoteAsset:     db.QuoteAsset,
+			Leverage:       *db.Leverage,
+			TrailingUp:     *db.TrailingUp,
+			TrailingDown:   *db.TrailingDown,
+		},
+	}
+	s.Sanitize()
+	return s
 }
 
 func PopulateRoi() error {

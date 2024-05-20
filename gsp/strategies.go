@@ -73,26 +73,28 @@ type Strategy struct {
 	TimeNotFound       time.Time
 	RoisFetchedAt      time.Time
 	Concluded          bool
-	StrategyParams     struct {
-		Type           string  `json:"type"`
-		LowerLimitStr  string  `json:"lowerLimit"`
-		UpperLimitStr  string  `json:"upperLimit"`
-		LowerLimit     float64 `json:"-"`
-		UpperLimit     float64 `json:"-"`
-		GridCount      int     `json:"gridCount"`
-		TriggerPrice   *string `json:"triggerPrice"`
-		StopLowerLimit *string `json:"stopLowerLimit"`
-		StopUpperLimit *string `json:"stopUpperLimit"`
-		BaseAsset      any     `json:"baseAsset"`
-		QuoteAsset     any     `json:"quoteAsset"`
-		Leverage       int     `json:"leverage"`
-		TrailingUp     bool    `json:"trailingUp"`
-		TrailingDown   bool    `json:"trailingDown"`
-	} `json:"strategyParams"`
-	TrailingType       string `json:"trailingType"`
-	LatestMatchedCount int    `json:"latestMatchedCount"`
-	MatchedCount       int    `json:"matchedCount"`
-	MinInvestment      string `json:"minInvestment"`
+	StrategyParams     StrategyParams `json:"strategyParams"`
+	TrailingType       string         `json:"trailingType"`
+	LatestMatchedCount int            `json:"latestMatchedCount"`
+	MatchedCount       int            `json:"matchedCount"`
+	MinInvestment      string         `json:"minInvestment"`
+}
+
+type StrategyParams struct {
+	Type           string  `json:"type"`
+	LowerLimitStr  string  `json:"lowerLimit"`
+	UpperLimitStr  string  `json:"upperLimit"`
+	LowerLimit     float64 `json:"-"`
+	UpperLimit     float64 `json:"-"`
+	GridCount      int     `json:"gridCount"`
+	TriggerPrice   *string `json:"triggerPrice"`
+	StopLowerLimit *string `json:"stopLowerLimit"`
+	StopUpperLimit *string `json:"stopUpperLimit"`
+	BaseAsset      any     `json:"baseAsset"`
+	QuoteAsset     any     `json:"quoteAsset"`
+	Leverage       int     `json:"leverage"`
+	TrailingUp     bool    `json:"trailingUp"`
+	TrailingDown   bool    `json:"trailingDown"`
 }
 
 type UserPair struct {
