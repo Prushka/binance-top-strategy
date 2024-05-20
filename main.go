@@ -141,7 +141,7 @@ func tick() error {
 	for _, u := range poolDB {
 		users.Add(u.UserID)
 	}
-	log.Infof("Found %d strategies and %d users", len(poolDB), users.Cardinality())
+	discord.Infof("Found %d strategies and %d users", len(poolDB), users.Cardinality())
 
 	err = gsp.UpdateTopStrategiesWithRoi(gsp.ToStrategies(poolDB))
 	if err != nil {

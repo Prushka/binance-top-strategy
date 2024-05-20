@@ -28,38 +28,35 @@ type ChosenStrategyDB struct {
 }
 
 type StrategyDB struct {
-	Symbol             string     `db:"symbol"`
-	CopyCount          int        `db:"copy_count"`
-	ROI                float64    `db:"roi"`
-	PNL                float64    `db:"pnl"`
-	RunningTime        int        `db:"running_time"`
-	StrategyID         int64      `db:"strategy_id"` // Use int64 for BIGINT
-	StrategyType       int        `db:"strategy_type"`
-	Direction          int        `db:"direction"`
-	UserID             int64      `db:"user_id"` // Use int64 for BIGINT
-	PriceDifference    float64    `db:"price_difference"`
-	TimeDiscovered     time.Time  `db:"time_discovered"`
-	RoisFetchedAt      time.Time  `db:"rois_fetched_at"`
-	Type               string     `db:"type"`
-	LowerLimit         float64    `db:"lower_limit"`
-	UpperLimit         float64    `db:"upper_limit"`
-	GridCount          int        `db:"grid_count"`
-	TriggerPrice       *float64   `db:"trigger_price"` // Use pointer for nullable columns
-	StopLowerLimit     *float64   `db:"stop_lower_limit"`
-	StopUpperLimit     *float64   `db:"stop_upper_limit"`
-	BaseAsset          *string    `db:"base_asset"` // Use pointer for nullable columns
-	QuoteAsset         *string    `db:"quote_asset"`
-	Leverage           *int       `db:"leverage"`
-	TrailingUp         *bool      `db:"trailing_up"`
-	TrailingDown       *bool      `db:"trailing_down"`
-	TrailingType       *string    `db:"trailing_type"`
-	LatestMatchedCount *int       `db:"latest_matched_count"`
-	MatchedCount       *int       `db:"matched_count"`
-	MinInvestment      *float64   `db:"min_investment"`
-	Concluded          *bool      `db:"concluded"`
-	LatestRoi          *float64   `db:"latest_roi"`
-	LatestPnl          *float64   `db:"latest_pnl"`
-	LatestTime         *time.Time `db:"latest_roi_time"`
+	Symbol             string    `db:"symbol"`
+	CopyCount          int       `db:"copy_count"`
+	ROI                float64   `db:"roi"`
+	PNL                float64   `db:"pnl"`
+	RunningTime        int       `db:"running_time"`
+	StrategyID         int64     `db:"strategy_id"` // Use int64 for BIGINT
+	StrategyType       int       `db:"strategy_type"`
+	Direction          int       `db:"direction"`
+	UserID             int64     `db:"user_id"` // Use int64 for BIGINT
+	PriceDifference    float64   `db:"price_difference"`
+	TimeDiscovered     time.Time `db:"time_discovered"`
+	RoisFetchedAt      time.Time `db:"rois_fetched_at"`
+	Type               string    `db:"type"`
+	LowerLimit         float64   `db:"lower_limit"`
+	UpperLimit         float64   `db:"upper_limit"`
+	GridCount          int       `db:"grid_count"`
+	TriggerPrice       *float64  `db:"trigger_price"` // Use pointer for nullable columns
+	StopLowerLimit     *float64  `db:"stop_lower_limit"`
+	StopUpperLimit     *float64  `db:"stop_upper_limit"`
+	BaseAsset          *string   `db:"base_asset"` // Use pointer for nullable columns
+	QuoteAsset         *string   `db:"quote_asset"`
+	Leverage           *int      `db:"leverage"`
+	TrailingUp         *bool     `db:"trailing_up"`
+	TrailingDown       *bool     `db:"trailing_down"`
+	TrailingType       *string   `db:"trailing_type"`
+	LatestMatchedCount *int      `db:"latest_matched_count"`
+	MatchedCount       *int      `db:"matched_count"`
+	MinInvestment      *float64  `db:"min_investment"`
+	Concluded          *bool     `db:"concluded"`
 }
 
 func floatPtrToStringPtr(f *float64) *string {
@@ -117,24 +114,11 @@ func (db *StrategyDB) ToStrategy() *Strategy {
 func PopulateRoi() error {
 	strategies := make([]*StrategyDB, 0)
 	err := sql.GetDB().Scan(&strategies, `SELECT
-    s.*,
-    r.roi as latest_roi,
-    r.pnl as latest_pnl,
-    r.time as latest_roi_time
+    s.*
 FROM
     bts.strategy s
-        LEFT JOIN (
-        SELECT
-            roi.strategy_id,
-            roi.roi,
-            roi.pnl,
-            roi.time,
-            ROW_NUMBER() OVER (PARTITION BY roi.strategy_id ORDER BY roi.time DESC) AS rn
-        FROM
-            bts.roi
-    ) r ON s.strategy_id = r.strategy_id AND r.rn = 1
 WHERE
-    (s.concluded = FALSE OR s.concluded IS NULL) ORDER BY s.time_discovered;`)
+    (s.concluded = FALSE OR s.concluded IS NULL) ORDER BY s.rois_fetched_at, s.time_discovered;`)
 	if err != nil {
 		return err
 	}
@@ -143,8 +127,10 @@ WHERE
 		discord.Infof("Earliest strategy: %s", strategies[0].TimeDiscovered)
 	}
 	concludedCount := 0
+	fetchedCount := 0
 	for _, s := range strategies {
-		if time.Now().Sub(s.RoisFetchedAt) > 25*time.Minute {
+		if time.Now().Sub(s.RoisFetchedAt) > 55*time.Minute {
+			fetchedCount++
 			err = sql.SimpleTransaction(func(tx pgx.Tx) error {
 				log.Info("Fetching Roi: ", s.StrategyID)
 				utils.ResetTime()
@@ -198,7 +184,7 @@ WHERE
 			break
 		}
 	}
-	discord.Infof("Concluded %d strategies", concludedCount)
+	discord.Infof("Concluded %d strategies, Fetched %d strategies", concludedCount, fetchedCount)
 	return err
 }
 
