@@ -118,7 +118,7 @@ func PopulateRoi() error {
 FROM
     bts.strategy s
 WHERE
-    (s.concluded = FALSE OR s.concluded IS NULL) ORDER BY s.rois_fetched_at, s.time_discovered;`)
+    (s.concluded = FALSE OR s.concluded IS NULL) AND strategy_type = 2 ORDER BY s.rois_fetched_at, s.time_discovered;`)
 	if err != nil {
 		return err
 	}
