@@ -39,7 +39,6 @@ type StrategyDB struct {
 	UserID             int64      `db:"user_id"` // Use int64 for BIGINT
 	PriceDifference    float64    `db:"price_difference"`
 	TimeDiscovered     time.Time  `db:"time_discovered"`
-	TimeNotFound       *time.Time `db:"time_not_found"`
 	RoisFetchedAt      time.Time  `db:"rois_fetched_at"`
 	Type               string     `db:"type"`
 	LowerLimit         float64    `db:"lower_limit"`
@@ -223,7 +222,6 @@ func (s *Strategy) addToRankingStore() error {
             user_id,
             price_difference,
             time_discovered,
-            time_not_found,
             rois_fetched_at,
             type,
             lower_limit,
@@ -241,7 +239,7 @@ func (s *Strategy) addToRankingStore() error {
             latest_matched_count,
             matched_count,
             min_investment
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29) ON CONFLICT DO NOTHING`,
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28) ON CONFLICT DO NOTHING`,
 			s.Symbol,
 			s.CopyCount,
 			s.Roi,
@@ -253,7 +251,6 @@ func (s *Strategy) addToRankingStore() error {
 			s.UserID,
 			s.PriceDifference,
 			s.TimeDiscovered,
-			s.TimeNotFound,
 			s.RoisFetchedAt,
 			s.StrategyParams.Type,
 			s.StrategyParams.LowerLimit,

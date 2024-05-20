@@ -211,7 +211,7 @@ func _simpleTransaction(f func(tx pgx.Tx) error) (mErr *multierr.MultiErr, fErr 
 					log.Errorf("Error committing transaction: %v", err)
 					mErr.Add(err)
 				} else {
-					log.Infof("Committed transaction")
+					log.Debugf("Committed transaction")
 				}
 			}
 		}

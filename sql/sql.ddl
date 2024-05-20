@@ -16,7 +16,6 @@ CREATE TABLE strategy
     user_id              BIGINT,
     price_difference     NUMERIC,
     time_discovered      TIMESTAMP WITH TIME ZONE,
-    time_not_found       TIMESTAMP WITH TIME ZONE,
     rois_fetched_at      TIMESTAMP WITH TIME ZONE,
     type                 VARCHAR(30),
     lower_limit          NUMERIC,
