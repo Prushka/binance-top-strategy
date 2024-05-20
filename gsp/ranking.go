@@ -118,7 +118,11 @@ func PopulateRoi() error {
 FROM
     bts.strategy s
 WHERE
-    (s.concluded = FALSE OR s.concluded IS NULL) AND strategy_type = 2 ORDER BY s.rois_fetched_at, s.time_discovered;`)
+    (s.concluded = FALSE OR s.concluded IS NULL)
+  AND
+    strategy_type = 2
+  AND rois_fetched_at <= NOW() - INTERVAL '45 minutes'
+    ORDER BY s.rois_fetched_at, s.time_discovered;`)
 	if err != nil {
 		return err
 	}
@@ -129,57 +133,55 @@ WHERE
 	concludedCount := 0
 	fetchedCount := 0
 	for _, s := range strategies {
-		if time.Now().Sub(s.RoisFetchedAt) > 55*time.Minute {
-			fetchedCount++
-			err = sql.SimpleTransaction(func(tx pgx.Tx) error {
-				log.Info("Fetching Roi: ", s.StrategyID)
-				utils.ResetTime()
-				rois, err := getStrategyRois(s.StrategyID, s.UserID)
-				if err != nil {
-					return err
-				}
-				s.RoisFetchedAt = time.Now()
-				for _, r := range rois {
-					_, err := tx.Exec(context.Background(),
-						`INSERT INTO bts.roi (
+		err = sql.SimpleTransaction(func(tx pgx.Tx) error {
+			log.Info("Fetching Roi: ", s.StrategyID)
+			utils.ResetTime()
+			rois, err := getStrategyRois(s.StrategyID, s.UserID)
+			if err != nil {
+				return err
+			}
+			s.RoisFetchedAt = time.Now()
+			for _, r := range rois {
+				_, err := tx.Exec(context.Background(),
+					`INSERT INTO bts.roi (
 				strategy_id,
 				roi,
 				pnl,
 				time
 			 ) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
-						s.StrategyID,
-						r.Roi,
-						r.Pnl,
-						time.Unix(r.Time, 0),
-					)
-					if err != nil {
-						return err
-					}
+					s.StrategyID,
+					r.Roi,
+					r.Pnl,
+					time.Unix(r.Time, 0),
+				)
+				if err != nil {
+					return err
 				}
-				_, err = tx.Exec(context.Background(),
-					`UPDATE bts.strategy SET rois_fetched_at = $1 WHERE strategy_id = $2`,
-					s.RoisFetchedAt,
+			}
+			_, err = tx.Exec(context.Background(),
+				`UPDATE bts.strategy SET rois_fetched_at = $1 WHERE strategy_id = $2`,
+				s.RoisFetchedAt,
+				s.StrategyID,
+			)
+			if err != nil {
+				return err
+			}
+			if len(rois) != 0 && s.RoisFetchedAt.Sub(time.Unix(rois[0].Time, 0)) > 130*time.Minute {
+				// concluded: if no new roi fetched in 2 hours
+				_, err := tx.Exec(context.Background(),
+					`UPDATE bts.strategy SET concluded = $1 WHERE strategy_id = $2`,
+					true,
 					s.StrategyID,
 				)
 				if err != nil {
 					return err
 				}
-				if len(rois) != 0 && s.RoisFetchedAt.Sub(time.Unix(rois[0].Time, 0)) > 130*time.Minute {
-					// concluded: if no new roi fetched in 2 hours
-					_, err := tx.Exec(context.Background(),
-						`UPDATE bts.strategy SET concluded = $1 WHERE strategy_id = $2`,
-						true,
-						s.StrategyID,
-					)
-					if err != nil {
-						return err
-					}
-					log.Infof("Concluded: %d", s.StrategyID)
-					concludedCount++
-				}
-				return nil
-			})
-		}
+				log.Infof("Concluded: %d", s.StrategyID)
+				concludedCount++
+			}
+			fetchedCount++
+			return nil
+		})
 		if err != nil && strings.Contains(err.Error(), "unexpected end of JSON input") {
 			break
 		}
