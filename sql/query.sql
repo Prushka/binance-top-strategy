@@ -79,7 +79,7 @@ SELECT * FROM strategy ORDER BY rois_fetched_at LIMIT 10;
 
 
 
-WITH LatestRoi AS (
+CREATE OR REPLACE VIEW TheChosen AS WITH LatestRoi AS (
     SELECT
         root_user_id,
         strategy_id,
@@ -104,13 +104,15 @@ WITH LatestRoi AS (
              l.roi,
              l.pnl,
              l.pnl / NULLIF(l.roi, 0) as original_input,
-             EXTRACT(EPOCH FROM (l.time - e.time)) as runtime
+             EXTRACT(EPOCH FROM (l.time - e.time)) as runtime,
+             s.concluded
          FROM
              LatestRoi l
          JOIN
             EarliestRoi e ON l.strategy_id = e.strategy_id
+         JOIN strategy s ON l.strategy_id = s.strategy_id
          WHERE
-             l.rn = 1 AND e.rn = 1 AND (l.roi > 0.01 OR l.roi < -0.01)
+             l.rn = 1 AND e.rn = 1 AND (l.roi > 0.01 OR l.roi < -0.01) AND s.strategy_type = 2
      ),
      UserOriginalInputs AS (
          SELECT
@@ -124,7 +126,8 @@ WITH LatestRoi AS (
              AVG(f.runtime) AS avg_runtime,
              MAX(f.runtime) AS max_runtime,
              MIN(f.runtime) AS min_runtime,
-             COUNT(*) AS strategy_count
+             COUNT(*) AS strategy_count,
+             COUNT(f.concluded) AS concluded_count
          FROM
              FilteredStrategies f
          WHERE
@@ -140,6 +143,8 @@ WHERE u.total_original_input >= 8500 AND strategy_count >= 3 AND min_roi >= 0.01
 ORDER BY
     total_roi DESC;
 
+SELECT * FROM TheChosen;
+
 
 
 WITH LatestRoi AS (
@@ -153,7 +158,7 @@ WITH LatestRoi AS (
     FROM
         bts.roi
     WHERE
-        root_user_id = 827617758
+        root_user_id = 16576522
 ),
      EarliestRoi AS (
          SELECT
@@ -163,7 +168,7 @@ WITH LatestRoi AS (
          FROM
              bts.roi
          WHERE
-             root_user_id = 827617758
+             root_user_id = 16576522
      ),
      FilteredStrategies AS (
          SELECT
