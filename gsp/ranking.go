@@ -24,7 +24,7 @@ type ChosenStrategyDB struct {
 	UserRoi        float64 `db:"total_roi"`
 	UserInput      float64 `db:"original_input"`
 	UserTotalInput float64 `db:"total_original_input"`
-	UserStrategies int     `db:"total_strategies"`
+	UserStrategies int     `db:"strategy_count"`
 }
 
 type StrategyDB struct {
@@ -88,6 +88,7 @@ WHERE
 		return err
 	}
 	discord.Infof("Populating roi for %d strategies", len(strategies))
+	concludedCount := 0
 	for _, s := range strategies {
 		if time.Now().Sub(s.RoisFetchedAt) > 25*time.Minute {
 			err = sql.SimpleTransaction(func(tx pgx.Tx) error {
@@ -134,7 +135,8 @@ WHERE
 					if err != nil {
 						return err
 					}
-					discord.Infof("Concluded: %d", s.StrategyID)
+					log.Infof("Concluded: %d", s.StrategyID)
+					concludedCount++
 				}
 				return nil
 			})
@@ -143,6 +145,7 @@ WHERE
 			break
 		}
 	}
+	discord.Infof("Concluded %d strategies", concludedCount)
 	return err
 }
 
