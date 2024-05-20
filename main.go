@@ -122,21 +122,6 @@ func checkStopLoss(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 	}
 }
 
-type UserDB struct {
-	UserID         int     `db:"root_user_id"`
-	TotalInput     float64 `db:"total_original_input"`
-	TotalPnl       float64 `db:"total_pnl"`
-	AvgRoi         float64 `db:"avg_roi"`
-	MaxRoi         float64 `db:"max_roi"`
-	MinRoi         float64 `db:"min_roi"`
-	TotalRoi       float64 `db:"total_roi"`
-	AvgRuntime     float64 `db:"avg_runtime"`
-	MaxRuntime     float64 `db:"max_runtime"`
-	MinRuntime     float64 `db:"min_runtime"`
-	StrategyCount  int     `db:"strategy_count"`
-	ConcludedCount int     `db:"concluded_count"`
-}
-
 func tick() error {
 	utils.ResetTime()
 	sdk.ClearSessionSymbolPrice()

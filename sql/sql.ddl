@@ -44,7 +44,6 @@ CREATE TABLE strategy
 
 CREATE TABLE roi
 (
-    root_user_id BIGINT,
     strategy_id  BIGINT,
     roi          NUMERIC,
     pnl          NUMERIC,
@@ -54,12 +53,7 @@ CREATE TABLE roi
         FOREIGN KEY (strategy_id)
             REFERENCES strategy (strategy_id)
             ON DELETE CASCADE
-            ON UPDATE CASCADE,
-    CONSTRAINT fk_user FOREIGN KEY (root_user_id)
-        REFERENCES b_user (user_id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
-    CONSTRAINT pk_roi PRIMARY KEY (strategy_id, time)
+            ON UPDATE CASCADE
 );
 
 SELECT public.create_hypertable('bts.roi', 'time', if_not_exists => TRUE);
@@ -67,7 +61,8 @@ CREATE INDEX IF NOT EXISTS roi_pnl_idx ON bts.roi (time, strategy_id);
 
 ALTER TABLE roi SET (
     timescaledb.compress,
-timescaledb.compress_segmentby = 'strategy_id,root_user_id'
+    timescaledb.compress_segmentby = 'strategy_id'
     );
 SELECT public.add_compression_policy('roi', INTERVAL '2 days', if_not_exists => TRUE);
 
+SELECT * FROM public.timescaledb_information.jobs;

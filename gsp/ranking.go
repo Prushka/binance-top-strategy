@@ -12,7 +12,6 @@ import (
 )
 
 type RoiDB struct {
-	RootUserID int     `db:"root_user_id"`
 	StrategyID int     `db:"strategy_id"`
 	Roi        float64 `db:"roi"`
 	Pnl        float64 `db:"pnl"`
@@ -139,6 +138,9 @@ WHERE
 		return err
 	}
 	discord.Infof("Populating roi for %d strategies", len(strategies))
+	if len(strategies) > 0 {
+		discord.Infof("Earliest strategy: %s", strategies[0].TimeDiscovered)
+	}
 	concludedCount := 0
 	for _, s := range strategies {
 		if time.Now().Sub(s.RoisFetchedAt) > 25*time.Minute {
@@ -152,13 +154,11 @@ WHERE
 				for _, r := range rois {
 					_, err := tx.Exec(context.Background(),
 						`INSERT INTO bts.roi (
-				root_user_id,
 				strategy_id,
 				roi,
 				pnl,
 				time
-			 ) VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING`,
-						r.RootUserID,
+			 ) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
 						s.StrategyID,
 						r.Roi,
 						r.Pnl,

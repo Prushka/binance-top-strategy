@@ -1,6 +1,5 @@
 WITH LatestROI AS (
     SELECT
-        root_user_id,
         strategy_id,
         roi,
         pnl,
@@ -10,15 +9,16 @@ WITH LatestROI AS (
 )
    , UserCalculations AS (
     SELECT
-        l.root_user_id AS user_id,
         SUM(l.pnl) AS total_pnl,
-        SUM(l.pnl / NULLIF(l.roi, 0)) AS total_original_input_money
+        SUM(l.pnl / NULLIF(l.roi, 0)) AS total_original_input_money,
+        s.user_id
     FROM
         LatestROI l
+    JOIN strategy s ON l.strategy_id = s.strategy_id
     WHERE
         l.rn = 1
     GROUP BY
-        l.root_user_id
+        s.user_id
 )
 SELECT
     user_id,
@@ -81,7 +81,6 @@ SELECT * FROM strategy ORDER BY rois_fetched_at LIMIT 10;
 
 CREATE OR REPLACE VIEW TheChosen AS WITH LatestRoi AS (
     SELECT
-        root_user_id,
         strategy_id,
         roi as roi,
         pnl,
@@ -99,7 +98,7 @@ CREATE OR REPLACE VIEW TheChosen AS WITH LatestRoi AS (
 ),
      FilteredStrategies AS (
          SELECT
-             l.root_user_id,
+             s.user_id,
              l.strategy_id,
              l.roi,
              l.pnl,
@@ -116,7 +115,7 @@ CREATE OR REPLACE VIEW TheChosen AS WITH LatestRoi AS (
      ),
      UserOriginalInputs AS (
          SELECT
-             f.root_user_id,
+             f.user_id,
              SUM(f.original_input) AS total_original_input,  -- Calculating original input and summing it per user
              SUM(f.pnl) AS total_pnl,
              AVG(f.roi) AS avg_roi,
@@ -133,7 +132,7 @@ CREATE OR REPLACE VIEW TheChosen AS WITH LatestRoi AS (
          WHERE
              f.runtime > 9000 AND f.original_input > 498
          GROUP BY
-             f.root_user_id
+             f.user_id
      )
 SELECT
     u.*
@@ -153,11 +152,10 @@ CREATE OR REPLACE VIEW ThePool AS WITH Pool AS (
         strategy.*, TheChosen.total_roi, TheChosen.total_original_input,
         TheChosen.strategy_count
     FROM strategy
-        JOIN TheChosen ON strategy.user_id = TheChosen.root_user_id
+        JOIN TheChosen ON strategy.user_id = TheChosen.user_id
     WHERE (concluded IS NULL OR concluded = false) AND strategy_type = 2
 ), LatestRoi AS (
     SELECT
-        r.root_user_id,
         r.strategy_id,
         r.roi as roi,
         r.pnl,
@@ -177,7 +175,6 @@ CREATE OR REPLACE VIEW ThePool AS WITH Pool AS (
 ),
      FilteredStrategies AS (
          SELECT
-             l.root_user_id,
              l.strategy_id,
              l.roi,
              l.pnl,
@@ -204,11 +201,12 @@ SELECT
 
 SELECT * FROM ThePool;
 
+
+
 -- TODO: min possible roi in any strategy whose original input is greater than 500
 
 WITH LatestRoi AS (
     SELECT
-        root_user_id,
         strategy_id,
         roi as roi,
         pnl,
@@ -216,8 +214,6 @@ WITH LatestRoi AS (
         ROW_NUMBER() OVER (PARTITION BY strategy_id ORDER BY time DESC) AS rn
     FROM
         bts.roi
-    WHERE
-        root_user_id = 215777793
 ),
      EarliestRoi AS (
          SELECT
@@ -226,8 +222,6 @@ WITH LatestRoi AS (
              ROW_NUMBER() OVER (PARTITION BY strategy_id ORDER BY time) AS rn
          FROM
              bts.roi
-         WHERE
-             root_user_id = 215777793
      ),
      FilteredStrategies AS (
          SELECT
@@ -251,7 +245,9 @@ SELECT f.*,
        s.direction,
        s.concluded,
        s.leverage
-       FROM FilteredStrategies f JOIN strategy s ON f.strategy_id = s.strategy_id ORDER BY f.time DESC;
+       FROM FilteredStrategies f JOIN strategy s ON f.strategy_id = s.strategy_id
+       WHERE user_id = 215777793
+       ORDER BY f.time DESC;
 
 
 SELECT * FROM roi WHERE strategy_id=392280445;
