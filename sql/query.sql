@@ -138,7 +138,7 @@ SELECT
     u.*
 FROM
     UserOriginalInputs u
-WHERE u.total_original_input >= 8500 AND strategy_count >= 3 AND min_roi >= 0.014 AND total_roi >= 0.04
+WHERE u.total_original_input >= 8500 AND strategy_count >= 3 AND min_roi >= 0.015 AND total_roi >= 0.045
 ORDER BY
     total_roi DESC;
 
