@@ -214,13 +214,14 @@ func tick() error {
 		return nil
 	}
 	invChunk = float64(int(invChunk))
-	if time.Now().Minute() < 10 {
-		discord.Infof("Only trade after min 10, Skip")
+	if time.Now().Minute() < 19 {
+		discord.Infof("Only trade after min 19, Skip")
 		return nil
 	}
 	discord.Infof("### Opening new grids:")
 	sessionSymbols := gsp.GGrids.ExistingSymbols.Clone()
 	blacklistedInPool := mapset.NewSet[string]()
+out:
 	for c, s := range gsp.GetPool().Strategies {
 		if s.RunningTime > 3600*4 {
 			log.Infof("Strategy running for more than 4 hours, Skip")
@@ -308,6 +309,14 @@ func tick() error {
 		if !s.MarketPriceWithinRange() {
 			discord.Infof("Market Price not within range, Skip")
 			continue
+		}
+
+		userStrategies := gsp.GetPool().StrategiesByUserId[s.UserID]
+		for _, us := range userStrategies {
+			if us.Symbol == s.Symbol && us.Direction != s.Direction {
+				discord.Infof("Same symbol hedging, Skip")
+				continue out
+			}
 		}
 
 		discord.Infof(gsp.Display(s, nil, "New", c+1, len(gsp.GetPool().Strategies)))

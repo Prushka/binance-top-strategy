@@ -278,10 +278,10 @@ func (s *Strategy) String() string {
 	if !s.isRunning() {
 		ended = "Ended: " + time.Unix(s.Rois[0].Time, 0).Format("2006-01-02 15:04:05") + " ,"
 	}
-	return fmt.Sprintf("%sPnL: %.2f, Rois: %s, [A/D/3/2/1H: %s%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s%s, Input: %f, User: %d, UserInput: %f, UserStrategies: %d",
+	return fmt.Sprintf("%sPnL: %.2f, Rois: %s, [A/D/3/2/1H: %s%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s%s, Input: %.1f, User: %d, UserInput: %.1f, UserStrategies: %d",
 		ended, s.Pnl, s.Rois.lastNRecords(config.TheConfig.LastNHoursNoDips),
 		s.RoiStr,
-		s.LastDayRoiChange*100, s.Last3HrRoiChange*100, s.Last2HrRoiChange*100, s.LastHrRoiChange*100, s.MinInvestment, ranking, s.UserInput, s.UserID, s.UserInput, s.UserStrategies)
+		s.LastDayRoiChange*100, s.Last3HrRoiChange*100, s.Last2HrRoiChange*100, s.LastHrRoiChange*100, s.MinInvestment, ranking, s.UserInput, s.UserID, s.UserTotalInput, s.UserStrategies)
 }
 
 func (s *Strategy) GetMetric() float64 {
