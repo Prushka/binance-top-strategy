@@ -167,7 +167,7 @@ func tick() error {
 		discord.Infof(gsp.Display(nil, grid, "", count+1, len(gsp.GGrids.GridsByGid)))
 		count++
 		if !gsp.Bundle.Raw.Exists(grid.SID) {
-			toCancel.AddGridToCancel(grid, -999, "strategy concluded")
+			toCancel.AddGridToCancel(grid, -999, "strategy not in pool")
 			if grid.LastRoi < 0 {
 				blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), "strategy not found, lastRoi loss")
 			}
