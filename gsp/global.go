@@ -16,14 +16,12 @@ var GGrids = &TrackedGrids{
 var Bundle *StrategiesBundle
 
 type StrategiesBundle struct {
-	Raw                    *TrackedStrategies
-	FilteredSortedBySD     *TrackedStrategies
-	FilteredSortedByMetric *TrackedStrategies
-	SDCountPairSpecific    SDCount
+	Raw                 *TrackedStrategies
+	SDCountPairSpecific SDCount
 }
 
 func GetPool() *TrackedStrategies {
-	return Bundle.FilteredSortedByMetric
+	return Bundle.Raw
 }
 
 const (

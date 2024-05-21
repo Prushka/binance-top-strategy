@@ -58,7 +58,6 @@ func Scrape() error {
 }
 
 func UpdateTopStrategiesWithRoi(strategies Strategies) error {
-	filtered := make(Strategies, 0)
 	for _, s := range strategies {
 		id := s.SID
 		rois, err := RoisCache.Get(fmt.Sprintf("%d-%d", id, s.UserID))
@@ -83,12 +82,9 @@ func UpdateTopStrategiesWithRoi(strategies Strategies) error {
 			s.RoiPerHour = (s.Roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
 		}
 		GStrats[s.SID] = s
-		filtered = append(filtered, s)
 	}
 	Bundle = &StrategiesBundle{Raw: strategies.toTrackedStrategies(),
-		FilteredSortedBySD:     sortBySDCount(filtered).toTrackedStrategies(),
-		FilteredSortedByMetric: filtered.toTrackedStrategies(),
-		SDCountPairSpecific:    make(SDCount)}
+		SDCountPairSpecific: make(SDCount)}
 	return nil
 }
 
