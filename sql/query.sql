@@ -130,7 +130,7 @@ CREATE OR REPLACE VIEW TheChosen AS WITH LatestRoi AS (
          FROM
              FilteredStrategies f
          WHERE
-             f.runtime > 9000 AND f.original_input > 498
+             f.runtime >= 14400 AND f.original_input > 498
          GROUP BY
              f.user_id
      )
@@ -138,7 +138,7 @@ SELECT
     u.*
 FROM
     UserOriginalInputs u
-WHERE u.total_original_input >= 8500 AND strategy_count >= 3 AND min_roi >= 0.015 AND total_roi >= 0.04
+WHERE u.total_original_input >= 8500 AND strategy_count >= 3 AND min_roi >= 0.014 AND total_roi >= 0.04
 ORDER BY
     total_roi DESC;
 
@@ -246,7 +246,7 @@ SELECT f.*,
        s.concluded,
        s.leverage
        FROM FilteredStrategies f JOIN strategy s ON f.strategy_id = s.strategy_id
-       WHERE user_id = 215777793
+       WHERE user_id = 787516646
        ORDER BY f.time DESC;
 
 
