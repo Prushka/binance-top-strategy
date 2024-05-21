@@ -262,15 +262,6 @@ func (t *TrackedStrategies) Exists(id int) bool {
 	return t.Ids.Contains(id)
 }
 
-func (s *Strategy) populateRois() error {
-	rois, err := RoisCache.Get(fmt.Sprintf("%d-%d", s.SID, s.UserID))
-	if err != nil {
-		return err
-	}
-	s.Rois = rois
-	return nil
-}
-
 func (s *Strategy) MarketPriceWithinRange() bool {
 	marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)
 	return marketPrice > s.StrategyParams.LowerLimit && marketPrice < s.StrategyParams.UpperLimit

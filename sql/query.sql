@@ -246,8 +246,72 @@ SELECT f.*,
        s.concluded,
        s.leverage
        FROM FilteredStrategies f JOIN strategy s ON f.strategy_id = s.strategy_id
-       WHERE user_id = 787516646
+       WHERE user_id = 882916991
        ORDER BY f.time DESC;
 
 
 SELECT * FROM roi WHERE strategy_id=392280445;
+
+
+WITH LatestRoi AS (
+    SELECT
+        strategy_id,
+        roi as roi,
+        pnl,
+        time,
+        ROW_NUMBER() OVER (PARTITION BY strategy_id ORDER BY time DESC) AS rn
+    FROM
+        bts.roi
+), EarliestRoi AS (
+    SELECT
+        strategy_id,
+        time,
+        ROW_NUMBER() OVER (PARTITION BY strategy_id ORDER BY time) AS rn
+    FROM
+        bts.roi
+),
+     FilteredStrategies AS (
+         SELECT
+             s.user_id,
+             l.strategy_id,
+             l.roi,
+             l.pnl,
+             l.pnl / NULLIF(l.roi, 0) as original_input,
+             EXTRACT(EPOCH FROM (l.time - e.time)) as runtime,
+             s.concluded
+         FROM
+             LatestRoi l
+                 JOIN
+             EarliestRoi e ON l.strategy_id = e.strategy_id
+                 JOIN strategy s ON l.strategy_id = s.strategy_id
+         WHERE
+             l.rn = 1 AND e.rn = 1 AND (l.roi > 0.01 OR l.roi < -0.01) AND s.strategy_type = 2
+     ),
+     UserOriginalInputs AS (
+         SELECT
+             f.user_id,
+             SUM(f.original_input) AS total_original_input,  -- Calculating original input and summing it per user
+             SUM(f.pnl) AS total_pnl,
+             AVG(f.roi) AS avg_roi,
+             MAX(f.roi) AS max_roi,
+             MIN(f.roi) AS min_roi,
+             SUM(f.pnl) / SUM(f.original_input) AS total_roi,
+             AVG(f.runtime) AS avg_runtime,
+             MAX(f.runtime) AS max_runtime,
+             MIN(f.runtime) AS min_runtime,
+             COUNT(*) AS strategy_count,
+             COUNT(f.concluded) AS concluded_count
+         FROM
+             FilteredStrategies f
+         WHERE
+             f.runtime >= 14400 AND f.original_input > 498
+         GROUP BY
+             f.user_id
+     )
+SELECT
+    u.*
+FROM
+    UserOriginalInputs u
+WHERE u.user_id = 882916991
+ORDER BY
+    total_roi DESC;
