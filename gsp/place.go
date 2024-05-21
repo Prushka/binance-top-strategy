@@ -89,9 +89,6 @@ func PlaceGrid(strategy Strategy, initialUSDT float64, leverage int) error {
 		payload.StopLowerLimit = *strategy.StrategyParams.StopLowerLimit
 		payload.StopTriggerType = "MARK_PRICE"
 	}
-	if strategy.Direction == SHORT {
-		payload.TrailingDown = true
-	}
 	s, _ := json.Marshal(payload)
 	discord.Orderf(discord.Json(string(s)))
 	if config.TheConfig.Paper {

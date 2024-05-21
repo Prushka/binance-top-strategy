@@ -60,9 +60,9 @@ type Config struct {
 	LastHrWeight                      float64   `env:"LAST_1_HR_WEIGHT" envDefault:"0"`
 	StopLossMarkForRemoval            []float64 `env:"STOP_LOSS_MARK_FOR_REMOVAL" envDefault:"-0.9,-1.1"`
 	StopLossMarkForRemovalSlack       []float64 `env:"STOP_LOSS_MARK_FOR_REMOVAL_SLACK" envDefault:"0.5,0.2"`
-	NeutralRangeDiff                  float64   `env:"NEUTRAL_RANGE_DIFF" envDefault:"0.2"`
-	ShortRangeDiff                    float64   `env:"SHORT_RANGE_DIFF" envDefault:"0.2"`
-	LongRangeDiff                     float64   `env:"LONG_RANGE_DIFF" envDefault:"0.2"`
+	NeutralRangeDiff                  float64   `env:"NEUTRAL_RANGE_DIFF" envDefault:"0.4"`
+	ShortRangeDiff                    float64   `env:"SHORT_RANGE_DIFF" envDefault:"0.4"`
+	LongRangeDiff                     float64   `env:"LONG_RANGE_DIFF" envDefault:"0.4"`
 	TriggerRangeDiff                  float64   `env:"TRIGGER_RANGE_DIFF" envDefault:"0.04"`
 	PGUrl                             string    `env:"PGURL" envDefault:"postgresql://postgres:password@localhost:5432"`
 }
