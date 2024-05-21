@@ -196,7 +196,7 @@ SELECT
     p.leverage, p.trailing_down, p.trailing_up, p.trailing_type, p.latest_matched_count, p.matched_count, p.min_investment,
     p.concluded
     FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id
-        WHERE f.original_input > 998
+        WHERE f.original_input > 1998
         ORDER BY p.total_roi DESC, f.original_input DESC;
 
 SELECT * FROM ThePool;

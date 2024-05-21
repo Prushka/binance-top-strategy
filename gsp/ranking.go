@@ -121,7 +121,7 @@ WHERE
     (s.concluded = FALSE OR s.concluded IS NULL)
   AND
     strategy_type = 2
-  AND rois_fetched_at <= NOW() - INTERVAL '45 minutes'
+  AND rois_fetched_at <= NOW() - INTERVAL '35 minutes'
     ORDER BY s.rois_fetched_at, s.time_discovered;`)
 	if err != nil {
 		return err

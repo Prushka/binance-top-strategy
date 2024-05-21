@@ -167,7 +167,7 @@ func tick() error {
 		discord.Infof(gsp.Display(nil, grid, "", count+1, len(gsp.GGrids.GridsByGid)))
 		count++
 		if !gsp.Bundle.Raw.Exists(grid.SID) {
-			toCancel.AddGridToCancel(grid, config.TheConfig.MaxCancelLossStrategyDeleted, "strategy not found")
+			toCancel.AddGridToCancel(grid, -999, "strategy concluded")
 			if grid.LastRoi < 0 {
 				blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), "strategy not found, lastRoi loss")
 			}
@@ -222,6 +222,10 @@ func tick() error {
 	sessionSymbols := gsp.GGrids.ExistingSymbols.Clone()
 	blacklistedInPool := mapset.NewSet[string]()
 	for c, s := range gsp.GetPool().Strategies {
+		if s.RunningTime > 3600*4 {
+			discord.Infof("Strategy running for more than 4 hours, Skip")
+			continue
+		}
 		if gsp.GGrids.ExistingSIDs.Contains(s.SID) {
 			discord.Infof("* Strategy %d - %s exists in open grids, Skip", s.SID, s.SD())
 			continue
@@ -380,7 +384,7 @@ func main() {
 			},
 		))
 	case "SQL":
-		panicOnErrorSec(scheduler.SingletonMode().Every(2).Minutes().Do(
+		panicOnErrorSec(scheduler.SingletonMode().Every(3).Minutes().Do(
 			func() {
 				t := time.Now()
 				discord.Infof("## Strategies: %v", time.Now().Format("2006-01-02 15:04:05"))

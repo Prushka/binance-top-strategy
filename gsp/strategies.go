@@ -450,7 +450,7 @@ func getTopStrategies(symbol string) (*TrackedStrategies, error) {
 	var queries []StrategyQuery
 	for i := 0; i < 48; i += 2 {
 		queries = append(queries, StrategyQuery{Type: FUTURE, Sort: SortByRoi, RuntimeMin: time.Duration(i) * time.Hour, RuntimeMax: time.Duration(i+2) * time.Hour, Symbol: symbol})
-		//queries = append(queries, StrategyQuery{Type: SPOT, Sort: SortByRoi, RuntimeMin: time.Duration(i) * time.Hour, RuntimeMax: time.Duration(i+2) * time.Hour, Symbol: symbol})
+		queries = append(queries, StrategyQuery{Type: SPOT, Sort: SortByRoi, RuntimeMin: time.Duration(i) * time.Hour, RuntimeMax: time.Duration(i+2) * time.Hour, Symbol: symbol})
 	}
 	merged, err := mergeStrategies(queries...)
 	if err != nil {
