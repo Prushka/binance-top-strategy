@@ -21,6 +21,10 @@ type RoiDB struct {
 
 type ChosenStrategyDB struct {
 	StrategyDB
+	UserMetricsDB
+}
+
+type UserMetricsDB struct {
 	UserTotalRoi   float64 `db:"total_roi"`
 	UserInput      float64 `db:"original_input"`
 	UserTotalInput float64 `db:"total_original_input"`
@@ -75,7 +79,7 @@ func ToStrategies(dbSs []*ChosenStrategyDB) Strategies {
 	return ss
 }
 
-func (db *StrategyDB) ToStrategy() *Strategy {
+func (db *ChosenStrategyDB) ToStrategy() *Strategy {
 	s := &Strategy{
 		Symbol:             db.Symbol,
 		CopyCount:          db.CopyCount,
@@ -90,6 +94,7 @@ func (db *StrategyDB) ToStrategy() *Strategy {
 		LatestMatchedCount: *db.LatestMatchedCount,
 		MatchedCount:       *db.MatchedCount,
 		MinInvestment:      *floatPtrToStringPtr(db.MinInvestment),
+		UserMetricsDB:      db.UserMetricsDB,
 		StrategyParams: StrategyParams{
 			Type:           db.Type,
 			LowerLimitStr:  fmt.Sprintf("%f", db.LowerLimit),
@@ -261,22 +266,6 @@ func (s *Strategy) addToRankingStore() error {
 		)
 		return err
 	})
-}
-
-type UserMetrics struct {
-	UserId       int
-	Strategies   map[int]*Strategy `json:"-"`
-	NegativeOnes int
-	TotalRois    float64
-	TotalPnl     float64
-	MinRuntime   time.Duration
-	MaxRuntime   time.Duration
-}
-
-func (u UserMetrics) String() string {
-	return fmt.Sprintf("UserId: %d, NegativeOnes: %d, Rois: %.2f, Pnl: %.2f, TotalStrategies: %d, MinRuntime: %s, MaxRuntime: %s",
-		u.UserId, u.NegativeOnes, u.TotalRois*100, u.TotalPnl, len(u.Strategies), u.MinRuntime, u.MaxRuntime,
-	)
 }
 
 // use roi and pnl from the latest roi and pnl in roi table, as roi and pnl in strategy table may not be up to date
