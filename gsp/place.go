@@ -51,6 +51,7 @@ func PlaceGrid(strategy Strategy, initialUSDT float64, leverage int) error {
 	if _, ok := DirectionMap[strategy.Direction]; !ok {
 		return fmt.Errorf("invalid direction: %d", strategy.Direction)
 	}
+	leverage = utils.IntMin(leverage, strategy.StrategyParams.Leverage)
 	payload := &placeGridRequest{
 		Symbol:                 strategy.Symbol,
 		Direction:              DirectionMap[strategy.Direction],

@@ -204,6 +204,7 @@ SELECT * FROM ThePool;
 
 
 -- TODO: min possible roi in any strategy whose original input is greater than 500
+-- strategy will be canceled even if user didnt conclude when min roi is < 0.015 and run time > 4h
 
 WITH LatestRoi AS (
     SELECT
@@ -250,7 +251,7 @@ SELECT f.*,
        ORDER BY f.time DESC;
 
 
-SELECT * FROM roi WHERE strategy_id=392280445;
+SELECT * FROM roi WHERE strategy_id=392645954;
 
 
 WITH LatestRoi AS (
@@ -278,7 +279,8 @@ WITH LatestRoi AS (
              l.pnl,
              l.pnl / NULLIF(l.roi, 0) as original_input,
              EXTRACT(EPOCH FROM (l.time - e.time)) as runtime,
-             s.concluded
+             s.concluded,
+             e.time as earliest_roi_time
          FROM
              LatestRoi l
                  JOIN
@@ -300,7 +302,8 @@ WITH LatestRoi AS (
              MAX(f.runtime) AS max_runtime,
              MIN(f.runtime) AS min_runtime,
              COUNT(*) AS strategy_count,
-             COUNT(f.concluded) AS concluded_count
+             COUNT(f.concluded) AS concluded_count,
+             MIN(f.earliest_roi_time) AS earliest_roi_time
          FROM
              FilteredStrategies f
          WHERE
@@ -312,6 +315,6 @@ SELECT
     u.*
 FROM
     UserOriginalInputs u
-WHERE u.user_id = 882916991
+WHERE u.user_id = 44035785
 ORDER BY
     total_roi DESC;

@@ -223,8 +223,8 @@ func tick() error {
 	blacklistedInPool := mapset.NewSet[string]()
 out:
 	for c, s := range gsp.GetPool().Strategies {
-		if s.RunningTime > 3600*4 {
-			log.Infof("Strategy running for more than 4 hours, Skip")
+		if s.RunningTime > 3600*2 {
+			log.Infof("Strategy running for more than 2 hours, Skip")
 			continue
 		}
 		if strings.Contains(s.Symbol, "USDC") {
