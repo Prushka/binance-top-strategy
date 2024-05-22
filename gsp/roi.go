@@ -12,8 +12,8 @@ import (
 	"time"
 )
 
-var RoisCache = cache.CreateMapCache[[]*Roi](
-	func(key string) ([]*Roi, error) {
+var RoisCache = cache.CreateMapCache[StrategyRoi](
+	func(key string) (StrategyRoi, error) {
 		split := strings.Split(key, "-")
 		SID, _ := strconv.Atoi(split[0])
 		UserId, _ := strconv.Atoi(split[1])
@@ -23,7 +23,7 @@ var RoisCache = cache.CreateMapCache[[]*Roi](
 		}
 		return roi, nil
 	},
-	func(rois []*Roi) bool {
+	func(rois StrategyRoi) bool {
 		if len(rois) == 0 {
 			return true
 		}

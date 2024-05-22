@@ -1,7 +1,6 @@
 package gsp
 
 import (
-	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/sdk"
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
@@ -20,11 +19,7 @@ type Profit struct {
 type Profits []Profit
 
 type GridEnv struct {
-	StrategyLastNotPicked *time.Time
-	Tracking              *GridTracking
-	SDRaw                 SDCount
-	SDFiltered            SDCount
-	SDPairSpecific        SDCount
+	Tracking *GridTracking
 }
 
 type GridTracking struct {
@@ -122,38 +117,6 @@ func (grid *Grid) GetTracking() *GridTracking {
 	return grid.GetEnv().Tracking
 }
 
-func GridNotPickedDuration(gid int) *time.Duration {
-	env := TheGridEnv[gid]
-	if env == nil {
-		discord.Errorf("Grid %d not found in gridEnv", gid)
-		return nil
-	}
-	if env.StrategyLastNotPicked == nil {
-		return nil
-	}
-	now := time.Now()
-	duration := now.Sub(*env.StrategyLastNotPicked)
-	return &duration
-}
-
-func GridSDCount(gid int, symbol, direction string, setType string) (int, int, float64) {
-	var currentSDCount int
-	var sdCountWhenOpen int
-	switch setType {
-	case SDRaw:
-		currentSDCount = Bundle.Raw.SymbolDirectionCount.GetSDCount(symbol, direction)
-		sdCountWhenOpen = TheGridEnv[gid].SDRaw.GetSDCount(symbol, direction)
-	case SDFiltered:
-		currentSDCount = GetPool().SymbolDirectionCount.GetSDCount(symbol, direction)
-		sdCountWhenOpen = TheGridEnv[gid].SDFiltered.GetSDCount(symbol, direction)
-	case SDPairSpecific:
-		currentSDCount = Bundle.SDCountPairSpecific.GetSDCount(symbol, direction)
-		sdCountWhenOpen = TheGridEnv[gid].SDPairSpecific.GetSDCount(symbol, direction)
-	}
-	ratio := float64(currentSDCount) / float64(sdCountWhenOpen)
-	return currentSDCount, sdCountWhenOpen, ratio
-}
-
 func (tracked *TrackedGrids) GetGridBySID(sid int) *Grid {
 	for _, g := range tracked.GridsByGid {
 		if g.SID == sid {
@@ -217,16 +180,13 @@ func (tracked *TrackedGrids) add(g *Grid, trackContinuous bool) {
 	}
 
 	if g.GetEnv() == nil {
-		g.SetEnv(&GridEnv{SDRaw: Bundle.Raw.SymbolDirectionCount,
-			SDFiltered:     GetPool().SymbolDirectionCount,
-			SDPairSpecific: Bundle.SDCountPairSpecific,
-			Tracking: &GridTracking{
-				LowestRoi:      g.LastRoi,
-				HighestRoi:     g.LastRoi,
-				TimeHighestRoi: updateTime,
-				TimeLowestRoi:  updateTime,
-				TimeLastChange: updateTime,
-			}})
+		g.SetEnv(&GridEnv{Tracking: &GridTracking{
+			LowestRoi:      g.LastRoi,
+			HighestRoi:     g.LastRoi,
+			TimeHighestRoi: updateTime,
+			TimeLowestRoi:  updateTime,
+			TimeLastChange: updateTime,
+		}})
 	} else {
 		tracking := g.GetTracking()
 		if g.LastRoi < tracking.LowestRoi {
@@ -261,14 +221,6 @@ func (tracked *TrackedGrids) add(g *Grid, trackContinuous bool) {
 	}
 	tracking := g.GetTracking()
 	tracking.LocalProfits = append(tracking.LocalProfits, Profit{Profit: g.LastRoi, Time: updateTime})
-	picked := GetPool().Exists(g.SID)
-	env := g.GetEnv()
-	if !picked && env.StrategyLastNotPicked == nil {
-		now := time.Now()
-		env.StrategyLastNotPicked = &now
-	} else if picked && env.StrategyLastNotPicked != nil {
-		env.StrategyLastNotPicked = nil
-	}
 	tracked.GridsByGid[g.GID] = g
 }
 
@@ -294,17 +246,12 @@ func (grid *Grid) String() string {
 		tracking.ContinuousRoiGrowth, tracking.ContinuousRoiLoss, tracking.ContinuousRoiNoChange,
 		time.Since(tracking.TimeLastChange).Round(time.Second),
 	)
-	formatSDRatio := func(setType string) string {
-		currentSD, sdWhenOpen, ratio := GridSDCount(grid.GID, grid.Symbol, grid.Direction, setType)
-		return fmt.Sprintf("%s: %d/%d/%.1f%%", setType, currentSD, sdWhenOpen, ratio*100)
-	}
 	realized, _ := strconv.ParseFloat(grid.GridProfit, 64)
 	outOfRange := ""
 	if !grid.MarketPriceWithinRange() {
 		outOfRange = "**[OOR]** "
 	}
-	return fmt.Sprintf("*%d*, Realized: %.2f, Total: %.2f, %s**%.2f%%**%s, %s, %s, %s",
+	return fmt.Sprintf("*%d*, Realized: %.2f, Total: %.2f, %s**%.2f%%**%s",
 		grid.GID,
-		realized, grid.TotalPnl, outOfRange, grid.LastRoi*100, extendedProfit,
-		formatSDRatio(SDRaw), formatSDRatio(SDFiltered), formatSDRatio(SDPairSpecific))
+		realized, grid.TotalPnl, outOfRange, grid.LastRoi*100, extendedProfit)
 }

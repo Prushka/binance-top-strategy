@@ -3,9 +3,8 @@ package gsp
 import (
 	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/discord"
+	"BinanceTopStrategies/sql"
 	"fmt"
-	mapset "github.com/deckarep/golang-set/v2"
-	log "github.com/sirupsen/logrus"
 	"sort"
 	"time"
 )
@@ -57,6 +56,18 @@ func Scrape() error {
 	return nil
 }
 
+func IsGridOriStrategyRunning(grid *Grid) (bool, error) {
+	oriSID := grid.SID
+	var oriUid int
+	sql.GetDB().ScanOne(&oriUid, `SELECT user_id FROM bts.strategy WHERE strategy_id = $1`,
+		oriSID)
+	rois, err := RoisCache.Get(fmt.Sprintf("%d-%d", oriSID, oriUid))
+	if err != nil {
+		return false, err
+	}
+	return rois.isRunning(), nil
+}
+
 func UpdateTopStrategiesWithRoi(strategies Strategies) error {
 	for _, s := range strategies {
 		id := s.SID
@@ -83,24 +94,6 @@ func UpdateTopStrategiesWithRoi(strategies Strategies) error {
 		}
 		GStrats[s.SID] = s
 	}
-	Bundle = &StrategiesBundle{Raw: strategies.toTrackedStrategies(),
-		SDCountPairSpecific: make(SDCount)}
-	return nil
-}
-
-func updateSDCountPairSpecific(symbols mapset.Set[string]) error {
-	log.Infof("Strategy with Symbol Specifics: %v", symbols)
-	for _, symbol := range symbols.ToSlice() {
-		strategies, err := getTopStrategies(symbol)
-		if err != nil {
-			return err
-		}
-		for direction, count := range strategies.SymbolDirectionCount[symbol] {
-			if _, ok := Bundle.SDCountPairSpecific[symbol]; !ok {
-				Bundle.SDCountPairSpecific[symbol] = make(map[string]int)
-			}
-			Bundle.SDCountPairSpecific[symbol][direction] = count
-		}
-	}
+	Bundle = &StrategiesBundle{Raw: strategies.toTrackedStrategies()}
 	return nil
 }

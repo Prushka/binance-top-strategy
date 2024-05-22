@@ -52,25 +52,6 @@ func checkOppositeDirections(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 	}
 }
 
-var directionShrinkPool = []string{
-	gsp.SDRaw, gsp.SDPairSpecific,
-}
-
-func checkDirectionShrink(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
-	for _, sdPool := range directionShrinkPool {
-		currentSDCount, sdCountWhenOpen, ratio := gsp.GridSDCount(grid.GID, grid.Symbol, grid.Direction, sdPool)
-		diff := sdCountWhenOpen - currentSDCount
-		for c, ratioCutoff := range config.TheConfig.SymbolDirectionShrink {
-			if ratio < ratioCutoff && diff >= config.TheConfig.SymbolDirectionShrinkMinConstant {
-				maxLoss := config.TheConfig.SymbolDirectionShrinkLoss[c]
-				reason := fmt.Sprintf("direction shrink: %.2f, accept loss: %f", ratio, maxLoss)
-				blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), reason)
-				toCancel.AddGridToCancel(grid, maxLoss, reason)
-			}
-		}
-	}
-}
-
 func checkTakeProfits(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 	for c, gpMax := range config.TheConfig.TakeProfits {
 		gpMax = config.GetScaledProfits(gpMax, grid.InitialLeverage)
@@ -90,18 +71,6 @@ func checkTakeProfits(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 					blacklist.AddSymbol(grid.Symbol, gpBlock, reason)
 				}
 			}
-		}
-	}
-}
-
-func checkStopLossNotPicked(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
-	for c, slHr := range config.TheConfig.StopLossNotPickedHrs {
-		slDuration := time.Duration(slHr) * time.Hour
-		maxLoss := config.TheConfig.StopLossNotPicked[c]
-		notPickedDuration := gsp.GridNotPickedDuration(grid.GID)
-		if *notPickedDuration > slDuration {
-			toCancel.AddGridToCancel(grid, maxLoss, fmt.Sprintf("not picked for %s, accept loss: %f",
-				notPickedDuration.Round(time.Second), maxLoss))
 		}
 	}
 }
@@ -165,13 +134,16 @@ func tick() error {
 	})
 	for _, grid := range grids {
 		discord.Infof(gsp.Display(nil, grid, "", count+1, len(gsp.GGrids.GridsByGid)))
+		isRunning, err := gsp.IsGridOriStrategyRunning(grid)
+		if err != nil {
+			return err
+		}
 		count++
-		if !gsp.Bundle.Raw.Exists(grid.SID) {
-			toCancel.AddGridToCancel(grid, -999, "strategy not in pool")
+		if !isRunning {
+			toCancel.AddGridToCancel(grid, -999, "strategy not running")
 			if grid.LastRoi < 0 {
 				blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), "strategy not found, lastRoi loss")
 			}
-			//checkStopLossNotPicked(grid, toCancel)
 		}
 	}
 	if !toCancel.IsEmpty() {

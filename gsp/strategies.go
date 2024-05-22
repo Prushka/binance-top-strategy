@@ -275,7 +275,7 @@ func (s *Strategy) String() string {
 		ranking = fmt.Sprintf(", Raw: %d, FilterdSD: %d", Bundle.Raw.findStrategyRanking(*s),
 			GetPool().findStrategyRanking(*s))
 	}
-	if !s.isRunning() {
+	if !s.Rois.isRunning() {
 		ended = "Ended: " + time.Unix(s.Rois[0].Time, 0).Format("2006-01-02 15:04:05") + " ,"
 	}
 	return fmt.Sprintf("%sPnL: %.2f, Rois: %s, [A/D/3/2/1H: %s%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s%s, Input: %.1f, User: %d, UserInput: %.1f, UserStrategies: %d",
@@ -303,9 +303,9 @@ func (s *Strategy) Sanitize() {
 	s.PriceDifference = s.StrategyParams.UpperLimit/s.StrategyParams.LowerLimit - 1
 }
 
-func (s *Strategy) isRunning() bool {
-	latestTime := time.Unix(s.Rois[0].Time, 0)
-	return time.Now().Sub(latestTime) <= 100*time.Minute
+func (s StrategyRoi) isRunning() bool {
+	latestTime := time.Unix(s[0].Time, 0)
+	return time.Now().Sub(latestTime) <= 95*time.Minute
 }
 
 func Display(s *Strategy, grid *Grid, action string, index int, length int) string {

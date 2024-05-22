@@ -23,18 +23,6 @@ func getOpenGrids() (*openGridResponse, error) {
 	return res, nil
 }
 
-func getGridSymbols() (mapset.Set[string], error) {
-	res, err := getOpenGrids()
-	if err != nil {
-		return nil, err
-	}
-	symbols := mapset.NewSet[string]()
-	for _, grid := range res.Grids {
-		symbols.Add(grid.Symbol)
-	}
-	return symbols, nil
-}
-
 func UpdateOpenGrids(trackContinuous bool) error {
 	res, err := getOpenGrids()
 	if err != nil {

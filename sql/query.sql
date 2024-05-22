@@ -126,7 +126,8 @@ CREATE OR REPLACE VIEW TheChosen AS WITH LatestRoi AS (
              MAX(f.runtime) AS max_runtime,
              MIN(f.runtime) AS min_runtime,
              COUNT(*) AS strategy_count,
-             COUNT(f.concluded) AS concluded_count
+             COUNT(f.concluded) AS concluded_count,
+             SUM(f.original_input) / COUNT(*) AS avg_original_input
          FROM
              FilteredStrategies f
          WHERE
@@ -138,7 +139,7 @@ SELECT
     u.*
 FROM
     UserOriginalInputs u
-WHERE u.total_original_input >= 8500 AND strategy_count >= 3 AND min_roi >= 0.015 AND total_roi >= 0.045
+WHERE u.total_original_input >= 8500 AND strategy_count >= 3 AND min_roi >= 0.015 AND total_roi >= 0.045 AND avg_original_input >= 1500
 ORDER BY
     total_roi DESC;
 
@@ -315,6 +316,6 @@ SELECT
     u.*
 FROM
     UserOriginalInputs u
-WHERE u.user_id = 44035785
+WHERE u.user_id = 11108711
 ORDER BY
     total_roi DESC;

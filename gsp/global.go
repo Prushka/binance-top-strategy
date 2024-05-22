@@ -16,8 +16,7 @@ var GGrids = &TrackedGrids{
 var Bundle *StrategiesBundle
 
 type StrategiesBundle struct {
-	Raw                 *TrackedStrategies
-	SDCountPairSpecific SDCount
+	Raw *TrackedStrategies
 }
 
 func GetPool() *TrackedStrategies {
