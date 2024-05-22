@@ -141,9 +141,7 @@ func tick() error {
 		count++
 		if !isRunning {
 			toCancel.AddGridToCancel(grid, -999, "strategy not running")
-			if grid.LastRoi < 0 {
-				blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), "strategy not found, lastRoi loss")
-			}
+			blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), "strategy sd not running")
 		}
 	}
 	if !toCancel.IsEmpty() {
