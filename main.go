@@ -113,10 +113,7 @@ func tick() error {
 	}
 	discord.Infof("Found %d strategies and %d users", len(poolDB), users.Cardinality())
 
-	err = gsp.UpdateTopStrategiesWithRoi(gsp.ToStrategies(poolDB))
-	if err != nil {
-		return err
-	}
+	gsp.AddToPool(gsp.ToStrategies(poolDB))
 
 	discord.Infof("### Current Grids:")
 	sdk.ClearSessionSymbolPrice()
@@ -250,7 +247,8 @@ out:
 			return err
 		}
 		if s.RunningTime > 3600*config.TheConfig.MaxLookBackBookingHours {
-			log.Infof("Strategy running for more than %d hours, Skip", config.TheConfig.MaxLookBackBookingHours)
+			discord.Infof("Strategy running for more than %d hours, Skip", config.TheConfig.MaxLookBackBookingHours)
+			continue
 		}
 
 		marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)

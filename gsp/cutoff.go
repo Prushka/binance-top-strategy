@@ -72,13 +72,6 @@ func IsGridOriStrategyRunning(grid *Grid) (bool, error) {
 	return false, nil
 }
 
-func UpdateTopStrategiesWithRoi(strategies Strategies) error {
-	for _, s := range strategies {
-		err := s.PopulateRois()
-		if err != nil {
-			return err
-		}
-	}
+func AddToPool(strategies Strategies) {
 	Bundle = &StrategiesBundle{Raw: strategies.toTrackedStrategies()}
-	return nil
 }
