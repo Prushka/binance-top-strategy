@@ -40,9 +40,10 @@ var RoisCache = cache.CreateMapCache[StrategyRoi](
 )
 
 type UserWL struct {
-	Win       int       `json:"wins"`
-	Loss      int       `json:"loss"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	Win          int       `json:"wins"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+	ShortRunning int       `json:"shortRunning"`
+	Total        int       `json:"total"`
 }
 
 var UserWLCache = cache.CreateMapCache[UserWL](
@@ -94,11 +95,11 @@ var UserWLCache = cache.CreateMapCache[UserWL](
           p.grid_count, p.trigger_price, p.stop_lower_limit, p.stop_upper_limit, p.base_asset, p.quote_asset,
           p.leverage, p.trailing_down, p.trailing_up, p.trailing_type, p.latest_matched_count, p.matched_count, p.min_investment,
           p.concluded
-FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.start_time != f.end_time;`, user)
+FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id;`, user)
 		if err != nil {
 			return UserWL{}, err
 		}
-		totalWins := 0
+		wl := UserWL{Win: 0, Total: len(strategies), ShortRunning: 0, UpdatedAt: time.Now()}
 		for _, s := range strategies {
 			start, end, err := sdk.GetPrices(s.Symbol,
 				s.StartTime.UnixMilli(), s.EndTime.UnixMilli())
@@ -109,25 +110,28 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.s
 			switch s.Direction {
 			case LONG:
 				if end > start {
-					totalWins++
+					wl.Win++
 					prefix = "won "
 				}
 			case SHORT:
 				if end < start {
-					totalWins++
+					wl.Win++
 					prefix = "won "
 				}
 			case NEUTRAL:
 				if end < s.UpperLimit && end > s.LowerLimit {
-					totalWins++
+					wl.Win++
 					prefix = "won "
 				}
+			}
+			if s.RunningTime <= 3600*4 && s.UserInput > 1498 {
+				wl.ShortRunning++
 			}
 			log.Debugf("%sSymbol: %s, Direction: %d, Start: %.5f, End: %.5f, %v (%.5f, %.5f)",
 				prefix, s.Symbol, s.Direction, start, end, time.Duration(s.RunningTime)*time.Second, s.LowerLimit, s.UpperLimit)
 		}
-		discord.Infof("Total wins: %d/%d (%.2f)", totalWins, len(strategies), float64(totalWins)/float64(len(strategies)))
-		return UserWL{Win: totalWins, Loss: len(strategies) - totalWins, UpdatedAt: time.Now()}, nil
+		discord.Infof("Total wins: %d/%d (%.2f)", wl.Win, len(strategies), float64(wl.Win)/float64(len(strategies)))
+		return wl, nil
 	},
 	func(wl UserWL) bool {
 		return time.Now().Sub(wl.UpdatedAt) > 1*time.Hour

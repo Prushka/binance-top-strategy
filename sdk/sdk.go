@@ -48,8 +48,7 @@ func fetchMarketPrice(symbol string) (float64, error) {
 
 func GetPrices(symbol string, timeStart int64, timeEnd int64) (float64, float64, error) {
 	if timeStart == timeEnd {
-		marketPrice, err := fetchMarketPrice(symbol)
-		return marketPrice, marketPrice, err
+		timeEnd = timeStart + 3600*1000
 	}
 	res, err := FuturesClient.NewKlinesService().Symbol(symbol).Interval("30m").
 		StartTime(timeStart).EndTime(timeEnd).Do(context.Background())

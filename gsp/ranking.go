@@ -33,6 +33,7 @@ type UserMetricsDB struct {
 type UserStrategy struct {
 	StrategyDB
 	UserMetricsDB
+	UserInput float64   `db:"original_input"`
 	StartTime time.Time `db:"start_time"`
 	EndTime   time.Time `db:"end_time"`
 }

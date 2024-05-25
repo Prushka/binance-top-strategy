@@ -228,9 +228,14 @@ out:
 		if err != nil {
 			return err
 		}
-		userWlRatio := float64(userWl.Win) / float64(userWl.Win+userWl.Loss)
+		userWlRatio := float64(userWl.Win) / float64(userWl.Total)
 		if userWlRatio < 0.84 {
-			discord.Infof("User Win Loss Ratio too low %d/%d (%.2f), Skip", userWl.Win, userWl.Loss, userWlRatio)
+			discord.Infof("User Win Loss Ratio too low %d/%d (%.2f), Skip", userWl.Win, userWl.Total, userWlRatio)
+			continue
+		}
+		shortRunningRatio := float64(userWl.ShortRunning) / float64(userWl.Total)
+		if shortRunningRatio > 0.1 {
+			discord.Infof("Short running ratio too high %.2f, Skip", shortRunningRatio)
 			continue
 		}
 		sInPool := s

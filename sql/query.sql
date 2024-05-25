@@ -247,7 +247,7 @@ SELECT f.*,
        s.concluded,
        s.leverage
        FROM FilteredStrategies f JOIN strategy s ON f.strategy_id = s.strategy_id
-       WHERE user_id = 44035785
+       WHERE user_id = 174742987
        ORDER BY f.time DESC;
 
 
@@ -315,6 +315,6 @@ SELECT
     u.*
 FROM
     UserOriginalInputs u
-WHERE u.user_id = 129269276
+WHERE u.user_id = 174742987
 ORDER BY
     total_roi DESC;
