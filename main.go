@@ -133,7 +133,7 @@ func tick() error {
 		return grids[i].GID < grids[j].GID
 	})
 	for _, grid := range grids {
-		discord.Infof(gsp.Display(nil, grid, "", count+1, len(gsp.GGrids.GridsByGid)))
+		discord.Infof(gsp.Display(gsp.GetPool().StrategiesBySID[grid.SID], grid, "", count+1, len(gsp.GGrids.GridsByGid)))
 		isRunning, err := gsp.IsGridOriStrategyRunning(grid)
 		if err != nil {
 			return err

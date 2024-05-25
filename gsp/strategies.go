@@ -104,7 +104,7 @@ type UserPair struct {
 }
 
 type TrackedStrategies struct {
-	StrategiesById             map[int]*Strategy
+	StrategiesBySID            map[int]*Strategy
 	StrategiesByUserId         map[int]Strategies
 	Strategies                 Strategies
 	UserRankings               map[int]int
@@ -135,7 +135,7 @@ type Strategies []*Strategy
 
 func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 	sss := &TrackedStrategies{
-		StrategiesById:       make(map[int]*Strategy),
+		StrategiesBySID:      make(map[int]*Strategy),
 		StrategiesByUserId:   make(map[int]Strategies),
 		UserRankings:         make(map[int]int),
 		SymbolCount:          make(map[string]int),
@@ -145,11 +145,11 @@ func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 		Neutrals:             mapset.NewSet[int](),
 	}
 	for _, s := range by {
-		_, ok := sss.StrategiesById[s.SID]
+		_, ok := sss.StrategiesBySID[s.SID]
 		if ok {
 			continue
 		}
-		sss.StrategiesById[s.SID] = s
+		sss.StrategiesBySID[s.SID] = s
 		if _, ok := sss.StrategiesByUserId[s.UserID]; !ok {
 			sss.StrategiesByUserId[s.UserID] = make(Strategies, 0)
 		}
@@ -219,7 +219,7 @@ func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 	sort.Slice(sss.UsersWithMoreThan1Strategy, func(i, j int) bool {
 		return sss.UsersWithMoreThan1Strategy[i].Count > sss.UsersWithMoreThan1Strategy[j].Count
 	})
-	sss.Ids = mapset.NewSetFromMapKeys(sss.StrategiesById)
+	sss.Ids = mapset.NewSetFromMapKeys(sss.StrategiesBySID)
 	return sss
 }
 
@@ -255,7 +255,7 @@ func (t *TrackedStrategies) String() string {
 			fmt.Sprintf("%d", directionMap["SHORT"]), fmt.Sprintf("%d", directionMap["NEUTRAL"]))
 	}
 	return fmt.Sprintf("%d, H: %v, L: %v\n```\n%s```\n%v",
-		len(t.StrategiesById), utils.AsJson(t.Highest), utils.AsJson(t.Lowest),
+		len(t.StrategiesBySID), utils.AsJson(t.Highest), utils.AsJson(t.Lowest),
 		tbl.Draw(), t.UsersWithMoreThan1Strategy)
 }
 
