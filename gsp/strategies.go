@@ -335,15 +335,15 @@ func (s StrategyRoi) isRunning() bool {
 }
 
 func Display(s *Strategy, grid *Grid, action string, index int, length int) string {
-	if grid == nil && s == nil {
-		return "Strategy and Grid are both nil"
-	}
 	if s != nil {
 		err := s.PopulateRois()
 		if err != nil {
 			discord.Errorf("Error populating rois for %d: %s", s.SID, err)
 			s = nil
 		}
+	}
+	if grid == nil && s == nil {
+		return "Strategy and Grid are both nil"
 	}
 	ss := ""
 	gg := ""
@@ -356,6 +356,7 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 	priceRange := ""
 	grids := ""
 	marketPrice := 0.0
+	wl := ""
 	formatPriceRange := func(lower, upper string) string {
 		l, _ := strconv.ParseFloat(lower, 64)
 		u, _ := strconv.ParseFloat(upper, 64)
@@ -403,6 +404,10 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 				priceRange = fmt.Sprintf("S/G: %s/%s", formatPriceRange(s.StrategyParams.LowerLimitStr, s.StrategyParams.UpperLimitStr),
 					formatPriceRange(grid.GridLowerLimit, grid.GridUpperLimit))
 			}
+			userWl, err := UserWLCache.Get(fmt.Sprintf("%d", s.UserID))
+			if err == nil {
+				wl = fmt.Sprintf(", W/L: %d/%d (%.2f)", userWl.Win, userWl.Loss+userWl.Win, float64(userWl.Win)/float64(userWl.Win+userWl.Loss))
+			}
 		}
 	}
 	if s != nil {
@@ -415,9 +420,9 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		seq = fmt.Sprintf("%d/%d - ", index, length)
 	}
 
-	return fmt.Sprintf("* [%s%s%s, %s, %s, %s @ %f, %s Grids, %s] %s: %s%s",
+	return fmt.Sprintf("* [%s%s%s, %s, %s, %s @ %f, %s Grids, %s%s] %s: %s%s",
 		seq, utils.FormatPair(symbol), direction, leverage, runTime,
-		priceRange, marketPrice, grids, strategyId, action, ss, gg)
+		priceRange, marketPrice, grids, strategyId, wl, action, ss, gg)
 }
 
 const (
