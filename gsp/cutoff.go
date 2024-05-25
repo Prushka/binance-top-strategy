@@ -46,13 +46,7 @@ func Scrape() error {
 		return err
 	}
 	discord.Infof("Fetched strategies: %d", len(strategies.Strategies))
-	for _, s := range strategies.Strategies {
-		err := s.addToRankingStore()
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return addToRankingStore(strategies.Strategies)
 }
 
 func IsGridOriStrategyRunning(grid *Grid) (bool, error) {

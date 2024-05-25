@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	log "github.com/sirupsen/logrus"
-	"strings"
 	"time"
 )
 
@@ -144,13 +143,13 @@ WHERE
 	}
 	concludedCount := 0
 	fetchedCount := 0
-	for _, s := range strategies {
-		err = sql.SimpleTransaction(func(tx pgx.Tx) error {
+	err = sql.SimpleTransaction(func(tx pgx.Tx) error {
+		for _, s := range strategies {
 			log.Info("Fetching Roi: ", s.StrategyID)
 			utils.ResetTime()
 			rois, err := getStrategyRois(s.StrategyID, s.UserID)
 			if err != nil {
-				return err
+				break
 			}
 			s.RoisFetchedAt = time.Now()
 			for _, r := range rois {
@@ -192,27 +191,25 @@ WHERE
 				concludedCount++
 			}
 			fetchedCount++
-			return nil
-		})
-		if err != nil && strings.Contains(err.Error(), "unexpected end of JSON input") {
-			break
 		}
-	}
+		return nil
+	})
 	discord.Infof("Concluded %d strategies, Fetched %d strategies", concludedCount, fetchedCount)
 	return err
 }
 
-func (s *Strategy) addToRankingStore() error {
+func addToRankingStore(ss Strategies) error {
 	return sql.SimpleTransaction(func(tx pgx.Tx) error {
-		_, err := tx.Exec(context.Background(),
-			`INSERT INTO bts.b_user (user_id) VALUES ($1) ON CONFLICT DO NOTHING`,
-			s.UserID)
-		if err != nil {
-			return err
-		}
-		s.TimeDiscovered = time.Now()
-		_, err = tx.Exec(context.Background(),
-			`INSERT INTO bts.strategy (
+		for _, s := range ss {
+			_, err := tx.Exec(context.Background(),
+				`INSERT INTO bts.b_user (user_id) VALUES ($1) ON CONFLICT DO NOTHING`,
+				s.UserID)
+			if err != nil {
+				return err
+			}
+			s.TimeDiscovered = time.Now()
+			_, err = tx.Exec(context.Background(),
+				`INSERT INTO bts.strategy (
             symbol,
             copy_count,
             roi,
@@ -284,35 +281,37 @@ func (s *Strategy) addToRankingStore() error {
             excluded.latest_matched_count,
             excluded.matched_count,
             excluded.min_investment)`,
-			s.Symbol,
-			s.CopyCount,
-			s.Roi,
-			s.Pnl,
-			s.RunningTime,
-			s.SID,
-			s.StrategyType,
-			s.Direction,
-			s.UserID,
-			s.PriceDifference,
-			s.TimeDiscovered,
-			s.RoisFetchedAt,
-			s.StrategyParams.Type,
-			s.StrategyParams.LowerLimit,
-			s.StrategyParams.UpperLimit,
-			s.StrategyParams.GridCount,
-			s.StrategyParams.TriggerPrice,
-			s.StrategyParams.StopLowerLimit,
-			s.StrategyParams.StopUpperLimit,
-			s.StrategyParams.BaseAsset,
-			s.StrategyParams.QuoteAsset,
-			s.StrategyParams.Leverage,
-			s.StrategyParams.TrailingUp,
-			s.StrategyParams.TrailingDown,
-			s.TrailingType,
-			s.LatestMatchedCount,
-			s.MatchedCount,
-			s.MinInvestment,
-		)
-		return err
+				s.Symbol,
+				s.CopyCount,
+				s.Roi,
+				s.Pnl,
+				s.RunningTime,
+				s.SID,
+				s.StrategyType,
+				s.Direction,
+				s.UserID,
+				s.PriceDifference,
+				s.TimeDiscovered,
+				s.RoisFetchedAt,
+				s.StrategyParams.Type,
+				s.StrategyParams.LowerLimit,
+				s.StrategyParams.UpperLimit,
+				s.StrategyParams.GridCount,
+				s.StrategyParams.TriggerPrice,
+				s.StrategyParams.StopLowerLimit,
+				s.StrategyParams.StopUpperLimit,
+				s.StrategyParams.BaseAsset,
+				s.StrategyParams.QuoteAsset,
+				s.StrategyParams.Leverage,
+				s.StrategyParams.TrailingUp,
+				s.StrategyParams.TrailingDown,
+				s.TrailingType,
+				s.LatestMatchedCount,
+				s.MatchedCount,
+				s.MinInvestment,
+			)
+			return err
+		}
+		return nil
 	})
 }
