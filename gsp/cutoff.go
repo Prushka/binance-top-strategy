@@ -5,6 +5,7 @@ import (
 	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/sql"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"sort"
 	"time"
 )
@@ -65,7 +66,18 @@ func IsGridOriStrategyRunning(grid *Grid) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return rois.isRunning(), nil
+	if !rois.isRunning() {
+		return false, nil
+	}
+	discoverStrategy, err := DiscoverGridRootStrategy(oriSID, grid.Symbol, DirectionSMap[grid.Direction], grid.GetRunTime())
+	if err != nil {
+		return false, err
+	}
+	if discoverStrategy != nil {
+		log.Infof("Strategy %d is running", grid.SID)
+		return true, nil
+	}
+	return false, nil
 }
 
 func UpdateTopStrategiesWithRoi(strategies Strategies) error {
@@ -92,7 +104,6 @@ func UpdateTopStrategiesWithRoi(strategies Strategies) error {
 			s.LastNHrAllPositive = s.Rois.AllPositive(time.Duration(config.TheConfig.LastNHoursAllPositive)*time.Hour, 0.005)
 			s.RoiPerHour = (s.Roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
 		}
-		GStrats[s.SID] = s
 	}
 	Bundle = &StrategiesBundle{Raw: strategies.toTrackedStrategies()}
 	return nil

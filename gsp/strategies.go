@@ -312,11 +312,6 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 	if grid == nil && s == nil {
 		return "Strategy and Grid are both nil"
 	}
-	if grid != nil {
-		if gl, ok := GStrats[grid.SID]; s == nil && ok {
-			s = gl
-		}
-	}
 	ss := ""
 	gg := ""
 	seq := ""
@@ -413,6 +408,12 @@ var DirectionMap = map[int]string{
 	SHORT:   "SHORT",
 }
 
+var DirectionSMap = map[string]int{
+	"NEUTRAL": NEUTRAL,
+	"LONG":    LONG,
+	"SHORT":   SHORT,
+}
+
 func mergeStrategies(sps ...StrategyQuery) (*TrackedStrategies, error) {
 	sss := make(Strategies, 0)
 	for _, sp := range sps {
@@ -448,6 +449,24 @@ func getTopStrategies(symbol string) (*TrackedStrategies, error) {
 		return nil, err
 	}
 	return merged, nil
+}
+
+func DiscoverGridRootStrategy(sid int, symbol string, direction int, roughRuntime time.Duration) (*Strategy, error) {
+	query := StrategyQuery{Type: FUTURE, Sort: SortByPnl,
+		RuntimeMin: roughRuntime - 4*time.Hour,
+		RuntimeMax: roughRuntime + time.Duration(config.TheConfig.MaxLookBackBookingHours+4)*time.Hour,
+		Symbol:     symbol, Direction: utils.IntPointer(direction),
+		Count: 2000}
+	merged, err := mergeStrategies(query)
+	if err != nil {
+		return nil, err
+	}
+	for _, s := range merged.Strategies {
+		if s.SID == sid {
+			return s, nil
+		}
+	}
+	return nil, nil
 }
 
 func _getTopStrategies(sort string, direction *int, strategyType int, runningTimeMin time.Duration, runningTimeMax time.Duration, strategyCount int, symbol string) (Strategies, error) {

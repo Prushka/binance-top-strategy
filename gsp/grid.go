@@ -251,7 +251,7 @@ func (grid *Grid) String() string {
 	if !grid.MarketPriceWithinRange() {
 		outOfRange = "**[OOR]** "
 	}
-	return fmt.Sprintf("*%d*, Realized: %.2f, Total: %.2f, %s**%.2f%%**%s",
+	return fmt.Sprintf("*%d*, Realized: %.2f, **%.2f%%**, Total: %.2f, %s**%.2f%%**%s",
 		grid.GID,
-		realized, grid.TotalPnl, outOfRange, grid.LastRoi*100, extendedProfit)
+		realized, realized/grid.InitialValue*100, grid.TotalPnl, outOfRange, grid.LastRoi*100, extendedProfit)
 }

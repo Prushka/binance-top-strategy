@@ -134,6 +134,7 @@ func tick() error {
 	})
 	for _, grid := range grids {
 		discord.Infof(gsp.Display(nil, grid, "", count+1, len(gsp.GGrids.GridsByGid)))
+		log.Info(utils.AsJson(grid))
 		isRunning, err := gsp.IsGridOriStrategyRunning(grid)
 		if err != nil {
 			return err
@@ -193,8 +194,9 @@ func tick() error {
 	blacklistedInPool := mapset.NewSet[string]()
 out:
 	for c, s := range gsp.GetPool().Strategies {
-		if s.RunningTime > 3600*2 {
-			log.Infof("Strategy running for more than 2 hours, Skip")
+		if s.RunningTime > 3600*5 {
+			log.Infof("Strategy running for more than 5 hours, Skip")
+			// first pass, will run a second pass with strategy fetched to local
 			continue
 		}
 		if strings.Contains(s.Symbol, "USDC") {
@@ -224,6 +226,14 @@ out:
 			blacklistedInPool.Add(s.Symbol)
 			log.Infof("Symbol blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
 			continue
+		}
+
+		s, err := gsp.DiscoverGridRootStrategy(s.SID, s.Symbol, s.Direction, time.Duration(s.RunningTime)*time.Second)
+		if err != nil {
+			return err
+		}
+		if s.RunningTime > 3600*config.TheConfig.MaxLookBackBookingHours {
+			log.Infof("Strategy running for more than %d hours, Skip", config.TheConfig.MaxLookBackBookingHours)
 		}
 
 		marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)
