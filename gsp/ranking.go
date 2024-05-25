@@ -6,6 +6,7 @@ import (
 	"BinanceTopStrategies/utils"
 	"context"
 	"fmt"
+	"github.com/jackc/pgx/v5"
 	log "github.com/sirupsen/logrus"
 	"time"
 )
@@ -142,54 +143,57 @@ WHERE
 	}
 	concludedCount := 0
 	fetchedCount := 0
-	for _, s := range strategies {
-		log.Info("Fetching Roi: ", s.StrategyID)
-		utils.ResetTime()
-		rois, err := getStrategyRois(s.StrategyID, s.UserID)
-		if err != nil {
-			break
-		}
-		s.RoisFetchedAt = time.Now()
-		for _, r := range rois {
-			_, err := sql.GetDB().Exec(context.Background(),
-				`INSERT INTO bts.roi (
+	err = sql.SimpleTransaction(func(tx pgx.Tx) error {
+		for _, s := range strategies {
+			log.Info("Fetching Roi: ", s.StrategyID)
+			utils.ResetTime()
+			rois, err := getStrategyRois(s.StrategyID, s.UserID)
+			if err != nil {
+				break
+			}
+			s.RoisFetchedAt = time.Now()
+			for _, r := range rois {
+				_, err := tx.Exec(context.Background(),
+					`INSERT INTO bts.roi (
 				strategy_id,
 				roi,
 				pnl,
 				time
 			 ) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
-				s.StrategyID,
-				r.Roi,
-				r.Pnl,
-				time.Unix(r.Time, 0),
-			)
-			if err != nil {
-				return err
+					s.StrategyID,
+					r.Roi,
+					r.Pnl,
+					time.Unix(r.Time, 0),
+				)
+				if err != nil {
+					return err
+				}
 			}
-		}
-		_, err = sql.GetDB().Exec(context.Background(),
-			`UPDATE bts.strategy SET rois_fetched_at = $1 WHERE strategy_id = $2`,
-			s.RoisFetchedAt,
-			s.StrategyID,
-		)
-		if err != nil {
-			return err
-		}
-		if len(rois) != 0 && s.RoisFetchedAt.Sub(time.Unix(rois[0].Time, 0)) > 130*time.Minute {
-			// concluded: if no new roi fetched in 2 hours
-			_, err := sql.GetDB().Exec(context.Background(),
-				`UPDATE bts.strategy SET concluded = $1 WHERE strategy_id = $2`,
-				true,
+			_, err = tx.Exec(context.Background(),
+				`UPDATE bts.strategy SET rois_fetched_at = $1 WHERE strategy_id = $2`,
+				s.RoisFetchedAt,
 				s.StrategyID,
 			)
 			if err != nil {
 				return err
 			}
-			log.Infof("Concluded: %d", s.StrategyID)
-			concludedCount++
+			if len(rois) != 0 && s.RoisFetchedAt.Sub(time.Unix(rois[0].Time, 0)) > 130*time.Minute {
+				// concluded: if no new roi fetched in 2 hours
+				_, err := tx.Exec(context.Background(),
+					`UPDATE bts.strategy SET concluded = $1 WHERE strategy_id = $2`,
+					true,
+					s.StrategyID,
+				)
+				if err != nil {
+					return err
+				}
+				log.Infof("Concluded: %d", s.StrategyID)
+				concludedCount++
+			}
+			fetchedCount++
 		}
-		fetchedCount++
-	}
+		return nil
+	})
 	discord.Infof("Concluded %d strategies, Fetched %d strategies", concludedCount, fetchedCount)
 	return err
 }
