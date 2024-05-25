@@ -292,6 +292,32 @@ func (s *Strategy) SD() string {
 	return s.Symbol + DirectionMap[s.Direction]
 }
 
+func (s *Strategy) PopulateRois() error {
+	id := s.SID
+	rois, err := RoisCache.Get(fmt.Sprintf("%d-%d", id, s.UserID))
+	if err != nil {
+		return err
+	}
+	s.Rois = rois
+	if len(s.Rois) > 1 {
+		s.Roi = s.Rois[0].Roi
+		s.LastDayRoiChange = s.Rois.GetRoiChange(24 * time.Hour)
+		s.Last3HrRoiChange = s.Rois.GetRoiChange(3 * time.Hour)
+		s.Last2HrRoiChange = s.Rois.GetRoiChange(2 * time.Hour)
+		s.LastHrRoiChange = s.Rois.GetRoiChange(1 * time.Hour)
+		s.LastDayRoiPerHr = s.Rois.GetRoiPerHr(24 * time.Hour)
+		s.Last15HrRoiPerHr = s.Rois.GetRoiPerHr(15 * time.Hour)
+		s.Last12HrRoiPerHr = s.Rois.GetRoiPerHr(12 * time.Hour)
+		s.Last9HrRoiPerHr = s.Rois.GetRoiPerHr(9 * time.Hour)
+		s.Last6HrRoiPerHr = s.Rois.GetRoiPerHr(6 * time.Hour)
+		s.Last3HrRoiPerHr = s.Rois.GetRoiPerHr(3 * time.Hour)
+		s.LastNHrNoDip = s.Rois.AllPositive(time.Duration(config.TheConfig.LastNHoursNoDips)*time.Hour, 0)
+		s.LastNHrAllPositive = s.Rois.AllPositive(time.Duration(config.TheConfig.LastNHoursAllPositive)*time.Hour, 0.005)
+		s.RoiPerHour = (s.Roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
+	}
+	return nil
+}
+
 func (s *Strategy) Sanitize() {
 	s.Roi, _ = strconv.ParseFloat(s.RoiStr, 64)
 	s.Roi /= 100

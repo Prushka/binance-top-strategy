@@ -235,6 +235,10 @@ out:
 			discord.Errorf("Strategy candidate not running?")
 			continue
 		}
+		err = s.PopulateRois()
+		if err != nil {
+			return err
+		}
 		if s.RunningTime > 3600*config.TheConfig.MaxLookBackBookingHours {
 			log.Infof("Strategy running for more than %d hours, Skip", config.TheConfig.MaxLookBackBookingHours)
 		}
