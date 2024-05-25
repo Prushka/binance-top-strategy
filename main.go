@@ -134,7 +134,6 @@ func tick() error {
 	})
 	for _, grid := range grids {
 		discord.Infof(gsp.Display(nil, grid, "", count+1, len(gsp.GGrids.GridsByGid)))
-		log.Info(utils.AsJson(grid))
 		isRunning, err := gsp.IsGridOriStrategyRunning(grid)
 		if err != nil {
 			return err
@@ -231,6 +230,10 @@ out:
 		s, err := gsp.DiscoverGridRootStrategy(s.SID, s.Symbol, s.Direction, time.Duration(s.RunningTime)*time.Second)
 		if err != nil {
 			return err
+		}
+		if s == nil {
+			discord.Errorf("Strategy candidate not running?")
+			continue
 		}
 		if s.RunningTime > 3600*config.TheConfig.MaxLookBackBookingHours {
 			log.Infof("Strategy running for more than %d hours, Skip", config.TheConfig.MaxLookBackBookingHours)
