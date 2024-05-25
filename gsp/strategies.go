@@ -338,6 +338,13 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 	if grid == nil && s == nil {
 		return "Strategy and Grid are both nil"
 	}
+	if s != nil {
+		err := s.PopulateRois()
+		if err != nil {
+			discord.Errorf("Error populating rois for %d: %s", s.SID, err)
+			s = nil
+		}
+	}
 	ss := ""
 	gg := ""
 	seq := ""
