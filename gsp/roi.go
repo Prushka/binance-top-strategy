@@ -130,7 +130,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id;`, user)
 			log.Debugf("%sSymbol: %s, Direction: %d, Start: %.5f, End: %.5f, %v (%.5f, %.5f)",
 				prefix, s.Symbol, s.Direction, start, end, time.Duration(s.RunningTime)*time.Second, s.LowerLimit, s.UpperLimit)
 		}
-		discord.Infof("Total wins: %d/%d (%.2f)", wl.Win, len(strategies), float64(wl.Win)/float64(len(strategies)))
+		discord.Infof("Total wins: %d/%d (%.2f)", wl.Win, len(strategies), float64(wl.Win)/float64(wl.Total))
 		return wl, nil
 	},
 	func(wl UserWL) bool {
