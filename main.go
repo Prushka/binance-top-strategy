@@ -246,8 +246,8 @@ out:
 		if err != nil {
 			return err
 		}
-		if s.RunningTime > 3600*config.TheConfig.MaxLookBackBookingHours {
-			discord.Infof("Strategy running for more than %d hours, Skip", config.TheConfig.MaxLookBackBookingHours)
+		if s.RunningTime > 60*config.TheConfig.MaxLookBackBookingMinutes {
+			discord.Infof("Strategy running for more than %d minutes, Skip", config.TheConfig.MaxLookBackBookingMinutes)
 			continue
 		}
 

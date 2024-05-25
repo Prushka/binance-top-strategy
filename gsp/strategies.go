@@ -487,7 +487,7 @@ func getTopStrategies(symbol string) (*TrackedStrategies, error) {
 func DiscoverGridRootStrategy(sid int, symbol string, direction int, roughRuntime time.Duration) (*Strategy, error) {
 	query := StrategyQuery{Type: FUTURE, Sort: SortByPnl,
 		RuntimeMin: roughRuntime - 4*time.Hour,
-		RuntimeMax: roughRuntime + time.Duration(config.TheConfig.MaxLookBackBookingHours+4)*time.Hour,
+		RuntimeMax: roughRuntime + time.Duration(config.TheConfig.MaxLookBackBookingMinutes+240)*time.Minute,
 		Symbol:     symbol, Direction: utils.IntPointer(direction),
 		Count: 2000}
 	merged, err := mergeStrategies(query)
