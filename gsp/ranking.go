@@ -145,6 +145,7 @@ WHERE
 	concludedCount := 0
 	fetchedCount := 0
 	populatedStrategies := make(map[int64]*StrategyDB)
+	rRows := make([][]interface{}, 0)
 	for _, s := range strategies {
 		log.Info("Fetching Roi: ", s.StrategyID)
 		rois, err := getStrategyRois(s.StrategyID, s.UserID)
@@ -156,11 +157,8 @@ WHERE
 		s.RoisFetchedAt = time.Now()
 		populatedStrategies[s.StrategyID] = s
 		fetchedCount++
-	}
-	rRows := make([][]interface{}, 0)
-	for sid, s := range populatedStrategies {
 		for _, r := range s.rois {
-			rRows = append(rRows, []interface{}{sid,
+			rRows = append(rRows, []interface{}{s.StrategyID,
 				r.Roi,
 				r.Pnl,
 				time.Unix(r.Time, 0)})
