@@ -235,7 +235,7 @@ func (s *Strategy) addToRankingStore() error {
             matched_count,
             min_investment
          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28)
-           ON CONFLICT DO UPDATE SET
+           ON CONFLICT (strategy_id) DO UPDATE SET
   (copy_count,
             roi,
             pnl,
