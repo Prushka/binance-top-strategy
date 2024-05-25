@@ -3,7 +3,6 @@ package gsp
 import (
 	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/sql"
-	"BinanceTopStrategies/utils"
 	"context"
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
@@ -39,9 +38,10 @@ type UserStrategy struct {
 }
 
 type StrategyDB struct {
-	Symbol             string    `db:"symbol"`
-	CopyCount          int       `db:"copy_count"`
-	ROI                float64   `db:"roi"`
+	Symbol             string  `db:"symbol"`
+	CopyCount          int     `db:"copy_count"`
+	ROI                float64 `db:"roi"`
+	rois               StrategyRoi
 	PNL                float64   `db:"pnl"`
 	RunningTime        int       `db:"running_time"`
 	StrategyID         int64     `db:"strategy_id"` // Use int64 for BIGINT
@@ -144,32 +144,44 @@ WHERE
 	}
 	concludedCount := 0
 	fetchedCount := 0
+	populatedStrategies := make(map[int64]*StrategyDB)
+	for _, s := range strategies {
+		log.Info("Fetching Roi: ", s.StrategyID)
+		rois, err := getStrategyRois(s.StrategyID, s.UserID)
+		if err != nil {
+			discord.Errorf("Error fetching roi: %v", err)
+			break
+		}
+		s.rois = rois
+		s.RoisFetchedAt = time.Now()
+		populatedStrategies[s.StrategyID] = s
+		fetchedCount++
+	}
+	rRows := make([][]interface{}, 0)
+	for sid, s := range populatedStrategies {
+		for _, r := range s.rois {
+			rRows = append(rRows, []interface{}{sid,
+				r.Roi,
+				r.Pnl,
+				time.Unix(r.Time, 0)})
+		}
+	}
 	err = sql.SimpleTransaction(func(tx pgx.Tx) error {
-		for _, s := range strategies {
-			log.Info("Fetching Roi: ", s.StrategyID)
-			utils.ResetTime()
-			rois, err := getStrategyRois(s.StrategyID, s.UserID)
-			if err != nil {
-				break
-			}
-			s.RoisFetchedAt = time.Now()
-			for _, r := range rois {
-				_, err := tx.Exec(context.Background(),
-					`INSERT INTO bts.roi (
-				strategy_id,
-				roi,
-				pnl,
-				time
-			 ) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
-					s.StrategyID,
-					r.Roi,
-					r.Pnl,
-					time.Unix(r.Time, 0),
-				)
-				if err != nil {
-					return err
-				}
-			}
+		_, err := tx.Exec(context.Background(), `CREATE TEMPORARY TABLE _temp_roi (LIKE bts.roi INCLUDING ALL) ON COMMIT DROP`)
+		if err != nil {
+			return err
+		}
+		rows, err := tx.CopyFrom(context.Background(), pgx.Identifier{"_temp_roi"},
+			roiColumns, pgx.CopyFromRows(rRows))
+		if err != nil {
+			return err
+		}
+		discord.Infof("Inserted %d rois", rows)
+		_, err = tx.Exec(context.Background(), `INSERT INTO bts.roi (strategy_id, roi, pnl, time) SELECT * FROM _temp_roi ON CONFLICT DO NOTHING`)
+		if err != nil {
+			return err
+		}
+		for _, s := range populatedStrategies {
 			_, err = tx.Exec(context.Background(),
 				`UPDATE bts.strategy SET rois_fetched_at = $1 WHERE strategy_id = $2`,
 				s.RoisFetchedAt,
@@ -178,6 +190,7 @@ WHERE
 			if err != nil {
 				return err
 			}
+			rois := s.rois
 			if len(rois) != 0 && s.RoisFetchedAt.Sub(time.Unix(rois[0].Time, 0)) > 130*time.Minute {
 				// concluded: if no new roi fetched in 2 hours
 				_, err := tx.Exec(context.Background(),
@@ -191,12 +204,18 @@ WHERE
 				log.Infof("Concluded: %d", s.StrategyID)
 				concludedCount++
 			}
-			fetchedCount++
 		}
 		return nil
 	})
 	discord.Infof("Concluded %d strategies, Fetched %d strategies", concludedCount, fetchedCount)
 	return err
+}
+
+var roiColumns = []string{
+	"strategy_id",
+	"roi",
+	"pnl",
+	"time",
 }
 
 var strategyColumns = []string{
