@@ -234,7 +234,7 @@ out:
 			continue
 		}
 		shortRunningRatio := float64(userWl.ShortRunning) / float64(userWl.Total)
-		if shortRunningRatio > 0.1 {
+		if shortRunningRatio > 0.18 {
 			discord.Infof("Short running ratio too high %.2f, Skip", shortRunningRatio)
 			continue
 		}
