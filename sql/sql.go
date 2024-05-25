@@ -49,6 +49,10 @@ func GetDB() Pgx {
 	return wrappedPgx
 }
 
+func GetDBPool() *pgxpool.Pool {
+	return dbPool
+}
+
 var dbPool *pgxpool.Pool
 var wrappedPgx Pgx // wrapped pgx instance
 

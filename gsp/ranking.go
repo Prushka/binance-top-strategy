@@ -6,6 +6,7 @@ import (
 	"BinanceTopStrategies/utils"
 	"context"
 	"fmt"
+	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/jackc/pgx/v5"
 	log "github.com/sirupsen/logrus"
 	"time"
@@ -198,47 +199,109 @@ WHERE
 	return err
 }
 
+var strategyColumns = []string{
+	"symbol",
+	"copy_count",
+	"roi",
+	"pnl",
+	"running_time",
+	"strategy_id",
+	"strategy_type",
+	"direction",
+	"user_id",
+	"price_difference",
+	"time_discovered",
+	"rois_fetched_at",
+	"type",
+	"lower_limit",
+	"upper_limit",
+	"grid_count",
+	"trigger_price",
+	"stop_lower_limit",
+	"stop_upper_limit",
+	"base_asset",
+	"quote_asset",
+	"leverage",
+	"trailing_up",
+	"trailing_down",
+	"trailing_type",
+	"latest_matched_count",
+	"matched_count",
+	"min_investment",
+}
+
+var userColumns = []string{
+	"user_id",
+}
+
 func addToRankingStore(ss Strategies) error {
+	sRows := make([][]interface{}, 0)
+	uRows := make([][]interface{}, 0)
+	users := mapset.NewSet[int]()
 	for _, s := range ss {
-		_, err := sql.GetDB().Exec(context.Background(),
-			`INSERT INTO bts.b_user (user_id) VALUES ($1) ON CONFLICT DO NOTHING`,
-			s.UserID)
+		users.Add(s.UserID)
+		s.TimeDiscovered = time.Now()
+		sRows = append(sRows, []interface{}{
+			s.Symbol,
+			s.CopyCount,
+			s.Roi,
+			s.Pnl,
+			s.RunningTime,
+			s.SID,
+			s.StrategyType,
+			s.Direction,
+			s.UserID,
+			s.PriceDifference,
+			s.TimeDiscovered,
+			s.RoisFetchedAt,
+			s.StrategyParams.Type,
+			s.StrategyParams.LowerLimit,
+			s.StrategyParams.UpperLimit,
+			s.StrategyParams.GridCount,
+			s.StrategyParams.TriggerPrice,
+			s.StrategyParams.StopLowerLimit,
+			s.StrategyParams.StopUpperLimit,
+			s.StrategyParams.BaseAsset,
+			s.StrategyParams.QuoteAsset,
+			s.StrategyParams.Leverage,
+			s.StrategyParams.TrailingUp,
+			s.StrategyParams.TrailingDown,
+			s.TrailingType,
+			s.LatestMatchedCount,
+			s.MatchedCount,
+			s.MinInvestment,
+		})
+	}
+	for u := range users.Iter() {
+		uRows = append(uRows, []interface{}{u})
+	}
+	return sql.SimpleTransaction(func(tx pgx.Tx) error {
+		_, err := tx.Exec(context.Background(), `CREATE TEMPORARY TABLE _temp_b_users (LIKE bts.b_user INCLUDING ALL) ON COMMIT DROP`)
 		if err != nil {
 			return err
 		}
-		s.TimeDiscovered = time.Now()
-		_, err = sql.GetDB().Exec(context.Background(),
-			`INSERT INTO bts.strategy (
-            symbol,
-            copy_count,
-            roi,
-            pnl,
-            running_time,
-            strategy_id,
-            strategy_type,
-            direction,
-            user_id,
-            price_difference,
-            time_discovered,
-            rois_fetched_at,
-            type,
-            lower_limit,
-            upper_limit,
-            grid_count,
-            trigger_price,
-            stop_lower_limit,
-            stop_upper_limit,
-            base_asset,
-            quote_asset,
-            leverage,
-            trailing_up,
-            trailing_down,
-            trailing_type,
-            latest_matched_count,
-            matched_count,
-            min_investment
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28)
-           ON CONFLICT (strategy_id) DO UPDATE SET
+		_, err = tx.Exec(context.Background(), `CREATE TEMPORARY TABLE _temp_strategies (LIKE bts.strategy INCLUDING ALL) ON COMMIT DROP`)
+		if err != nil {
+			return err
+		}
+		rows, err := tx.CopyFrom(context.Background(), pgx.Identifier{"_temp_b_users"},
+			userColumns, pgx.CopyFromRows(uRows))
+		if err != nil {
+			return err
+		}
+		discord.Infof("Inserted %d users", rows)
+		rows, err = tx.CopyFrom(context.Background(), pgx.Identifier{"_temp_strategies"},
+			strategyColumns, pgx.CopyFromRows(sRows))
+		if err != nil {
+			return err
+		}
+		discord.Infof("Inserted %d strategies", rows)
+		_, err = tx.Exec(context.Background(), `INSERT INTO bts.b_user (user_id) SELECT user_id FROM _temp_b_users ON CONFLICT DO NOTHING`)
+		if err != nil {
+			return err
+		}
+		_, err = tx.Exec(context.Background(), `INSERT INTO bts.strategy (symbol, copy_count, roi, pnl, running_time, strategy_id, strategy_type, direction, user_id, price_difference, time_discovered, rois_fetched_at, type, lower_limit, upper_limit, grid_count, trigger_price, stop_lower_limit, stop_upper_limit, base_asset, quote_asset, leverage, trailing_up, trailing_down, trailing_type, latest_matched_count, matched_count, min_investment, concluded) 
+SELECT * FROM _temp_strategies ON CONFLICT (strategy_id) DO UPDATE SET
   (copy_count,
             roi,
             pnl,
@@ -279,39 +342,10 @@ func addToRankingStore(ss Strategies) error {
             excluded.trailing_type,
             excluded.latest_matched_count,
             excluded.matched_count,
-            excluded.min_investment)`,
-			s.Symbol,
-			s.CopyCount,
-			s.Roi,
-			s.Pnl,
-			s.RunningTime,
-			s.SID,
-			s.StrategyType,
-			s.Direction,
-			s.UserID,
-			s.PriceDifference,
-			s.TimeDiscovered,
-			s.RoisFetchedAt,
-			s.StrategyParams.Type,
-			s.StrategyParams.LowerLimit,
-			s.StrategyParams.UpperLimit,
-			s.StrategyParams.GridCount,
-			s.StrategyParams.TriggerPrice,
-			s.StrategyParams.StopLowerLimit,
-			s.StrategyParams.StopUpperLimit,
-			s.StrategyParams.BaseAsset,
-			s.StrategyParams.QuoteAsset,
-			s.StrategyParams.Leverage,
-			s.StrategyParams.TrailingUp,
-			s.StrategyParams.TrailingDown,
-			s.TrailingType,
-			s.LatestMatchedCount,
-			s.MatchedCount,
-			s.MinInvestment,
-		)
+            excluded.min_investment)`)
 		if err != nil {
 			return err
 		}
-	}
-	return nil
+		return nil
+	})
 }
