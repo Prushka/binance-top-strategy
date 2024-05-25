@@ -310,7 +310,9 @@ func addToRankingStore(ss Strategies) error {
 				s.MatchedCount,
 				s.MinInvestment,
 			)
-			return err
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	})

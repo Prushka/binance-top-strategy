@@ -191,8 +191,8 @@ func tick() error {
 	blacklistedInPool := mapset.NewSet[string]()
 out:
 	for c, s := range gsp.GetPool().Strategies {
-		if s.RunningTime > 3600*5 {
-			log.Infof("Strategy running for more than 5 hours, Skip")
+		if s.RunningTime > 3600*3 {
+			log.Infof("Strategy running for more than 3 hours, Skip")
 			// first pass, will run a second pass with strategy fetched to local
 			continue
 		}
