@@ -49,7 +49,7 @@ type Config struct {
 	TickEverySeconds                  int       `env:"TICK_EVERY_SECONDS" envDefault:"300"`
 	AssetSymbol                       string    `env:"ASSET_SYMBOL" envDefault:"USDT"`
 	MaxChunks                         int       `env:"MAX_CHUNKS" envDefault:"7"`
-	MinInvestmentPerChunk             float64   `env:"MIN_INVESTMENT_PER_CHUNK" envDefault:"6"`
+	MinInvestmentPerChunk             float64   `env:"MIN_INVESTMENT_PER_CHUNK" envDefault:"50"`
 	MaxCancelLossStrategyDeleted      float64   `env:"MAX_CANCEL_LOSS_STRATEGY_DELETED" envDefault:"0"`
 	Mode                              string    `env:"MODE" envDefault:"trading"`
 	PreferredLeverage                 int       `env:"PREFERRED_LEVERAGE" envDefault:"18"`

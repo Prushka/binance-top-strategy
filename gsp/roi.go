@@ -3,8 +3,12 @@ package gsp
 import (
 	"BinanceTopStrategies/cache"
 	"BinanceTopStrategies/config"
+	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/request"
+	"BinanceTopStrategies/sdk"
+	"BinanceTopStrategies/sql"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"slices"
 	"sort"
 	"strconv"
@@ -34,6 +38,100 @@ var RoisCache = cache.CreateMapCache[StrategyRoi](
 		return false
 	},
 )
+
+type UserWL struct {
+	Win       int       `json:"wins"`
+	Loss      int       `json:"loss"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+var UserWLCache = cache.CreateMapCache[UserWL](
+	func(key string) (UserWL, error) {
+		user, _ := strconv.Atoi(key)
+		strategies := make([]*UserStrategy, 0)
+		err := sql.GetDB().Scan(&strategies,
+			`WITH Pool AS (
+    SELECT * FROM bts.strategy WHERE user_id = $1 AND concluded=true
+), LatestRoi AS (
+    SELECT
+        r.strategy_id,
+        r.roi as roi,
+        r.pnl,
+        r.time,
+        ROW_NUMBER() OVER (PARTITION BY r.strategy_id ORDER BY time DESC) AS rn
+    FROM
+        bts.roi r
+            JOIN Pool ON Pool.strategy_id = r.strategy_id
+), EarliestRoi AS (
+    SELECT
+        r.strategy_id,
+        r.time,
+        ROW_NUMBER() OVER (PARTITION BY r.strategy_id ORDER BY time) AS rn
+    FROM
+        bts.roi r
+            JOIN Pool ON Pool.strategy_id = r.strategy_id
+),
+     FilteredStrategies AS (
+         SELECT
+             l.strategy_id,
+             l.roi,
+             l.pnl,
+             l.pnl / NULLIF(l.roi, 0) as original_input,
+             EXTRACT(EPOCH FROM (l.time - e.time)) as runtime,
+			 l.time as end_time,
+			 e.time as start_time
+         FROM
+             LatestRoi l
+                 JOIN
+             EarliestRoi e ON l.strategy_id = e.strategy_id
+         WHERE
+             l.rn = 1 AND e.rn = 1
+     )SELECT
+          f.roi as roi, f.pnl as pnl, f.original_input, f.runtime as running_time,
+		  f.start_time, f.end_time,
+          p.symbol, p.copy_count, p.strategy_id, p.strategy_type, p.direction, p.time_discovered,
+          p.user_id, p.price_difference, p.rois_fetched_at, p.type, p.lower_limit, p.upper_limit,
+          p.grid_count, p.trigger_price, p.stop_lower_limit, p.stop_upper_limit, p.base_asset, p.quote_asset,
+          p.leverage, p.trailing_down, p.trailing_up, p.trailing_type, p.latest_matched_count, p.matched_count, p.min_investment,
+          p.concluded
+FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.start_time != f.end_time;`, user)
+		if err != nil {
+			return UserWL{}, err
+		}
+		totalWins := 0
+		for _, s := range strategies {
+			start, end, err := sdk.GetPrices(s.Symbol,
+				s.StartTime.UnixMilli(), s.EndTime.UnixMilli())
+			if err != nil {
+				return UserWL{}, err
+			}
+			prefix := "lost "
+			switch s.Direction {
+			case LONG:
+				if end > start {
+					totalWins++
+					prefix = "won "
+				}
+			case SHORT:
+				if end < start {
+					totalWins++
+					prefix = "won "
+				}
+			case NEUTRAL:
+				if end < s.UpperLimit && end > s.LowerLimit {
+					totalWins++
+					prefix = "won "
+				}
+			}
+			log.Debugf("%sSymbol: %s, Direction: %d, Start: %.5f, End: %.5f, %v (%.5f, %.5f)",
+				prefix, s.Symbol, s.Direction, start, end, time.Duration(s.RunningTime)*time.Second, s.LowerLimit, s.UpperLimit)
+		}
+		discord.Infof("Total wins: %d/%d (%.2f)", totalWins, len(strategies), float64(totalWins)/float64(len(strategies)))
+		return UserWL{Win: totalWins, Loss: len(strategies) - totalWins, UpdatedAt: time.Now()}, nil
+	},
+	func(wl UserWL) bool {
+		return time.Now().Sub(wl.UpdatedAt) > 1*time.Hour
+	})
 
 type StrategyRoi []*Roi
 

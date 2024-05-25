@@ -139,14 +139,11 @@ SELECT
     u.*
 FROM
     UserOriginalInputs u
-WHERE u.total_original_input >= 18500 AND strategy_count >= 3 AND min_roi >= 0.015 AND total_roi >= 0.045 AND avg_original_input >= 1500
+WHERE u.total_original_input >= 8500 AND strategy_count >= 3 AND min_roi >= 0.01 AND total_roi >= 0.04 AND avg_original_input >= 1000
 ORDER BY
     total_roi DESC;
 
 SELECT * FROM TheChosen;
-
-SELECT * FROm strategy WHERE user_id=215777793;
-SELECT * FROM strategy WHERE user_id = 215777793 AND (concluded IS NULL OR concluded = false);
 
 CREATE OR REPLACE VIEW ThePool AS WITH Pool AS (
     SELECT
@@ -197,10 +194,12 @@ SELECT
     p.leverage, p.trailing_down, p.trailing_up, p.trailing_type, p.latest_matched_count, p.matched_count, p.min_investment,
     p.concluded
     FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id
-        WHERE f.original_input > 1498 AND f.original_input >= p.avg_original_input * 0.8
+        WHERE f.original_input > 1498 AND f.original_input >= p.avg_original_input * 0.7
         ORDER BY p.total_roi DESC, f.original_input DESC;
 
 SELECT * FROM ThePool;
+
+
 
 
 

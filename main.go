@@ -226,13 +226,22 @@ out:
 			log.Infof("Symbol blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
 			continue
 		}
-
+		userWl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", s.UserID))
+		if err != nil {
+			return err
+		}
+		userWlRatio := float64(userWl.Win) / float64(userWl.Win+userWl.Loss)
+		if userWlRatio < 0.84 {
+			discord.Infof("User Win Loss Ratio too low %d/%d (%.2f), Skip", userWl.Win, userWl.Loss, userWlRatio)
+			continue
+		}
+		sInPool := s
 		s, err := gsp.DiscoverGridRootStrategy(s.SID, s.Symbol, s.Direction, time.Duration(s.RunningTime)*time.Second)
 		if err != nil {
 			return err
 		}
 		if s == nil {
-			discord.Errorf("Strategy candidate not running?")
+			discord.Errorf("Strategy candidate %d %s not running", sInPool.SID, sInPool.Symbol)
 			continue
 		}
 		err = s.PopulateRois()
@@ -408,13 +417,7 @@ func main() {
 		))
 	case "playground":
 		utils.ResetTime()
-		t := time.Now()
-		discord.Infof("## Roi: %v", time.Now().Format("2006-01-02 15:04:05"))
-		err := gsp.PopulateRoi()
-		if err != nil {
-			discord.Errorf("Error: %v", err)
-		}
-		discord.Infof("*Run took: %v*", time.Since(t))
+		sdk.Init()
 	}
 	scheduler.StartAsync()
 	<-blocking

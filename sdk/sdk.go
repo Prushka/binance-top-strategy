@@ -46,6 +46,31 @@ func fetchMarketPrice(symbol string) (float64, error) {
 	return 0, fmt.Errorf("symbol not found")
 }
 
+func GetPrices(symbol string, timeStart int64, timeEnd int64) (float64, float64, error) {
+	if timeStart == timeEnd {
+		marketPrice, err := fetchMarketPrice(symbol)
+		return marketPrice, marketPrice, err
+	}
+	res, err := FuturesClient.NewKlinesService().Symbol(symbol).Interval("30m").
+		StartTime(timeStart).EndTime(timeEnd).Do(context.Background())
+	if err != nil {
+		log.Errorf("Start: %d, End: %d", timeStart, timeEnd)
+		return 0, 0, err
+	}
+	if len(res) == 0 {
+		return 0, 0, fmt.Errorf("no data")
+	}
+	start, err := strconv.ParseFloat(res[0].Close, 64)
+	if err != nil {
+		return 0, 0, err
+	}
+	end, err := strconv.ParseFloat(res[len(res)-1].Close, 64)
+	if err != nil {
+		return 0, 0, err
+	}
+	return start, end, nil
+}
+
 func GetFutureUSDT() (float64, error) {
 	res, err := FuturesClient.NewGetBalanceService().Do(context.Background())
 	if err != nil {

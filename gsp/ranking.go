@@ -31,6 +31,13 @@ type UserMetricsDB struct {
 	UserStrategies int     `db:"strategy_count"`
 }
 
+type UserStrategy struct {
+	StrategyDB
+	UserMetricsDB
+	StartTime time.Time `db:"start_time"`
+	EndTime   time.Time `db:"end_time"`
+}
+
 type StrategyDB struct {
 	Symbol             string    `db:"symbol"`
 	CopyCount          int       `db:"copy_count"`
