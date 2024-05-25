@@ -17,6 +17,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"math"
 	"os"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -363,15 +364,41 @@ out:
 // TODO: cancel when above n%, then cooldown?
 // perform last 20 min roi (latest - last 20 OR if max roi was reached more than 20 min ago), if not positive and stop gain, cancel then block symbolpairdirection until next hr
 
+func configPop() {
+	err := sql.Init()
+	if err != nil {
+		panic(err)
+	}
+	dbFields := make(map[string]reflect.StructField)
+	for i := 0; i < reflect.ValueOf(config.TheConfig).Elem().NumField(); i++ {
+		field := reflect.ValueOf(config.TheConfig).Elem().Field(i)
+		tag := reflect.TypeOf(config.TheConfig).Elem().Field(i).Tag.Get("db")
+		if tag == "" {
+			continue
+		}
+		if field.Kind() == reflect.String {
+			dbFields[tag] = reflect.TypeOf(config.TheConfig).Elem().Field(i)
+		}
+	}
+	for k, v := range dbFields {
+		var s string
+		err := sql.GetDB().ScanOne(&s, `SELECT value FROM bts.config WHERE key = $1`, k)
+		if err == nil {
+			s = strings.ReplaceAll(s, "\n", "")
+			reflect.ValueOf(config.TheConfig).Elem().FieldByName(v.Name).SetString(s)
+		}
+	}
+}
+
 func main() {
 	config.Init()
+	configPop()
 	blocking := make(chan bool, 1)
 	cleanup.InitSignalCallback(blocking)
 	cleanup.AddOnStopFunc(func(_ os.Signal) {
 		scheduler.Stop()
 	})
 	discord.Init()
-	panicOnError(sql.Init())
 	switch config.TheConfig.Mode {
 	case "trading":
 		if config.TheConfig.Paper {

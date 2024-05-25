@@ -56,6 +56,11 @@ CREATE TABLE roi
             ON UPDATE CASCADE
 );
 
+CREATE TABLE config (
+    KEY TEXT primary key not null,
+    VALUE TEXT
+);
+
 SELECT public.create_hypertable('bts.roi', 'time', if_not_exists => TRUE);
 CREATE INDEX IF NOT EXISTS roi_pnl_idx ON bts.roi (time, strategy_id);
 

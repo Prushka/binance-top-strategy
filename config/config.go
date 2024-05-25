@@ -1,14 +1,8 @@
 package config
 
 import (
-	"BinanceTopStrategies/cleanup"
-	"context"
 	"github.com/caarlos0/env"
-	"github.com/redis/rueidis"
 	log "github.com/sirupsen/logrus"
-	"os"
-	"reflect"
-	"strings"
 )
 
 type Config struct {
@@ -16,8 +10,8 @@ type Config struct {
 	RedisPassword                     string    `env:"REDIS_PASSWORD" envDefault:""`
 	ApiKey                            string    `env:"API_KEY"`
 	SecretKey                         string    `env:"SECRET_KEY"`
-	CSRFToken                         string    `redis:"CSRF"`
-	COOKIE                            string    `redis:"COOKIE"`
+	CSRFToken                         string    `db:"CSRF"`
+	COOKIE                            string    `db:"COOKIE"`
 	MarginType                        string    `env:"MARGIN_TYPE" envDefault:"CROSSED"`
 	StrategiesCount                   int       `env:"STRATEGIES_COUNT" envDefault:"3000"`
 	RuntimeMinHours                   int       `env:"RUNTIME_MIN_HOURS" envDefault:"3"`
@@ -49,7 +43,7 @@ type Config struct {
 	TickEverySeconds                  int       `env:"TICK_EVERY_SECONDS" envDefault:"300"`
 	AssetSymbol                       string    `env:"ASSET_SYMBOL" envDefault:"USDT"`
 	MaxChunks                         int       `env:"MAX_CHUNKS" envDefault:"7"`
-	MinInvestmentPerChunk             float64   `env:"MIN_INVESTMENT_PER_CHUNK" envDefault:"50"`
+	MinInvestmentPerChunk             float64   `env:"MIN_INVESTMENT_PER_CHUNK" envDefault:"40"`
 	MaxCancelLossStrategyDeleted      float64   `env:"MAX_CANCEL_LOSS_STRATEGY_DELETED" envDefault:"0"`
 	Mode                              string    `env:"MODE" envDefault:"trading"`
 	PreferredLeverage                 int       `env:"PREFERRED_LEVERAGE" envDefault:"18"`
@@ -70,41 +64,10 @@ type Config struct {
 
 var TheConfig = &Config{}
 
-var rdb rueidis.Client
-
 func Init() {
 	err := env.Parse(TheConfig)
 	if err != nil {
 		log.Fatalf("error parsing config: %v", err)
-	}
-	redisFields := make(map[string]reflect.StructField)
-	for i := 0; i < reflect.ValueOf(TheConfig).Elem().NumField(); i++ {
-		field := reflect.ValueOf(TheConfig).Elem().Field(i)
-		tag := reflect.TypeOf(TheConfig).Elem().Field(i).Tag.Get("redis")
-		if tag == "" {
-			continue
-		}
-		if field.Kind() == reflect.String {
-			redisFields[tag] = reflect.TypeOf(TheConfig).Elem().Field(i)
-		}
-	}
-	rdb, err = rueidis.NewClient(rueidis.ClientOption{
-		InitAddress: []string{TheConfig.Redis},
-		Password:    TheConfig.RedisPassword,
-	})
-	if err != nil {
-		panic(err)
-	}
-	cleanup.AddOnStopFunc(func(_ os.Signal) {
-		rdb.Close()
-	})
-	for k, v := range redisFields {
-		ctx := context.Background()
-		s, err := rdb.Do(ctx, rdb.B().Get().Key(k).Build()).ToString()
-		if err == nil {
-			s = strings.ReplaceAll(s, "\n", "")
-			reflect.ValueOf(TheConfig).Elem().FieldByName(v.Name).SetString(s)
-		}
 	}
 }
 
