@@ -6,7 +6,6 @@ import (
 	"BinanceTopStrategies/utils"
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5"
 	log "github.com/sirupsen/logrus"
 	"time"
 )
@@ -143,73 +142,69 @@ WHERE
 	}
 	concludedCount := 0
 	fetchedCount := 0
-	err = sql.SimpleTransaction(func(tx pgx.Tx) error {
-		for _, s := range strategies {
-			log.Info("Fetching Roi: ", s.StrategyID)
-			utils.ResetTime()
-			rois, err := getStrategyRois(s.StrategyID, s.UserID)
-			if err != nil {
-				break
-			}
-			s.RoisFetchedAt = time.Now()
-			for _, r := range rois {
-				_, err := tx.Exec(context.Background(),
-					`INSERT INTO bts.roi (
+	for _, s := range strategies {
+		log.Info("Fetching Roi: ", s.StrategyID)
+		utils.ResetTime()
+		rois, err := getStrategyRois(s.StrategyID, s.UserID)
+		if err != nil {
+			break
+		}
+		s.RoisFetchedAt = time.Now()
+		for _, r := range rois {
+			_, err := sql.GetDB().Exec(context.Background(),
+				`INSERT INTO bts.roi (
 				strategy_id,
 				roi,
 				pnl,
 				time
 			 ) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
-					s.StrategyID,
-					r.Roi,
-					r.Pnl,
-					time.Unix(r.Time, 0),
-				)
-				if err != nil {
-					return err
-				}
+				s.StrategyID,
+				r.Roi,
+				r.Pnl,
+				time.Unix(r.Time, 0),
+			)
+			if err != nil {
+				return err
 			}
-			_, err = tx.Exec(context.Background(),
-				`UPDATE bts.strategy SET rois_fetched_at = $1 WHERE strategy_id = $2`,
-				s.RoisFetchedAt,
+		}
+		_, err = sql.GetDB().Exec(context.Background(),
+			`UPDATE bts.strategy SET rois_fetched_at = $1 WHERE strategy_id = $2`,
+			s.RoisFetchedAt,
+			s.StrategyID,
+		)
+		if err != nil {
+			return err
+		}
+		if len(rois) != 0 && s.RoisFetchedAt.Sub(time.Unix(rois[0].Time, 0)) > 130*time.Minute {
+			// concluded: if no new roi fetched in 2 hours
+			_, err := sql.GetDB().Exec(context.Background(),
+				`UPDATE bts.strategy SET concluded = $1 WHERE strategy_id = $2`,
+				true,
 				s.StrategyID,
 			)
 			if err != nil {
 				return err
 			}
-			if len(rois) != 0 && s.RoisFetchedAt.Sub(time.Unix(rois[0].Time, 0)) > 130*time.Minute {
-				// concluded: if no new roi fetched in 2 hours
-				_, err := tx.Exec(context.Background(),
-					`UPDATE bts.strategy SET concluded = $1 WHERE strategy_id = $2`,
-					true,
-					s.StrategyID,
-				)
-				if err != nil {
-					return err
-				}
-				log.Infof("Concluded: %d", s.StrategyID)
-				concludedCount++
-			}
-			fetchedCount++
+			log.Infof("Concluded: %d", s.StrategyID)
+			concludedCount++
 		}
-		return nil
-	})
+		fetchedCount++
+	}
 	discord.Infof("Concluded %d strategies, Fetched %d strategies", concludedCount, fetchedCount)
 	return err
 }
 
 func addToRankingStore(ss Strategies) error {
-	return sql.SimpleTransaction(func(tx pgx.Tx) error {
-		for _, s := range ss {
-			_, err := tx.Exec(context.Background(),
-				`INSERT INTO bts.b_user (user_id) VALUES ($1) ON CONFLICT DO NOTHING`,
-				s.UserID)
-			if err != nil {
-				return err
-			}
-			s.TimeDiscovered = time.Now()
-			_, err = tx.Exec(context.Background(),
-				`INSERT INTO bts.strategy (
+	for _, s := range ss {
+		_, err := sql.GetDB().Exec(context.Background(),
+			`INSERT INTO bts.b_user (user_id) VALUES ($1) ON CONFLICT DO NOTHING`,
+			s.UserID)
+		if err != nil {
+			return err
+		}
+		s.TimeDiscovered = time.Now()
+		_, err = sql.GetDB().Exec(context.Background(),
+			`INSERT INTO bts.strategy (
             symbol,
             copy_count,
             roi,
@@ -281,39 +276,38 @@ func addToRankingStore(ss Strategies) error {
             excluded.latest_matched_count,
             excluded.matched_count,
             excluded.min_investment)`,
-				s.Symbol,
-				s.CopyCount,
-				s.Roi,
-				s.Pnl,
-				s.RunningTime,
-				s.SID,
-				s.StrategyType,
-				s.Direction,
-				s.UserID,
-				s.PriceDifference,
-				s.TimeDiscovered,
-				s.RoisFetchedAt,
-				s.StrategyParams.Type,
-				s.StrategyParams.LowerLimit,
-				s.StrategyParams.UpperLimit,
-				s.StrategyParams.GridCount,
-				s.StrategyParams.TriggerPrice,
-				s.StrategyParams.StopLowerLimit,
-				s.StrategyParams.StopUpperLimit,
-				s.StrategyParams.BaseAsset,
-				s.StrategyParams.QuoteAsset,
-				s.StrategyParams.Leverage,
-				s.StrategyParams.TrailingUp,
-				s.StrategyParams.TrailingDown,
-				s.TrailingType,
-				s.LatestMatchedCount,
-				s.MatchedCount,
-				s.MinInvestment,
-			)
-			if err != nil {
-				return err
-			}
+			s.Symbol,
+			s.CopyCount,
+			s.Roi,
+			s.Pnl,
+			s.RunningTime,
+			s.SID,
+			s.StrategyType,
+			s.Direction,
+			s.UserID,
+			s.PriceDifference,
+			s.TimeDiscovered,
+			s.RoisFetchedAt,
+			s.StrategyParams.Type,
+			s.StrategyParams.LowerLimit,
+			s.StrategyParams.UpperLimit,
+			s.StrategyParams.GridCount,
+			s.StrategyParams.TriggerPrice,
+			s.StrategyParams.StopLowerLimit,
+			s.StrategyParams.StopUpperLimit,
+			s.StrategyParams.BaseAsset,
+			s.StrategyParams.QuoteAsset,
+			s.StrategyParams.Leverage,
+			s.StrategyParams.TrailingUp,
+			s.StrategyParams.TrailingDown,
+			s.TrailingType,
+			s.LatestMatchedCount,
+			s.MatchedCount,
+			s.MinInvestment,
+		)
+		if err != nil {
+			return err
 		}
-		return nil
-	})
+	}
+	return nil
 }
