@@ -78,10 +78,10 @@ func checkTakeProfits(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 
 func checkStopLoss(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 	for c, sl := range config.TheConfig.StopLossMarkForRemoval {
-		slack := config.TheConfig.StopLossMarkForRemovalSlack[c]
+		slAt := config.TheConfig.StopLossMarkForRemovalSLAt[c]
 		if grid.LastRoi < sl {
-			gsp.GridMarkForRemoval(grid.GID, sl+slack)
-			discord.Infof(fmt.Sprintf("**stop loss marked for removal**: %.2f%%", (sl+slack)*100))
+			gsp.GridMarkForRemoval(grid.GID, slAt)
+			discord.Infof(fmt.Sprintf("**stop loss marked for removal**: %.2f%%", (slAt)*100))
 		}
 	}
 	maxLoss := gsp.GetMaxLoss(grid.GID)
@@ -141,6 +141,7 @@ func tick() error {
 			toCancel.AddGridToCancel(grid, -999, "strategy not running")
 			blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), "strategy sd not running")
 		}
+		checkStopLoss(grid, toCancel)
 	}
 	if !toCancel.IsEmpty() {
 		discord.Infof("### Expired Strategies: %s", toCancel)
@@ -224,6 +225,19 @@ out:
 			log.Infof("Symbol blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
 			continue
 		}
+
+		userStrategies := gsp.GetPool().StrategiesByUserId[s.UserID]
+		for _, us := range userStrategies {
+			if us.Symbol == s.Symbol && us.Direction != s.Direction {
+				discord.Infof("Same symbol hedging, Skip")
+				continue out
+			}
+		}
+		if len(userStrategies) < 30 {
+			discord.Infof("User strategy count too low (%d), Skip", len(userStrategies))
+			continue
+		}
+
 		userWl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", s.UserID))
 		if err != nil {
 			return err
@@ -309,14 +323,6 @@ out:
 		if !s.MarketPriceWithinRange() {
 			discord.Infof("Market Price not within range, Skip")
 			continue
-		}
-
-		userStrategies := gsp.GetPool().StrategiesByUserId[s.UserID]
-		for _, us := range userStrategies {
-			if us.Symbol == s.Symbol && us.Direction != s.Direction {
-				discord.Infof("Same symbol hedging, Skip")
-				continue out
-			}
 		}
 
 		discord.Infof(gsp.Display(s, nil, "New", c+1, len(gsp.GetPool().Strategies)))
