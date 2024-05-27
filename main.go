@@ -421,21 +421,30 @@ func main() {
 			},
 		))
 	case "SQL":
+		panicOnErrorSec(scheduler.SingletonMode().Every(2).Minute().Do(func() {
+			t := time.Now()
+			discord.Infof("### Prices: %v", time.Now().Format("2006-01-02 15:04:05"))
+			err := gsp.PopulatePrices()
+			if err != nil {
+				discord.Errorf("Prices: %v", err)
+			}
+			discord.Infof("*Run took: %v*", time.Since(t))
+		}))
 		for {
 			t := time.Now()
-			discord.Infof("## Strategies: %v", time.Now().Format("2006-01-02 15:04:05"))
+			discord.Infof("### Strategies: %v", time.Now().Format("2006-01-02 15:04:05"))
 			err := gsp.Scrape()
 			if err != nil {
-				discord.Errorf("Error: %v", err)
+				discord.Errorf("Strategies: %v", err)
 			}
 			discord.Infof("*Run took: %v*", time.Since(t))
 			time.Sleep(5 * time.Minute)
 
 			t = time.Now()
-			discord.Infof("## Roi: %v", time.Now().Format("2006-01-02 15:04:05"))
+			discord.Infof("### Roi: %v", time.Now().Format("2006-01-02 15:04:05"))
 			err = gsp.PopulateRoi()
 			if err != nil {
-				discord.Errorf("Error: %v", err)
+				discord.Errorf("Roi: %v", err)
 			}
 			discord.Infof("*Run took: %v*", time.Since(t))
 			time.Sleep(5 * time.Minute)

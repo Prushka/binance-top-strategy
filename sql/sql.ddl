@@ -34,6 +34,8 @@ CREATE TABLE strategy
     matched_count        INTEGER,
     min_investment       NUMERIC,
     concluded            BOOLEAN,
+    start_price          NUMERIC,
+    end_price            NUMERIC,
     CONSTRAINT fk_user
         FOREIGN KEY (user_id)
             REFERENCES b_user (user_id)
