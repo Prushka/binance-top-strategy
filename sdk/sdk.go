@@ -59,11 +59,11 @@ func GetPrices(symbol string, timeStart int64, timeEnd int64) (float64, float64,
 	if len(res) == 0 {
 		return 0, 0, fmt.Errorf("no data")
 	}
-	start, err := strconv.ParseFloat(res[0].Close, 64)
+	start, err := strconv.ParseFloat(res[0].Close, 64) // start time + 30 minutes
 	if err != nil {
 		return 0, 0, err
 	}
-	end, err := strconv.ParseFloat(res[len(res)-1].Close, 64)
+	end, err := strconv.ParseFloat(res[len(res)-1].Close, 64) // end time + 30 minutes
 	if err != nil {
 		return 0, 0, err
 	}

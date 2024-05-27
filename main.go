@@ -453,6 +453,11 @@ func main() {
 	case "playground":
 		utils.ResetTime()
 		sdk.Init()
+		_, _, err := sdk.GetPrices("SOLUSDT", 1716400800*1000, 1716415200*1000)
+		if err != nil {
+			panic(err)
+
+		}
 	}
 	scheduler.StartAsync()
 	<-blocking
