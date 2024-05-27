@@ -130,7 +130,7 @@ func (db *ChosenStrategyDB) ToStrategy() *Strategy {
 func PopulatePrices() error {
 	strategies := make([]*UserStrategy, 0)
 	err := sql.GetDB().Scan(&strategies, `WITH Pool AS (
-    SELECT * FROM bts.strategy WHERE concluded=true AND (start_price IS NULL OR end_price is NULL)
+    SELECT * FROM bts.strategy WHERE concluded=true AND start_price IS NULL
 ), LatestRoi AS (
     SELECT
         r.strategy_id,

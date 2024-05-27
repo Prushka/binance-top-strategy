@@ -421,7 +421,7 @@ func main() {
 			},
 		))
 	case "SQL":
-		panicOnErrorSec(scheduler.SingletonMode().Every(2).Minutes().Do(func() {
+		panicOnErrorSec(scheduler.SingletonMode().Every(1).Minutes().Do(func() {
 			t := time.Now()
 			discord.Infof("### Prices: %v", time.Now().Format("2006-01-02 15:04:05"))
 			err := gsp.PopulatePrices()

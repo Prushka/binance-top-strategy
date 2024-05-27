@@ -5,7 +5,6 @@ import (
 	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/request"
-	"BinanceTopStrategies/sdk"
 	"BinanceTopStrategies/sql"
 	"fmt"
 	log "github.com/sirupsen/logrus"
@@ -52,7 +51,7 @@ var UserWLCache = cache.CreateMapCache[UserWL](
 		strategies := make([]*UserStrategy, 0)
 		err := sql.GetDB().Scan(&strategies,
 			`WITH Pool AS (
-    SELECT * FROM bts.strategy WHERE user_id = $1 AND concluded=true
+    SELECT * FROM bts.strategy WHERE user_id = $1 AND concluded=true AND start_price IS NOT NULL
 ), LatestRoi AS (
     SELECT
         r.strategy_id,
@@ -63,33 +62,20 @@ var UserWLCache = cache.CreateMapCache[UserWL](
     FROM
         bts.roi r
             JOIN Pool ON Pool.strategy_id = r.strategy_id
-), EarliestRoi AS (
-    SELECT
-        r.strategy_id,
-        r.time,
-        ROW_NUMBER() OVER (PARTITION BY r.strategy_id ORDER BY time) AS rn
-    FROM
-        bts.roi r
-            JOIN Pool ON Pool.strategy_id = r.strategy_id
 ),
      FilteredStrategies AS (
          SELECT
              l.strategy_id,
              l.roi,
              l.pnl,
-             l.pnl / NULLIF(l.roi, 0) as original_input,
-             EXTRACT(EPOCH FROM (l.time - e.time)) as runtime,
-			 l.time as end_time,
-			 e.time as start_time
+             l.pnl / NULLIF(l.roi, 0) as original_input
          FROM
              LatestRoi l
-                 JOIN
-             EarliestRoi e ON l.strategy_id = e.strategy_id
          WHERE
-             l.rn = 1 AND e.rn = 1
+             l.rn = 1
      )SELECT
-          f.roi as roi, f.pnl as pnl, f.original_input, f.runtime as running_time,
-		  f.start_time, f.end_time,
+          f.roi as roi, f.pnl as pnl, f.original_input,
+		  p.start_time, p.end_time, p.start_price, p.end_price,
           p.symbol, p.copy_count, p.strategy_id, p.strategy_type, p.direction, p.time_discovered,
           p.user_id, p.price_difference, p.rois_fetched_at, p.type, p.lower_limit, p.upper_limit,
           p.grid_count, p.trigger_price, p.stop_lower_limit, p.stop_upper_limit, p.base_asset, p.quote_asset,
@@ -101,8 +87,8 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 		}
 		wl := UserWL{Win: 0, Total: len(strategies), ShortRunning: 0, UpdatedAt: time.Now()}
 		for _, s := range strategies {
-			start, end, err := sdk.GetPrices(s.Symbol,
-				s.StartTime.UnixMilli(), s.EndTime.UnixMilli())
+			start := *s.StartPrice
+			end := *s.EndPrice
 			if err != nil {
 				return UserWL{}, err
 			}
