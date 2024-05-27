@@ -190,6 +190,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 				break
 			} else {
 				discord.Errorf("Error fetching prices %d: %v", s.StrategyID, err)
+				continue
 			}
 		}
 		_, err = sql.GetDB().Exec(context.Background(), `UPDATE bts.strategy SET start_price = $1, end_price = $2,
