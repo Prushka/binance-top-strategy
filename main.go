@@ -192,8 +192,8 @@ func tick() error {
 	blacklistedInPool := mapset.NewSet[string]()
 out:
 	for c, s := range gsp.GetPool().Strategies {
-		if s.RunningTime > 3600*3 {
-			log.Infof("Strategy running for more than 3 hours, Skip")
+		if s.RunningTime > 60*config.TheConfig.MaxLookBackBookingMinutes {
+			log.Infof("Strategy running for more than %d hours, Skip", config.TheConfig.MaxLookBackBookingMinutes)
 			// first pass, will run a second pass with strategy fetched to local
 			continue
 		}
@@ -239,13 +239,9 @@ out:
 			return err
 		}
 		userWlRatio := float64(userWl.Win) / float64(userWl.Total)
-		if userWlRatio < 0.84 {
-			discord.Infof("User %d Win Loss Ratio too low %d/%d (%.2f), Skip", s.UserID, userWl.Win, userWl.Total, userWlRatio)
-			continue
-		}
 		shortRunningRatio := float64(userWl.ShortRunning) / float64(userWl.Total)
-		if shortRunningRatio > 0.18 {
-			discord.Infof("Short running ratio too high %.2f, Skip", shortRunningRatio)
+		if userWlRatio < 0.84 || (shortRunningRatio > 0.18 && userWlRatio != 1.0) {
+			discord.Infof("User %d Win Loss Ratio %d/%d (%.2f), Short running ratio %.2f", s.UserID, userWl.Win, userWl.Total, userWlRatio, shortRunningRatio)
 			continue
 		}
 		sInPool := s
@@ -425,28 +421,25 @@ func main() {
 			},
 		))
 	case "SQL":
-		panicOnErrorSec(scheduler.SingletonMode().Every(3).Minutes().Do(
-			func() {
-				t := time.Now()
-				discord.Infof("## Strategies: %v", time.Now().Format("2006-01-02 15:04:05"))
-				err := gsp.Scrape()
-				if err != nil {
-					discord.Errorf("Error: %v", err)
-				}
-				discord.Infof("*Run took: %v*", time.Since(t))
-			},
-		))
-		panicOnErrorSec(scheduler.SingletonMode().Every(7).Minutes().Do(
-			func() {
-				t := time.Now()
-				discord.Infof("## Roi: %v", time.Now().Format("2006-01-02 15:04:05"))
-				err := gsp.PopulateRoi()
-				if err != nil {
-					discord.Errorf("Error: %v", err)
-				}
-				discord.Infof("*Run took: %v*", time.Since(t))
-			},
-		))
+		for {
+			t := time.Now()
+			discord.Infof("## Strategies: %v", time.Now().Format("2006-01-02 15:04:05"))
+			err := gsp.Scrape()
+			if err != nil {
+				discord.Errorf("Error: %v", err)
+			}
+			discord.Infof("*Run took: %v*", time.Since(t))
+			time.Sleep(4 * time.Minute)
+
+			t = time.Now()
+			discord.Infof("## Roi: %v", time.Now().Format("2006-01-02 15:04:05"))
+			err = gsp.PopulateRoi()
+			if err != nil {
+				discord.Errorf("Error: %v", err)
+			}
+			discord.Infof("*Run took: %v*", time.Since(t))
+			time.Sleep(4 * time.Minute)
+		}
 	case "playground":
 		utils.ResetTime()
 		sdk.Init()

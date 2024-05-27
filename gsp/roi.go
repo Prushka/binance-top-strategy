@@ -124,7 +124,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 					prefix = "won "
 				}
 			}
-			if s.RunningTime <= 3600*4 && s.UserInput > 1498 {
+			if s.RunningTime <= 3600*4 {
 				wl.ShortRunning++
 			}
 			log.Debugf("%sSymbol: %s, Direction: %d, Start: %.5f, End: %.5f, %v (%.5f, %.5f)",
