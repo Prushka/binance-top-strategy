@@ -70,6 +70,10 @@ type StrategyDB struct {
 	MatchedCount       *int      `db:"matched_count"`
 	MinInvestment      *float64  `db:"min_investment"`
 	Concluded          *bool     `db:"concluded"`
+	StartTime          time.Time `db:"start_time"`
+	EndTime            time.Time `db:"end_time"`
+	StartPrice         float64   `db:"start_price"`
+	EndPrice           float64   `db:"end_price"`
 }
 
 func floatPtrToStringPtr(f *float64) *string {
