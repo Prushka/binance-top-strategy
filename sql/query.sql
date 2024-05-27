@@ -73,8 +73,6 @@ LIMIT 10;
 
 select count(*) FROM strategy WHERE concluded = TRUE AND strategy_type = 2;
 
-INSERT INTO bts.roi (strategy_id, roi, pnl, time) VALUES (391829570, 0.1, 100, '2020-01-01 00:00:00');
-
 SELECT * FROM strategy ORDER BY rois_fetched_at LIMIT 10;
 
 
