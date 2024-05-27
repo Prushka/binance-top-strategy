@@ -9,6 +9,7 @@ import (
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/jackc/pgx/v5"
 	log "github.com/sirupsen/logrus"
+	"strings"
 	"time"
 )
 
@@ -185,7 +186,11 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 		start, end, err = sdk.GetPrices(s.Symbol,
 			s.StartTime.UnixMilli(), s.EndTime.UnixMilli())
 		if err != nil {
-			break
+			if strings.Contains(err.Error(), "Too many requests") {
+				break
+			} else {
+				discord.Errorf("Error fetching prices %d: %v", s.StrategyID, err)
+			}
 		}
 		_, err = sql.GetDB().Exec(context.Background(), `UPDATE bts.strategy SET start_price = $1, end_price = $2,
                         start_time=$3, end_time=$4 WHERE strategy_id = $5`, start, end, s.StartTime, s.EndTime, s.StrategyID)
