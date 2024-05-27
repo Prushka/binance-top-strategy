@@ -436,7 +436,7 @@ func main() {
 				discord.Infof("*Run took: %v*", time.Since(t))
 			},
 		))
-		panicOnErrorSec(scheduler.SingletonMode().Every(5).Minutes().Do(
+		panicOnErrorSec(scheduler.SingletonMode().Every(7).Minutes().Do(
 			func() {
 				t := time.Now()
 				discord.Infof("## Roi: %v", time.Now().Format("2006-01-02 15:04:05"))
