@@ -430,6 +430,7 @@ func main() {
 			}
 			discord.Infof("*Run took: %v*", time.Since(t))
 		}))
+		scheduler.StartAsync()
 		for {
 			t := time.Now()
 			discord.Infof("### Strategies: %v", time.Now().Format("2006-01-02 15:04:05"))

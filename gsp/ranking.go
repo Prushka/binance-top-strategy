@@ -34,9 +34,7 @@ type UserMetricsDB struct {
 type UserStrategy struct {
 	StrategyDB
 	UserMetricsDB
-	UserInput float64   `db:"original_input"`
-	StartTime time.Time `db:"start_time"`
-	EndTime   time.Time `db:"end_time"`
+	UserInput float64 `db:"original_input"`
 }
 
 type StrategyDB struct {
@@ -44,36 +42,36 @@ type StrategyDB struct {
 	CopyCount          int     `db:"copy_count"`
 	ROI                float64 `db:"roi"`
 	rois               StrategyRoi
-	PNL                float64   `db:"pnl"`
-	RunningTime        int       `db:"running_time"`
-	StrategyID         int64     `db:"strategy_id"` // Use int64 for BIGINT
-	StrategyType       int       `db:"strategy_type"`
-	Direction          int       `db:"direction"`
-	UserID             int64     `db:"user_id"` // Use int64 for BIGINT
-	PriceDifference    float64   `db:"price_difference"`
-	TimeDiscovered     time.Time `db:"time_discovered"`
-	RoisFetchedAt      time.Time `db:"rois_fetched_at"`
-	Type               string    `db:"type"`
-	LowerLimit         float64   `db:"lower_limit"`
-	UpperLimit         float64   `db:"upper_limit"`
-	GridCount          int       `db:"grid_count"`
-	TriggerPrice       *float64  `db:"trigger_price"` // Use pointer for nullable columns
-	StopLowerLimit     *float64  `db:"stop_lower_limit"`
-	StopUpperLimit     *float64  `db:"stop_upper_limit"`
-	BaseAsset          *string   `db:"base_asset"` // Use pointer for nullable columns
-	QuoteAsset         *string   `db:"quote_asset"`
-	Leverage           *int      `db:"leverage"`
-	TrailingUp         *bool     `db:"trailing_up"`
-	TrailingDown       *bool     `db:"trailing_down"`
-	TrailingType       *string   `db:"trailing_type"`
-	LatestMatchedCount *int      `db:"latest_matched_count"`
-	MatchedCount       *int      `db:"matched_count"`
-	MinInvestment      *float64  `db:"min_investment"`
-	Concluded          *bool     `db:"concluded"`
-	StartTime          time.Time `db:"start_time"`
-	EndTime            time.Time `db:"end_time"`
-	StartPrice         float64   `db:"start_price"`
-	EndPrice           float64   `db:"end_price"`
+	PNL                float64    `db:"pnl"`
+	RunningTime        int        `db:"running_time"`
+	StrategyID         int64      `db:"strategy_id"` // Use int64 for BIGINT
+	StrategyType       int        `db:"strategy_type"`
+	Direction          int        `db:"direction"`
+	UserID             int64      `db:"user_id"` // Use int64 for BIGINT
+	PriceDifference    float64    `db:"price_difference"`
+	TimeDiscovered     time.Time  `db:"time_discovered"`
+	RoisFetchedAt      time.Time  `db:"rois_fetched_at"`
+	Type               string     `db:"type"`
+	LowerLimit         float64    `db:"lower_limit"`
+	UpperLimit         float64    `db:"upper_limit"`
+	GridCount          int        `db:"grid_count"`
+	TriggerPrice       *float64   `db:"trigger_price"` // Use pointer for nullable columns
+	StopLowerLimit     *float64   `db:"stop_lower_limit"`
+	StopUpperLimit     *float64   `db:"stop_upper_limit"`
+	BaseAsset          *string    `db:"base_asset"` // Use pointer for nullable columns
+	QuoteAsset         *string    `db:"quote_asset"`
+	Leverage           *int       `db:"leverage"`
+	TrailingUp         *bool      `db:"trailing_up"`
+	TrailingDown       *bool      `db:"trailing_down"`
+	TrailingType       *string    `db:"trailing_type"`
+	LatestMatchedCount *int       `db:"latest_matched_count"`
+	MatchedCount       *int       `db:"matched_count"`
+	MinInvestment      *float64   `db:"min_investment"`
+	Concluded          *bool      `db:"concluded"`
+	StartTime          *time.Time `db:"start_time"`
+	EndTime            *time.Time `db:"end_time"`
+	StartPrice         *float64   `db:"start_price"`
+	EndPrice           *float64   `db:"end_price"`
 }
 
 func floatPtrToStringPtr(f *float64) *string {
@@ -175,7 +173,7 @@ func PopulatePrices() error {
           p.grid_count, p.trigger_price, p.stop_lower_limit, p.stop_upper_limit, p.base_asset, p.quote_asset,
           p.leverage, p.trailing_down, p.trailing_up, p.trailing_type, p.latest_matched_count, p.matched_count, p.min_investment,
           p.concluded
-FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id;`)
+FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.original_input IS NOT NULL;`)
 	if err != nil {
 		return err
 	}
@@ -188,6 +186,9 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id;`)
 		}
 		_, err = sql.GetDB().Exec(context.Background(), `UPDATE bts.strategy SET start_price = $1, end_price = $2,
                         start_time=$3, end_time=$4 WHERE strategy_id = $5`, start, end, s.StartTime, s.EndTime, s.StrategyID)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -438,6 +439,7 @@ SELECT * FROM _temp_strategies ON CONFLICT (strategy_id) DO UPDATE SET
             excluded.matched_count,
             excluded.min_investment)`)
 		if err != nil {
+			discord.Errorf("Error inserting strategies: %v", err)
 			return err
 		}
 		return nil
