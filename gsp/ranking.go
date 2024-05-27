@@ -393,7 +393,8 @@ func addToRankingStore(ss Strategies) error {
      type, lower_limit, upper_limit, grid_count,
      trigger_price, stop_lower_limit, stop_upper_limit, base_asset,
      quote_asset, leverage, trailing_up, trailing_down,
-     trailing_type, latest_matched_count, matched_count, min_investment) 
+     trailing_type, latest_matched_count, matched_count, min_investment,
+     concluded, start_time, end_time, start_price, end_price) 
 SELECT * FROM _temp_strategies ON CONFLICT (strategy_id) DO UPDATE SET
   (copy_count,
             roi,
