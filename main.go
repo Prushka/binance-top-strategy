@@ -233,10 +233,6 @@ out:
 				continue out
 			}
 		}
-		if len(userStrategies) < 30 {
-			discord.Infof("User strategy count too low (%d), Skip", len(userStrategies))
-			continue
-		}
 
 		userWl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", s.UserID))
 		if err != nil {
