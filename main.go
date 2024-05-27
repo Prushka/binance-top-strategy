@@ -400,6 +400,7 @@ func main() {
 		scheduler.Stop()
 	})
 	discord.Init()
+	sdk.Init()
 	switch config.TheConfig.Mode {
 	case "trading":
 		if config.TheConfig.Paper {
@@ -407,7 +408,6 @@ func main() {
 		} else {
 			discord.Errorf("Real Trading")
 		}
-		sdk.Init()
 		persistence.Init()
 		panicOnErrorSec(scheduler.SingletonMode().Every(config.TheConfig.TickEverySeconds).Seconds().Do(
 			func() {
@@ -421,14 +421,14 @@ func main() {
 			},
 		))
 	case "SQL":
-		panicOnErrorSec(scheduler.SingletonMode().Every(2).Minute().Do(func() {
+		panicOnErrorSec(scheduler.SingletonMode().Every(2).Minutes().Do(func() {
 			t := time.Now()
 			discord.Infof("### Prices: %v", time.Now().Format("2006-01-02 15:04:05"))
 			err := gsp.PopulatePrices()
 			if err != nil {
 				discord.Errorf("Prices: %v", err)
 			}
-			discord.Infof("*Run took: %v*", time.Since(t))
+			discord.Infof("*Prices run took: %v*", time.Since(t))
 		}))
 		scheduler.StartAsync()
 		for {
@@ -438,7 +438,7 @@ func main() {
 			if err != nil {
 				discord.Errorf("Strategies: %v", err)
 			}
-			discord.Infof("*Run took: %v*", time.Since(t))
+			discord.Infof("*Strategies run took: %v*", time.Since(t))
 			time.Sleep(5 * time.Minute)
 
 			t = time.Now()
@@ -447,7 +447,7 @@ func main() {
 			if err != nil {
 				discord.Errorf("Roi: %v", err)
 			}
-			discord.Infof("*Run took: %v*", time.Since(t))
+			discord.Infof("*Roi run took: %v*", time.Since(t))
 			time.Sleep(5 * time.Minute)
 		}
 	case "playground":

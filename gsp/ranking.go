@@ -178,19 +178,22 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 		return err
 	}
 	discord.Infof("Populating prices for %d strategies", len(strategies))
+	counter := 0
 	for _, s := range strategies {
 		start, end, err := sdk.GetPrices(s.Symbol,
 			s.StartTime.UnixMilli(), s.EndTime.UnixMilli())
 		if err != nil {
-			return err
+			break
 		}
 		_, err = sql.GetDB().Exec(context.Background(), `UPDATE bts.strategy SET start_price = $1, end_price = $2,
                         start_time=$3, end_time=$4 WHERE strategy_id = $5`, start, end, s.StartTime, s.EndTime, s.StrategyID)
 		if err != nil {
-			return err
+			break
 		}
+		counter++
 	}
-	return nil
+	discord.Infof("Populated prices for %d strategies", counter)
+	return err
 }
 
 func PopulateRoi() error {
@@ -321,6 +324,14 @@ var userColumns = []string{
 	"user_id",
 }
 
+var strategyCL = `symbol, copy_count, roi, pnl,
+     running_time, strategy_id, strategy_type, direction,
+     user_id, price_difference, time_discovered, rois_fetched_at,
+     type, lower_limit, upper_limit, grid_count,
+     trigger_price, stop_lower_limit, stop_upper_limit, base_asset,
+     quote_asset, leverage, trailing_up, trailing_down,
+     trailing_type, latest_matched_count, matched_count, min_investment`
+
 func addToRankingStore(ss Strategies) error {
 	sRows := make([][]interface{}, 0)
 	uRows := make([][]interface{}, 0)
@@ -388,15 +399,8 @@ func addToRankingStore(ss Strategies) error {
 			return err
 		}
 		_, err = tx.Exec(context.Background(), `INSERT INTO bts.strategy 
-    (symbol, copy_count, roi, pnl,
-     running_time, strategy_id, strategy_type, direction,
-     user_id, price_difference, time_discovered, rois_fetched_at,
-     type, lower_limit, upper_limit, grid_count,
-     trigger_price, stop_lower_limit, stop_upper_limit, base_asset,
-     quote_asset, leverage, trailing_up, trailing_down,
-     trailing_type, latest_matched_count, matched_count, min_investment,
-     concluded, start_time, end_time, start_price, end_price) 
-SELECT * FROM _temp_strategies ON CONFLICT (strategy_id) DO UPDATE SET
+    (`+strategyCL+`)
+SELECT `+strategyCL+` FROM _temp_strategies ON CONFLICT (strategy_id) DO UPDATE SET
   (copy_count,
             roi,
             pnl,
@@ -439,7 +443,6 @@ SELECT * FROM _temp_strategies ON CONFLICT (strategy_id) DO UPDATE SET
             excluded.matched_count,
             excluded.min_investment)`)
 		if err != nil {
-			discord.Errorf("Error inserting strategies: %v", err)
 			return err
 		}
 		return nil
