@@ -429,7 +429,7 @@ func main() {
 				discord.Errorf("Error: %v", err)
 			}
 			discord.Infof("*Run took: %v*", time.Since(t))
-			time.Sleep(4 * time.Minute)
+			time.Sleep(5 * time.Minute)
 
 			t = time.Now()
 			discord.Infof("## Roi: %v", time.Now().Format("2006-01-02 15:04:05"))
@@ -438,7 +438,7 @@ func main() {
 				discord.Errorf("Error: %v", err)
 			}
 			discord.Infof("*Run took: %v*", time.Since(t))
-			time.Sleep(4 * time.Minute)
+			time.Sleep(5 * time.Minute)
 		}
 	case "playground":
 		utils.ResetTime()
