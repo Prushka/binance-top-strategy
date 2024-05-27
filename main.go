@@ -240,7 +240,7 @@ out:
 		}
 		userWlRatio := float64(userWl.Win) / float64(userWl.Total)
 		if userWlRatio < 0.84 {
-			discord.Infof("User Win Loss Ratio too low %d/%d (%.2f), Skip", userWl.Win, userWl.Total, userWlRatio)
+			discord.Infof("User %d Win Loss Ratio too low %d/%d (%.2f), Skip", s.UserID, userWl.Win, userWl.Total, userWlRatio)
 			continue
 		}
 		shortRunningRatio := float64(userWl.ShortRunning) / float64(userWl.Total)
