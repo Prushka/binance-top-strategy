@@ -179,8 +179,10 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 	}
 	discord.Infof("Populating prices for %d strategies", len(strategies))
 	counter := 0
+	start := 0.0
+	end := 0.0
 	for _, s := range strategies {
-		start, end, err := sdk.GetPrices(s.Symbol,
+		start, end, err = sdk.GetPrices(s.Symbol,
 			s.StartTime.UnixMilli(), s.EndTime.UnixMilli())
 		if err != nil {
 			break
