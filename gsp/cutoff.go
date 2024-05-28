@@ -49,27 +49,30 @@ func Scrape() error {
 	return addToRankingStore(strategies.Strategies)
 }
 
-func IsGridOriStrategyRunning(grid *Grid) (bool, error) {
+func IsGridOriStrategyRunning(grid *Grid) (*Strategy, error) {
 	oriSID := grid.SID
 	var oriUid int
-	sql.GetDB().ScanOne(&oriUid, `SELECT user_id FROM bts.strategy WHERE strategy_id = $1`,
+	err := sql.GetDB().ScanOne(&oriUid, `SELECT user_id FROM bts.strategy WHERE strategy_id = $1`,
 		oriSID)
+	if err != nil {
+		return nil, err
+	}
 	rois, err := RoisCache.Get(fmt.Sprintf("%d-%d", oriSID, oriUid))
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	if !rois.isRunning() {
-		return false, nil
+		return nil, nil
 	}
-	discoverStrategy, err := DiscoverGridRootStrategy(oriSID, grid.Symbol, DirectionSMap[grid.Direction], grid.GetRunTime())
+	discoverStrategy, err := DiscoverRootStrategy(oriSID, grid.Symbol, DirectionSMap[grid.Direction], grid.GetRunTime())
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	if discoverStrategy != nil {
 		log.Infof("Strategy %d is running", grid.SID)
-		return true, nil
+		return discoverStrategy, nil
 	}
-	return false, nil
+	return nil, nil
 }
 
 func AddToPool(strategies Strategies) {

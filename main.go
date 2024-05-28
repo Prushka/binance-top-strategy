@@ -136,16 +136,19 @@ func tick() error {
 		return grids[i].GID < grids[j].GID
 	})
 	for _, grid := range grids {
-		discord.Infof(gsp.Display(gsp.GetPool().StrategiesBySID[grid.SID], grid, "", count+1, len(gsp.GGrids.GridsByGid)))
 		isRunning, err := gsp.IsGridOriStrategyRunning(grid)
 		if err != nil {
 			return err
 		}
 		count++
-		if !isRunning {
+		oriStrategy := gsp.GetPool().StrategiesBySID[grid.SID]
+		if isRunning == nil {
 			toCancel.AddGridToCancel(grid, -999, "strategy not running")
 			blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), "strategy sd not running")
+		} else {
+			oriStrategy = isRunning
 		}
+		discord.Infof(gsp.Display(oriStrategy, grid, "", count+1, len(gsp.GGrids.GridsByGid)))
 		checkStopLoss(grid, toCancel)
 	}
 	if !toCancel.IsEmpty() {
@@ -260,7 +263,7 @@ func tick() error {
 				continue
 			}
 			sInPool := s
-			s, err := gsp.DiscoverGridRootStrategy(s.SID, s.Symbol, s.Direction, time.Duration(s.RunningTime)*time.Second)
+			s, err := gsp.DiscoverRootStrategy(s.SID, s.Symbol, s.Direction, time.Duration(s.RunningTime)*time.Second)
 			if err != nil {
 				return err
 			}
