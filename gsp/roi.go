@@ -88,6 +88,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 		for _, s := range strategies {
 			start := *s.StartPrice
 			end := *s.EndPrice
+			s.RunningTime = int(s.EndTime.Sub(*s.StartTime).Seconds())
 			if err != nil {
 				return UserWL{}, err
 			}

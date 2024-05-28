@@ -245,7 +245,7 @@ SELECT f.*,
        s.concluded,
        s.leverage
        FROM FilteredStrategies f JOIN strategy s ON f.strategy_id = s.strategy_id
-       WHERE user_id = 132234261
+       WHERE user_id = 174742987
        ORDER BY f.time DESC;
 
 
