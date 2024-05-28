@@ -249,7 +249,7 @@ func tick() error {
 			userWlRatio := float64(userWl.Win) / float64(userWl.Total)
 			shortRunningRatio := float64(userWl.ShortRunning) / float64(userWl.Total)
 			if userWlRatio < 0.84 || (shortRunningRatio > 0.18 && userWlRatio != 1.0) {
-				discord.Infof("User %d Win Loss Ratio %d/%d (%.2f), Short running ratio %.2f", s.UserID, userWl.Win, userWl.Total, userWlRatio, shortRunningRatio)
+				discord.Infof("User %d Win Loss %d/%d (%.2f), Short running %d/%d (%.2f)", s.UserID, userWl.Win, userWl.Total, userWlRatio, userWl.ShortRunning, userWl.Total, shortRunningRatio)
 				continue
 			}
 			sInPool := s
