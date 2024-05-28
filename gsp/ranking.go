@@ -199,6 +199,9 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 			break
 		}
 		counter++
+		if counter > 410 {
+			break
+		}
 	}
 	discord.Infof("Populated prices for %d strategies", counter)
 	return err

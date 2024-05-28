@@ -64,7 +64,7 @@ type GridsMap map[int]*Grid
 func (gm GridsMap) GetChunks(quote string) int {
 	chunks := 0
 	for _, g := range gm {
-		token := g.Symbol[:len(g.Symbol)-4]
+		token := g.Symbol[len(g.Symbol)-len(quote):]
 		if token == quote {
 			chunks++
 		}

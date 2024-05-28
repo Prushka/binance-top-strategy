@@ -184,7 +184,7 @@ func tick() error {
 			invChunk = math.Min(balance/chunks, config.TheConfig.MaxPerChunk)
 		}
 		idealInvChunk := (balance + gsp.GGrids.TotalGridPnl + gsp.GGrids.TotalGridInitial) / float64(maxChunks)
-		log.Infof("Ideal Investment: %f, allowed Investment: %f, missing %f chunks", idealInvChunk, invChunk, chunks)
+		discord.Infof("### Opening %d chunks for %s (%.2f,%.2f):", chunksInt, currency, idealInvChunk, invChunk)
 		if invChunk > idealInvChunk {
 			invChunk = idealInvChunk
 		}
@@ -197,9 +197,7 @@ func tick() error {
 			discord.Infof("Only trade after min 19, Skip")
 			return nil
 		}
-		discord.Infof("### Opening new grids:")
 		sessionSymbols := gsp.GGrids.ExistingSymbols.Clone()
-		discord.Infof("Placing %d chunks for %s", chunksInt, currency)
 	out:
 		for c, s := range gsp.GetPool().Strategies {
 			if s.RunningTime > 60*config.TheConfig.MaxLookBackBookingMinutes {
@@ -208,7 +206,7 @@ func tick() error {
 			}
 			strategyQuote := s.Symbol[len(s.Symbol)-4:]
 			if strategyQuote != currency {
-				log.Infof("wrong quote, Skip")
+				log.Infof("wrong quote (%s, %s), Skip", currency, strategyQuote)
 				continue
 			}
 			if gsp.GGrids.ExistingSIDs.Contains(s.SID) {
@@ -472,13 +470,14 @@ func main() {
 		}
 	case "playground":
 		utils.ResetTime()
-		s := getTestStrategy()
-		log.Info(utils.AsJson(s))
-		err := gsp.PlaceGrid(*s, 20, 20)
+
+		sdk.ClearSessionSymbolPrice()
+		err := gsp.UpdateOpenGrids(true)
 		if err != nil {
 			panic(err)
-
 		}
+		usdtChunks := gsp.GGrids.GridsByGid.GetChunks("USDT")
+		log.Infof("USDT Chunks: %d", usdtChunks)
 	}
 	scheduler.StartAsync()
 	<-blocking
