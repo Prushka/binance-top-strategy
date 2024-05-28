@@ -104,8 +104,8 @@ func tick() error {
 	if err != nil {
 		return err
 	}
-	usdt -= config.TheConfig.LeavingAsset
-	usdc -= config.TheConfig.LeavingAsset
+	usdt *= 1 - config.TheConfig.Reserved
+	usdc *= 1 - config.TheConfig.Reserved
 	poolDB := make([]*gsp.ChosenStrategyDB, 0)
 	err = sql.GetDB().Scan(&poolDB, `SELECT * FROM bts.ThePool`)
 	if err != nil {
