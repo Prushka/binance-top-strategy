@@ -326,8 +326,8 @@ func (s *Strategy) Sanitize() {
 	s.StrategyParams.UpperLimit, _ = strconv.ParseFloat(s.StrategyParams.UpperLimitStr, 64)
 }
 
-func (s StrategyRoi) isRunning() bool {
-	latestTime := time.Unix(s[0].Time, 0)
+func (rois StrategyRoi) isRunning() bool {
+	latestTime := time.Unix(rois[0].Time, 0)
 	return time.Now().Sub(latestTime) <= 95*time.Minute
 }
 

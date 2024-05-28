@@ -165,52 +165,52 @@ func getStrategyRois(strategyID int64, rootUserId int64) (StrategyRoi, error) {
 	return roiData, nil
 }
 
-func (roi StrategyRoi) lastNRecords(n int) string {
+func (rois StrategyRoi) lastNRecords(n int) string {
 	n += 1
-	if len(roi) < n {
-		n = len(roi)
+	if len(rois) < n {
+		n = len(rois)
 	}
 	var ss []string
 	for i := 0; i < n; i++ {
-		ss = append(ss, fmt.Sprintf("%.2f%%", roi[i].Roi*100))
+		ss = append(ss, fmt.Sprintf("%.2f%%", rois[i].Roi*100))
 	}
 	slices.Reverse(ss)
 	return strings.Join(ss, ", ")
 }
 
-func (roi StrategyRoi) GetRoiChange(t time.Duration) float64 {
-	latestTimestamp := roi[0].Time
-	latestRoi := roi[0].Roi
+func (rois StrategyRoi) GetRoiChange(t time.Duration) float64 {
+	latestTimestamp := rois[0].Time
+	latestRoi := rois[0].Roi
 	l := latestTimestamp - int64(t.Seconds())
-	for _, r := range roi {
+	for _, r := range rois {
 		if r.Time <= l {
 			return latestRoi - r.Roi
 		}
 	}
-	return latestRoi - roi[len(roi)-1].Roi
+	return latestRoi - rois[len(rois)-1].Roi
 }
 
-func (roi StrategyRoi) GetRoiPerHr(t time.Duration) float64 {
-	latestTimestamp := roi[0].Time
-	latestRoi := roi[0].Roi
+func (rois StrategyRoi) GetRoiPerHr(t time.Duration) float64 {
+	latestTimestamp := rois[0].Time
+	latestRoi := rois[0].Roi
 	l := latestTimestamp - int64(t.Seconds())
 	hrs := float64(t.Seconds()) / 3600
-	for _, r := range roi {
+	for _, r := range rois {
 		if r.Time <= l {
 			return (latestRoi - r.Roi) / hrs
 		}
 	}
-	return (latestRoi - roi[len(roi)-1].Roi) / (float64(roi[0].Time-roi[len(roi)-1].Time) / 3600)
+	return (latestRoi - rois[len(rois)-1].Roi) / (float64(rois[0].Time-rois[len(rois)-1].Time) / 3600)
 }
 
-func (roi StrategyRoi) AllPositive(t time.Duration, cutoff float64) bool {
-	latestTimestamp := roi[0].Time
+func (rois StrategyRoi) AllPositive(t time.Duration, cutoff float64) bool {
+	latestTimestamp := rois[0].Time
 	l := latestTimestamp - int64(t.Seconds())
-	for c, r := range roi {
+	for c, r := range rois {
 		if r.Time < l {
 			return true
 		}
-		if c > 0 && roi[c-1].Roi-r.Roi < cutoff {
+		if c > 0 && rois[c-1].Roi-r.Roi < cutoff {
 			return false
 		}
 	}
