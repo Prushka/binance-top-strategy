@@ -183,7 +183,7 @@ func tick() error {
 		if config.TheConfig.MaxPerChunk != -1 {
 			invChunk = math.Min(balance/chunks, config.TheConfig.MaxPerChunk)
 		}
-		idealInvChunk := (balance + gsp.GGrids.TotalGridPnl + gsp.GGrids.TotalGridInitial) / float64(maxChunks)
+		idealInvChunk := (balance + gsp.GGrids.TotalGridPnl[currency] + gsp.GGrids.TotalGridInitial[currency]) / float64(maxChunks)
 		discord.Infof("### Opening %d chunks for %s (%.2f,%.2f):", chunksInt, currency, idealInvChunk, invChunk)
 		if invChunk > idealInvChunk {
 			invChunk = idealInvChunk
@@ -266,7 +266,7 @@ func tick() error {
 				return err
 			}
 			if s.RunningTime > 60*config.TheConfig.MaxLookBackBookingMinutes {
-				discord.Infof("Strategy running for more than %d minutes, Skip", config.TheConfig.MaxLookBackBookingMinutes)
+				discord.Infof("Strategy %d running for more than %d minutes, Skip", s.SID, config.TheConfig.MaxLookBackBookingMinutes)
 				continue
 			}
 

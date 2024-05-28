@@ -49,8 +49,8 @@ func (tracking *GridTracking) GetLocalWithin(duration time.Duration) (float64, f
 }
 
 type TrackedGrids struct {
-	TotalGridInitial float64
-	TotalGridPnl     float64
+	TotalGridInitial map[string]float64
+	TotalGridPnl     map[string]float64
 	Shorts           mapset.Set[int]
 	Longs            mapset.Set[int]
 	Neutrals         mapset.Set[int]
@@ -61,11 +61,15 @@ type TrackedGrids struct {
 
 type GridsMap map[int]*Grid
 
+func (grid *Grid) IsQuote(quote string) bool {
+	token := grid.Symbol[len(grid.Symbol)-len(quote):]
+	return token == quote
+}
+
 func (gm GridsMap) GetChunks(quote string) int {
 	chunks := 0
 	for _, g := range gm {
-		token := g.Symbol[len(g.Symbol)-len(quote):]
-		if token == quote {
+		if g.IsQuote(quote) {
 			chunks++
 		}
 	}
@@ -139,6 +143,16 @@ func (tracked *TrackedGrids) GetGridBySID(sid int) *Grid {
 	return nil
 }
 
+func (tracked *TrackedGrids) calcPnl(g *Grid, multiplier float64) {
+	if g.IsQuote("USDT") {
+		tracked.TotalGridInitial["USDT"] += multiplier * g.InitialValue
+		tracked.TotalGridPnl["USDT"] += multiplier * g.TotalPnl
+	} else if g.IsQuote("USDC") {
+		tracked.TotalGridInitial["USDC"] += multiplier * g.InitialValue
+		tracked.TotalGridPnl["USDC"] += multiplier * g.TotalPnl
+	}
+}
+
 func (tracked *TrackedGrids) remove(id int) {
 	g, ok := tracked.GridsByGid[id]
 	if !ok {
@@ -153,8 +167,7 @@ func (tracked *TrackedGrids) remove(id int) {
 	} else {
 		tracked.Neutrals.Remove(g.GID)
 	}
-	tracked.TotalGridInitial -= g.InitialValue
-	tracked.TotalGridPnl -= g.TotalPnl
+	tracked.calcPnl(g, -1)
 	delete(tracked.GridsByGid, g.GID)
 	delete(TheGridEnv, g.GID)
 }
@@ -185,11 +198,9 @@ func (tracked *TrackedGrids) add(g *Grid, trackContinuous bool) {
 	g.LastRoi = g.TotalPnl / g.InitialValue
 	updateTime := time.Now()
 	prevG, ok := tracked.GridsByGid[g.GID]
-	tracked.TotalGridInitial += g.InitialValue
-	tracked.TotalGridPnl += g.TotalPnl
+	tracked.calcPnl(g, 1)
 	if ok {
-		tracked.TotalGridInitial -= prevG.InitialValue
-		tracked.TotalGridPnl -= prevG.TotalPnl
+		tracked.calcPnl(prevG, -1)
 	}
 
 	if g.GetEnv() == nil {
