@@ -70,15 +70,15 @@ func GetPrices(symbol string, timeStart int64, timeEnd int64) (float64, float64,
 	return start, end, nil
 }
 
-func GetFutureUSDT() (float64, error) {
+func GetFuture(currency string) (float64, error) {
 	res, err := FuturesClient.NewGetBalanceService().Do(context.Background())
 	if err != nil {
 		return 0, err
 	}
-	usdt := 0.0
+	c := 0.0
 	for _, b := range res {
 		log.Infof("Asset: %s, Balance: %s", b.Asset, b.Balance)
-		if b.Asset == "USDT" {
+		if b.Asset == currency {
 			i, err := strconv.ParseFloat(b.Balance, 64)
 			if err != nil {
 				return 0, err
@@ -91,10 +91,10 @@ func GetFutureUSDT() (float64, error) {
 			if err != nil {
 				return 0, err
 			}
-			usdt = math.Min(i+unPnl, availableBalance)
-			log.Infof("USDT: %f", usdt)
+			c = math.Min(i+unPnl, availableBalance)
+			log.Infof("%s: %f", currency, c)
 			break
 		}
 	}
-	return usdt, nil
+	return c, nil
 }

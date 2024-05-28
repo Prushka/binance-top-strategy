@@ -56,7 +56,20 @@ type TrackedGrids struct {
 	Neutrals         mapset.Set[int]
 	ExistingSIDs     mapset.Set[int]
 	ExistingSymbols  mapset.Set[string]
-	GridsByGid       map[int]*Grid
+	GridsByGid       GridsMap
+}
+
+type GridsMap map[int]*Grid
+
+func (gm GridsMap) GetChunks(quote string) int {
+	chunks := 0
+	for _, g := range gm {
+		token := g.Symbol[:len(g.Symbol)-4]
+		if token == quote {
+			chunks++
+		}
+	}
+	return chunks
 }
 
 type Grid struct {

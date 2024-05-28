@@ -24,7 +24,7 @@ func ShortDur(d time.Duration) string {
 }
 
 func FormatPair(symbol string) string {
-	return symbol[:len(symbol)-len(config.TheConfig.AssetSymbol)]
+	return symbol
 }
 
 func MapValues[T comparable, U any](m map[T]U) []U {

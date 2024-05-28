@@ -47,7 +47,7 @@ type placeGridResponse struct {
 	request.BinanceBaseResponse
 }
 
-func PlaceGrid(strategy Strategy, initialUSDT float64, leverage int) error {
+func PlaceGrid(strategy Strategy, input float64, leverage int) error {
 	if _, ok := DirectionMap[strategy.Direction]; !ok {
 		return fmt.Errorf("invalid direction: %d", strategy.Direction)
 	}
@@ -60,7 +60,7 @@ func PlaceGrid(strategy Strategy, initialUSDT float64, leverage int) error {
 		GridCount:              strategy.StrategyParams.GridCount,
 		GridLowerLimit:         strategy.StrategyParams.LowerLimitStr,
 		GridUpperLimit:         strategy.StrategyParams.UpperLimitStr,
-		GridInitialValue:       fmt.Sprintf("%.2f", initialUSDT*float64(leverage)),
+		GridInitialValue:       fmt.Sprintf("%.2f", input*float64(leverage)),
 		Cos:                    true,
 		Cps:                    true,
 		TrailingUp:             strategy.StrategyParams.TrailingUp,

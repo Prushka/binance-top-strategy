@@ -27,7 +27,7 @@ type Config struct {
 	ShiftMinutesAfterHour             int       `env:"SHIFT_MINUTES_AFTER_HOUR" envDefault:"0"`
 	LastNHoursNoDips                  int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"6"`
 	LastNHoursAllPositive             int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"6"`
-	LeavingAsset                      float64   `env:"LEAVING_ASSET" envDefault:"20"`
+	LeavingAsset                      float64   `env:"LEAVING_ASSET" envDefault:"10"`
 	MaxPerChunk                       float64   `env:"MAX_PER_CHUNK" envDefault:"35"`
 	CancelNoChangeMinutes             int       `env:"CANCEL_NO_CHANGE_MINUTES" envDefault:"30"`
 	MinOppositeDirectionHigherRanking int       `env:"MIN_OPPOSITE_DIRECTION_HIGHER_RANKING" envDefault:"2"`
@@ -41,12 +41,12 @@ type Config struct {
 	StopLossNotPickedHrs              []int     `env:"STOP_LOSS_NOT_PICKED_HRS" envDefault:"1,2,3,4,5,6"`
 	StopLossNotPicked                 []float64 `env:"STOP_LOSS_NOT_PICKED" envDefault:"0,-0.05,-0.1,-0.15,-0.2,-0.3"`
 	TickEverySeconds                  int       `env:"TICK_EVERY_SECONDS" envDefault:"300"`
-	AssetSymbol                       string    `env:"ASSET_SYMBOL" envDefault:"USDT"`
-	MaxChunks                         int       `env:"MAX_CHUNKS" envDefault:"7"`
+	MaxUSDTChunks                     int       `env:"MAX_USDT_CHUNKS" envDefault:"4"`
+	MaxUSDCChunks                     int       `env:"MAX_USDC_CHUNKS" envDefault:"1"`
 	MinInvestmentPerChunk             float64   `env:"MIN_INVESTMENT_PER_CHUNK" envDefault:"40"`
 	MaxCancelLossStrategyDeleted      float64   `env:"MAX_CANCEL_LOSS_STRATEGY_DELETED" envDefault:"0"`
 	Mode                              string    `env:"MODE" envDefault:"trading"`
-	PreferredLeverage                 int       `env:"PREFERRED_LEVERAGE" envDefault:"18"`
+	PreferredLeverage                 int       `env:"PREFERRED_LEVERAGE" envDefault:"20"`
 	MaxLeverage                       int       `env:"MAX_LEVERAGE" envDefault:"25"`
 	KeepTopNStrategiesOfSameSymbol    int       `env:"KEEP_TOP_N_STRATEGIES_OF_SAME_SYMBOL" envDefault:"99"`
 	Last3HrWeight                     float64   `env:"LAST_3_HR_WEIGHT" envDefault:"0"`

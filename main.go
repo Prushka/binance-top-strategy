@@ -96,11 +96,16 @@ func tick() error {
 	utils.ResetTime()
 	sdk.ClearSessionSymbolPrice()
 	discord.Infof("## Run: %v", time.Now().Format("2006-01-02 15:04:05"))
-	usdt, err := sdk.GetFutureUSDT()
+	usdt, err := sdk.GetFuture("USDT")
+	if err != nil {
+		return err
+	}
+	usdc, err := sdk.GetFuture("USDC")
 	if err != nil {
 		return err
 	}
 	usdt -= config.TheConfig.LeavingAsset
+	usdc -= config.TheConfig.LeavingAsset
 	poolDB := make([]*gsp.ChosenStrategyDB, 0)
 	err = sql.GetDB().Scan(&poolDB, `SELECT * FROM bts.ThePool`)
 	if err != nil {
@@ -154,9 +159,12 @@ func tick() error {
 		return nil
 	}
 
-	gridsOpen := len(gsp.GGrids.GridsByGid)
-	if config.TheConfig.MaxChunks-gridsOpen <= 0 && !config.TheConfig.Paper {
-		discord.Infof("Max Chunks reached, No cancel - Skip current run")
+	gridsOpen := gsp.GGrids.GridsByGid
+	usdtChunks := gridsOpen.GetChunks("USDT")
+	usdcChunks := gridsOpen.GetChunks("USDC")
+	if config.TheConfig.MaxUSDTChunks-usdtChunks <= 0 &&
+		config.TheConfig.MaxUSDCChunks-usdcChunks <= 0 && !config.TheConfig.Paper {
+		discord.Infof("Max Chunks reached (%d, %d), No cancel - Skip current run", usdtChunks, usdcChunks)
 		return nil
 	}
 	if mapset.NewSetFromMapKeys(gsp.GetPool().SymbolCount).Difference(gsp.GGrids.ExistingSymbols).Cardinality() == 0 && !config.TheConfig.Paper {
@@ -167,179 +175,191 @@ func tick() error {
 		discord.Infof("Trading Block, Skip")
 		return nil
 	}
-	chunksInt := config.TheConfig.MaxChunks - gridsOpen
-	chunks := float64(config.TheConfig.MaxChunks - gridsOpen)
-	invChunk := usdt / chunks
-	if config.TheConfig.MaxPerChunk != -1 {
-		invChunk = math.Min(usdt/chunks, config.TheConfig.MaxPerChunk)
-	}
-	idealInvChunk := (usdt + gsp.GGrids.TotalGridPnl + gsp.GGrids.TotalGridInitial) / float64(config.TheConfig.MaxChunks)
-	log.Infof("Ideal Investment: %f, allowed Investment: %f, missing %f chunks", idealInvChunk, invChunk, chunks)
-	if invChunk > idealInvChunk {
-		invChunk = idealInvChunk
-	}
-	if invChunk < config.TheConfig.MinInvestmentPerChunk && !config.TheConfig.Paper {
-		discord.Infof("Investment too low (%f), Skip", invChunk)
-		return nil
-	}
-	invChunk = float64(int(invChunk))
-	if time.Now().Minute() < 19 {
-		discord.Infof("Only trade after min 19, Skip")
-		return nil
-	}
-	discord.Infof("### Opening new grids:")
-	sessionSymbols := gsp.GGrids.ExistingSymbols.Clone()
 	blacklistedInPool := mapset.NewSet[string]()
-out:
-	for c, s := range gsp.GetPool().Strategies {
-		if s.RunningTime > 60*config.TheConfig.MaxLookBackBookingMinutes {
-			log.Infof("Strategy running for more than %d hours, Skip", config.TheConfig.MaxLookBackBookingMinutes)
-			// first pass, will run a second pass with strategy fetched to local
-			continue
+	place := func(maxChunks, existingChunks int, currency string, balance float64) error {
+		chunksInt := maxChunks - existingChunks
+		chunks := float64(chunksInt)
+		invChunk := balance / chunks
+		if config.TheConfig.MaxPerChunk != -1 {
+			invChunk = math.Min(balance/chunks, config.TheConfig.MaxPerChunk)
 		}
-		if strings.Contains(s.Symbol, "USDC") {
-			discord.Infof("USDC symbol, Skip")
-			continue
+		idealInvChunk := (balance + gsp.GGrids.TotalGridPnl + gsp.GGrids.TotalGridInitial) / float64(maxChunks)
+		log.Infof("Ideal Investment: %f, allowed Investment: %f, missing %f chunks", idealInvChunk, invChunk, chunks)
+		if invChunk > idealInvChunk {
+			invChunk = idealInvChunk
 		}
-		if gsp.GGrids.ExistingSIDs.Contains(s.SID) {
-			discord.Infof("* Strategy %d - %s exists in open grids, Skip", s.SID, s.SD())
-			continue
+		if invChunk < config.TheConfig.MinInvestmentPerChunk && !config.TheConfig.Paper {
+			discord.Infof("Investment too low (%f), Skip", invChunk)
+			return nil
 		}
-		if sessionSymbols.Contains(s.Symbol) {
-			log.Infof("Symbol exists in open grids, Skip")
-			continue
+		invChunk = float64(int(invChunk))
+		if time.Now().Minute() < 19 {
+			discord.Infof("Only trade after min 19, Skip")
+			return nil
 		}
-
-		if bl, till := blacklist.SIDBlacklisted(s.SID); bl {
-			blacklistedInPool.Add(fmt.Sprintf("%d", s.SID))
-			log.Infof("Strategy blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
-			continue
-		}
-		if bl, till := blacklist.SymbolDirectionBlacklisted(s.Symbol, gsp.DirectionMap[s.Direction]); bl {
-			blacklistedInPool.Add(s.SD())
-			log.Infof("Symbol Direction blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
-			continue
-		}
-		if bl, till := blacklist.SymbolBlacklisted(s.Symbol); bl {
-			blacklistedInPool.Add(s.Symbol)
-			log.Infof("Symbol blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
-			continue
-		}
-
-		userStrategies := gsp.GetPool().StrategiesByUserId[s.UserID]
-		for _, us := range userStrategies {
-			if us.Symbol == s.Symbol && us.Direction != s.Direction {
-				discord.Infof("Same symbol hedging, Skip")
-				continue out
-			}
-		}
-
-		userWl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", s.UserID))
-		if err != nil {
-			return err
-		}
-		userWlRatio := float64(userWl.Win) / float64(userWl.Total)
-		shortRunningRatio := float64(userWl.ShortRunning) / float64(userWl.Total)
-		if userWlRatio < 0.84 || (shortRunningRatio > 0.18 && userWlRatio != 1.0) {
-			discord.Infof("User %d Win Loss Ratio %d/%d (%.2f), Short running ratio %.2f", s.UserID, userWl.Win, userWl.Total, userWlRatio, shortRunningRatio)
-			continue
-		}
-		sInPool := s
-		s, err := gsp.DiscoverGridRootStrategy(s.SID, s.Symbol, s.Direction, time.Duration(s.RunningTime)*time.Second)
-		if err != nil {
-			return err
-		}
-		if s == nil {
-			discord.Errorf("Strategy candidate %d %s not running", sInPool.SID, sInPool.Symbol)
-			continue
-		}
-		err = s.PopulateRois()
-		if err != nil {
-			return err
-		}
-		if s.RunningTime > 60*config.TheConfig.MaxLookBackBookingMinutes {
-			discord.Infof("Strategy running for more than %d minutes, Skip", config.TheConfig.MaxLookBackBookingMinutes)
-			continue
-		}
-
-		marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)
-		minInvestment, _ := strconv.ParseFloat(s.MinInvestment, 64)
-		notionalLeverage := notional.GetLeverage(s.Symbol, invChunk)
-		leverage := utils.IntMin(notionalLeverage, config.TheConfig.PreferredLeverage)
-		gap := s.StrategyParams.UpperLimit - s.StrategyParams.LowerLimit
-		if s.PriceDifference < 0.1 {
-			discord.Infof("Price difference too low, Skip")
-			continue
-		}
-		switch s.Direction {
-		case gsp.LONG:
-			if marketPrice > s.StrategyParams.UpperLimit-gap*config.TheConfig.LongRangeDiff {
-				discord.Infof("Market Price too high for long, Skip")
+		discord.Infof("### Opening new grids:")
+		sessionSymbols := gsp.GGrids.ExistingSymbols.Clone()
+		discord.Infof("Placing %d chunks for %s", chunksInt, currency)
+	out:
+		for c, s := range gsp.GetPool().Strategies {
+			if s.RunningTime > 60*config.TheConfig.MaxLookBackBookingMinutes {
+				log.Infof("Strategy running for more than %d hours, Skip", config.TheConfig.MaxLookBackBookingMinutes)
 				continue
 			}
-		case gsp.NEUTRAL:
-			minInvestPerLeverage := minInvestment * float64(s.StrategyParams.Leverage)
-			minLeverage := int(math.Ceil(minInvestPerLeverage / invChunk))
-			if minLeverage > config.TheConfig.MaxLeverage {
-				discord.Infof("Investment too low %f, Min leverage %d, Skip", invChunk, minLeverage)
-				continue
-			} else if minLeverage > leverage {
-				leverage = minLeverage
-			}
-			if marketPrice < s.StrategyParams.LowerLimit+gap*config.TheConfig.NeutralRangeDiff {
-				discord.Infof("Market Price too low for neutral, Skip")
+			strategyQuote := s.Symbol[len(s.Symbol)-4:]
+			if strategyQuote != currency {
+				log.Infof("wrong quote, Skip")
 				continue
 			}
-			if marketPrice > s.StrategyParams.UpperLimit-gap*config.TheConfig.NeutralRangeDiff {
-				discord.Infof("Market Price too high for neutral, Skip")
+			if gsp.GGrids.ExistingSIDs.Contains(s.SID) {
+				discord.Infof("* Strategy %d - %s exists in open grids, Skip", s.SID, s.SD())
 				continue
 			}
-		case gsp.SHORT:
-			if marketPrice < s.StrategyParams.LowerLimit+gap*config.TheConfig.ShortRangeDiff {
-				discord.Infof("Market Price too low for short, Skip")
+			if sessionSymbols.Contains(s.Symbol) {
+				log.Infof("Symbol exists in open grids, Skip")
 				continue
 			}
-		}
 
-		if s.StrategyParams.TriggerPrice != nil {
-			triggerPrice, _ := strconv.ParseFloat(*s.StrategyParams.TriggerPrice, 64)
+			if bl, till := blacklist.SIDBlacklisted(s.SID); bl {
+				blacklistedInPool.Add(fmt.Sprintf("%d", s.SID))
+				log.Infof("Strategy blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
+				continue
+			}
+			if bl, till := blacklist.SymbolDirectionBlacklisted(s.Symbol, gsp.DirectionMap[s.Direction]); bl {
+				blacklistedInPool.Add(s.SD())
+				log.Infof("Symbol Direction blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
+				continue
+			}
+			if bl, till := blacklist.SymbolBlacklisted(s.Symbol); bl {
+				blacklistedInPool.Add(s.Symbol)
+				log.Infof("Symbol blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
+				continue
+			}
+
+			userStrategies := gsp.GetPool().StrategiesByUserId[s.UserID]
+			for _, us := range userStrategies {
+				if us.Symbol == s.Symbol && us.Direction != s.Direction {
+					discord.Infof("Same symbol hedging, Skip")
+					continue out
+				}
+			}
+
+			userWl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", s.UserID))
+			if err != nil {
+				return err
+			}
+			userWlRatio := float64(userWl.Win) / float64(userWl.Total)
+			shortRunningRatio := float64(userWl.ShortRunning) / float64(userWl.Total)
+			if userWlRatio < 0.84 || (shortRunningRatio > 0.18 && userWlRatio != 1.0) {
+				discord.Infof("User %d Win Loss Ratio %d/%d (%.2f), Short running ratio %.2f", s.UserID, userWl.Win, userWl.Total, userWlRatio, shortRunningRatio)
+				continue
+			}
+			sInPool := s
+			s, err := gsp.DiscoverGridRootStrategy(s.SID, s.Symbol, s.Direction, time.Duration(s.RunningTime)*time.Second)
+			if err != nil {
+				return err
+			}
+			if s == nil {
+				discord.Errorf("Strategy candidate %d %s not running", sInPool.SID, sInPool.Symbol)
+				continue
+			}
+			err = s.PopulateRois()
+			if err != nil {
+				return err
+			}
+			if s.RunningTime > 60*config.TheConfig.MaxLookBackBookingMinutes {
+				discord.Infof("Strategy running for more than %d minutes, Skip", config.TheConfig.MaxLookBackBookingMinutes)
+				continue
+			}
+
 			marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)
-			diff := math.Abs((triggerPrice - marketPrice) / marketPrice)
-			if diff > config.TheConfig.TriggerRangeDiff {
-				discord.Infof("Trigger Price difference too high, Skip, Trigger: %f, Market: %f, Diff: %f",
-					triggerPrice, marketPrice, diff)
+			minInvestment, _ := strconv.ParseFloat(s.MinInvestment, 64)
+			notionalLeverage := notional.GetLeverage(s.Symbol, invChunk)
+			leverage := utils.IntMin(notionalLeverage, config.TheConfig.PreferredLeverage)
+			gap := s.StrategyParams.UpperLimit - s.StrategyParams.LowerLimit
+			if s.PriceDifference < 0.1 {
+				discord.Infof("Price difference too low, Skip")
 				continue
 			}
-		}
-
-		if !s.MarketPriceWithinRange() {
-			discord.Infof("Market Price not within range, Skip")
-			continue
-		}
-
-		discord.Infof(gsp.Display(s, nil, "New", c+1, len(gsp.GetPool().Strategies)))
-		errr := gsp.PlaceGrid(*s, invChunk, leverage)
-		if !config.TheConfig.Paper {
-			if errr != nil {
-				discord.Infof("**Error placing grid: %v**", errr)
-				if strings.Contains(errr.Error(), "Create grid too frequently") {
-					discord.Infof("**Too Frequent Error, Skip Current Run**")
-					break
+			switch s.Direction {
+			case gsp.LONG:
+				if marketPrice > s.StrategyParams.UpperLimit-gap*config.TheConfig.LongRangeDiff {
+					discord.Infof("Market Price too high for long, Skip")
+					continue
 				}
-			} else {
-				discord.Actionf(gsp.Display(s, nil, "**Opened Grid**", c+1, len(gsp.GetPool().Strategies)))
-				chunksInt -= 1
-				sessionSymbols.Add(s.Symbol)
-				if chunksInt <= 0 {
-					break
+			case gsp.NEUTRAL:
+				minInvestPerLeverage := minInvestment * float64(s.StrategyParams.Leverage)
+				minLeverage := int(math.Ceil(minInvestPerLeverage / invChunk))
+				if minLeverage > config.TheConfig.MaxLeverage {
+					discord.Infof("Investment too low %f, Min leverage %d, Skip", invChunk, minLeverage)
+					continue
+				} else if minLeverage > leverage {
+					leverage = minLeverage
+				}
+				if marketPrice < s.StrategyParams.LowerLimit+gap*config.TheConfig.NeutralRangeDiff {
+					discord.Infof("Market Price too low for neutral, Skip")
+					continue
+				}
+				if marketPrice > s.StrategyParams.UpperLimit-gap*config.TheConfig.NeutralRangeDiff {
+					discord.Infof("Market Price too high for neutral, Skip")
+					continue
+				}
+			case gsp.SHORT:
+				if marketPrice < s.StrategyParams.LowerLimit+gap*config.TheConfig.ShortRangeDiff {
+					discord.Infof("Market Price too low for short, Skip")
+					continue
+				}
+			}
+
+			if s.StrategyParams.TriggerPrice != nil {
+				triggerPrice, _ := strconv.ParseFloat(*s.StrategyParams.TriggerPrice, 64)
+				marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)
+				diff := math.Abs((triggerPrice - marketPrice) / marketPrice)
+				if diff > config.TheConfig.TriggerRangeDiff {
+					discord.Infof("Trigger Price difference too high, Skip, Trigger: %f, Market: %f, Diff: %f",
+						triggerPrice, marketPrice, diff)
+					continue
+				}
+			}
+
+			if !s.MarketPriceWithinRange() {
+				discord.Infof("Market Price not within range, Skip")
+				continue
+			}
+
+			discord.Infof(gsp.Display(s, nil, "New", c+1, len(gsp.GetPool().Strategies)))
+			errr := gsp.PlaceGrid(*s, invChunk, leverage)
+			if !config.TheConfig.Paper {
+				if errr != nil {
+					discord.Infof("**Error placing grid: %v**", errr)
+					if strings.Contains(errr.Error(), "Create grid too frequently") {
+						discord.Infof("**Too Frequent Error, Skip Current Run**")
+						break
+					}
+				} else {
+					discord.Actionf(gsp.Display(s, nil, "**Opened Grid**", c+1, len(gsp.GetPool().Strategies)))
+					chunksInt -= 1
+					sessionSymbols.Add(s.Symbol)
+					if chunksInt <= 0 {
+						break
+					}
 				}
 			}
 		}
+		return nil
 	}
+	err = place(config.TheConfig.MaxUSDTChunks, usdtChunks, "USDT", usdt)
+	if err != nil {
+		return err
+	}
+	err = place(config.TheConfig.MaxUSDCChunks, usdcChunks, "USDC", usdc)
+	if err != nil {
+		return err
+	}
+
 	if blacklistedInPool.Cardinality() > 0 {
 		discord.Infof("Blacklisted in pool: %s", blacklistedInPool)
 	}
-
 	utils.Time("Place/Cancel done")
 	discord.Infof("### New Grids:")
 	err = gsp.UpdateOpenGrids(false)
@@ -452,8 +472,9 @@ func main() {
 		}
 	case "playground":
 		utils.ResetTime()
-		sdk.Init()
-		_, _, err := sdk.GetPrices("SOLUSDT", 1716400800*1000, 1716415200*1000)
+		s := getTestStrategy()
+		log.Info(utils.AsJson(s))
+		err := gsp.PlaceGrid(*s, 20, 20)
 		if err != nil {
 			panic(err)
 
@@ -461,6 +482,16 @@ func main() {
 	}
 	scheduler.StartAsync()
 	<-blocking
+}
+
+func getTestStrategy() *gsp.Strategy {
+	s := gsp.ChosenStrategyDB{}
+	err := sql.GetDB().ScanOne(&s, `SELECT * FROM bts.strategy WHERE strategy_id = 392699245`)
+	if err != nil {
+		panic(err)
+	}
+	ss := gsp.ToStrategies([]*gsp.ChosenStrategyDB{&s})
+	return ss[0]
 }
 
 func panicOnErrorSec(a interface{}, err error) {
