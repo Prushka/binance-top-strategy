@@ -489,7 +489,7 @@ func getTopStrategies(symbol string) (*TrackedStrategies, error) {
 
 func DiscoverRootStrategy(sid int, symbol string, direction int, roughRuntime time.Duration) (*Strategy, error) {
 	getQuery := func(quote string) StrategyQuery {
-		sym := symbol[:len(symbol)-4]
+		sym := symbol[:len(symbol)-4] + quote
 		return StrategyQuery{Type: FUTURE, Sort: SortByPnl,
 			RuntimeMin: roughRuntime - 4*time.Hour,
 			RuntimeMax: roughRuntime + time.Duration(config.TheConfig.MaxLookBackBookingMinutes+240)*time.Minute,
