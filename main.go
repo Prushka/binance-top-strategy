@@ -145,7 +145,7 @@ func tick() error {
 		if isRunning != nil {
 			oriStrategy = isRunning
 		}
-		discord.Infof(gsp.Display(oriStrategy, grid, "", count+1, len(gsp.GGrids.GridsByGid)))
+		discord.Infof(gsp.Display(oriStrategy, grid, "", count, len(gsp.GGrids.GridsByGid)))
 		if isRunning == nil {
 			toCancel.AddGridToCancel(grid, -999, "strategy not running")
 			blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), "strategy sd not running")
