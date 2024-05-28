@@ -189,7 +189,7 @@ func tick() error {
 			invChunk = math.Min(balance/chunks, config.TheConfig.MaxPerChunk)
 		}
 		idealInvChunk := (balance + gsp.GGrids.TotalGridPnl[currency] + gsp.GGrids.TotalGridInitial[currency]) / float64(maxChunks)
-		discord.Infof("### Opening %d chunks for %s (%.2f, %.2f):", chunksInt, currency, idealInvChunk, invChunk)
+		discord.Infof("### Opening %d chunks for %s %s (%.2f, %.2f):", chunksInt, currency, overwriteQuote, idealInvChunk, invChunk)
 		if invChunk > idealInvChunk {
 			invChunk = idealInvChunk
 		}
@@ -334,7 +334,7 @@ func tick() error {
 			}
 
 			if overwriteQuote != "" {
-				s.Symbol = s.Symbol[:len(s.Symbol)-len(currency)] + "USDC"
+				s.Symbol = s.Symbol[:len(s.Symbol)-len(currency)] + overwriteQuote
 			}
 
 			discord.Infof(gsp.Display(s, nil, "New", c+1, len(gsp.GetPool().Strategies)))
