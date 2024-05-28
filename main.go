@@ -143,6 +143,9 @@ func tick() error {
 		count++
 		oriStrategy := gsp.GetPool().StrategiesBySID[grid.SID]
 		if isRunning != nil {
+			if oriStrategy != nil {
+				isRunning.UserMetricsDB = oriStrategy.UserMetricsDB
+			}
 			oriStrategy = isRunning
 		}
 		discord.Infof(gsp.Display(oriStrategy, grid, "", count, len(gsp.GGrids.GridsByGid)))
