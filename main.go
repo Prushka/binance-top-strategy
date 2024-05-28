@@ -248,7 +248,7 @@ func tick() error {
 			}
 			userWlRatio := float64(userWl.Win) / float64(userWl.Total)
 			shortRunningRatio := float64(userWl.ShortRunning) / float64(userWl.Total)
-			if userWlRatio < 0.84 || (shortRunningRatio > 0.18 && userWlRatio != 1.0) {
+			if userWlRatio < 0.84 || (shortRunningRatio > 0.201 && userWlRatio != 1.0) {
 				discord.Infof("User %d Win Loss %d/%d (%.2f), Short running %d/%d (%.2f)", s.UserID, userWl.Win, userWl.Total, userWlRatio, userWl.ShortRunning, userWl.Total, shortRunningRatio)
 				continue
 			}
@@ -470,14 +470,13 @@ func main() {
 		}
 	case "playground":
 		utils.ResetTime()
-
 		sdk.ClearSessionSymbolPrice()
-		err := gsp.UpdateOpenGrids(true)
+		userWl, err := gsp.UserWLCache.Get("174742987")
 		if err != nil {
 			panic(err)
+
 		}
-		usdtChunks := gsp.GGrids.GridsByGid.GetChunks("USDT")
-		log.Infof("USDT Chunks: %d", usdtChunks)
+		log.Info(utils.AsJson(userWl))
 	}
 	scheduler.StartAsync()
 	<-blocking
