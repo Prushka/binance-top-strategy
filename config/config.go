@@ -59,7 +59,7 @@ type Config struct {
 	LongRangeDiff                     float64   `env:"LONG_RANGE_DIFF" envDefault:"0.4"`
 	TriggerRangeDiff                  float64   `env:"TRIGGER_RANGE_DIFF" envDefault:"0.04"`
 	PGUrl                             string    `env:"PGURL" envDefault:"postgresql://postgres:password@localhost:5432"`
-	MaxLookBackBookingMinutes         int       `env:"MAX_LOOK_BACK_BOOKING_MIN" envDefault:"120"`
+	MaxLookBackBookingMinutes         int       `env:"MAX_LOOK_BACK_BOOKING_MIN" envDefault:"180"`
 }
 
 var TheConfig = &Config{}

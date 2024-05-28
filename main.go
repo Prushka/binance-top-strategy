@@ -201,7 +201,7 @@ func tick() error {
 	out:
 		for c, s := range gsp.GetPool().Strategies {
 			if s.RunningTime > 60*config.TheConfig.MaxLookBackBookingMinutes {
-				log.Infof("Strategy running for more than %d hours, Skip", config.TheConfig.MaxLookBackBookingMinutes)
+				log.Infof("Strategy running for more than %d minutes, Skip", config.TheConfig.MaxLookBackBookingMinutes)
 				continue
 			}
 			strategyQuote := s.Symbol[len(s.Symbol)-4:]
@@ -248,7 +248,7 @@ func tick() error {
 			}
 			userWlRatio := float64(userWl.Win) / float64(userWl.Total)
 			shortRunningRatio := float64(userWl.ShortRunning) / float64(userWl.Total)
-			if userWlRatio < 0.84 || (shortRunningRatio > 0.201 && userWlRatio != 1.0) {
+			if userWlRatio < 0.84 || (shortRunningRatio > 0.231 && userWlRatio != 1.0) {
 				discord.Infof("User %d Win Loss %d/%d (%.2f), Short running %d/%d (%.2f)", s.UserID, userWl.Win, userWl.Total, userWlRatio, userWl.ShortRunning, userWl.Total, shortRunningRatio)
 				continue
 			}
