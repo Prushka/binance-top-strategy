@@ -187,7 +187,7 @@ SELECT
     f.roi as roi, f.pnl as pnl, f.original_input, f.runtime as running_time, p.strategy_count,
     p.total_roi, p.total_original_input,
     p.symbol, p.copy_count, p.strategy_id, p.strategy_type, p.direction, p.time_discovered,
-    p.user_id, p.price_difference, p.rois_fetched_at, p.type, p.lower_limit, p.upper_limit,
+    p.user_id, p.rois_fetched_at, p.type, p.lower_limit, p.upper_limit,
     p.grid_count, p.trigger_price, p.stop_lower_limit, p.stop_upper_limit, p.base_asset, p.quote_asset,
     p.leverage, p.trailing_down, p.trailing_up, p.trailing_type, p.latest_matched_count, p.matched_count, p.min_investment,
     p.concluded

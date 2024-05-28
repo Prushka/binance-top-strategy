@@ -67,7 +67,6 @@ type Strategy struct {
 	LastNHrNoDip       bool
 	LastNHrAllPositive bool
 	RoiPerHour         float64
-	PriceDifference    float64
 	ReasonNotPicked    []string
 	TimeDiscovered     time.Time
 	TimeNotFound       time.Time
@@ -325,8 +324,6 @@ func (s *Strategy) Sanitize() {
 
 	s.StrategyParams.LowerLimit, _ = strconv.ParseFloat(s.StrategyParams.LowerLimitStr, 64)
 	s.StrategyParams.UpperLimit, _ = strconv.ParseFloat(s.StrategyParams.UpperLimitStr, 64)
-
-	s.PriceDifference = s.StrategyParams.UpperLimit/s.StrategyParams.LowerLimit - 1
 }
 
 func (s StrategyRoi) isRunning() bool {

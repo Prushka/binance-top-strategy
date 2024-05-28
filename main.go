@@ -184,7 +184,7 @@ func tick() error {
 			invChunk = math.Min(balance/chunks, config.TheConfig.MaxPerChunk)
 		}
 		idealInvChunk := (balance + gsp.GGrids.TotalGridPnl[currency] + gsp.GGrids.TotalGridInitial[currency]) / float64(maxChunks)
-		discord.Infof("### Opening %d chunks for %s (%.2f,%.2f):", chunksInt, currency, idealInvChunk, invChunk)
+		discord.Infof("### Opening %d chunks for %s (%.2f, %.2f):", chunksInt, currency, idealInvChunk, invChunk)
 		if invChunk > idealInvChunk {
 			invChunk = idealInvChunk
 		}
@@ -275,7 +275,8 @@ func tick() error {
 			notionalLeverage := notional.GetLeverage(s.Symbol, invChunk)
 			leverage := utils.IntMin(notionalLeverage, config.TheConfig.PreferredLeverage)
 			gap := s.StrategyParams.UpperLimit - s.StrategyParams.LowerLimit
-			if s.PriceDifference < 0.1 {
+			priceDifference := s.StrategyParams.UpperLimit/s.StrategyParams.LowerLimit - 1
+			if priceDifference < 0.1 {
 				discord.Infof("Price difference too low, Skip")
 				continue
 			}

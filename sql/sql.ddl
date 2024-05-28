@@ -14,7 +14,6 @@ CREATE TABLE strategy
     strategy_type        INTEGER,
     direction            INTEGER,
     user_id              BIGINT,
-    price_difference     NUMERIC,
     time_discovered      TIMESTAMP WITH TIME ZONE,
     rois_fetched_at      TIMESTAMP WITH TIME ZONE,
     type                 VARCHAR(30),

@@ -49,7 +49,6 @@ type StrategyDB struct {
 	StrategyType       int        `db:"strategy_type"`
 	Direction          int        `db:"direction"`
 	UserID             int64      `db:"user_id"` // Use int64 for BIGINT
-	PriceDifference    float64    `db:"price_difference"`
 	TimeDiscovered     time.Time  `db:"time_discovered"`
 	RoisFetchedAt      time.Time  `db:"rois_fetched_at"`
 	Type               string     `db:"type"`
@@ -170,7 +169,7 @@ func PopulatePrices() error {
           f.roi as roi, f.pnl as pnl, f.original_input, f.runtime as running_time,
 		  f.start_time, f.end_time,
           p.symbol, p.copy_count, p.strategy_id, p.strategy_type, p.direction, p.time_discovered,
-          p.user_id, p.price_difference, p.rois_fetched_at, p.type, p.lower_limit, p.upper_limit,
+          p.user_id, p.rois_fetched_at, p.type, p.lower_limit, p.upper_limit,
           p.grid_count, p.trigger_price, p.stop_lower_limit, p.stop_upper_limit, p.base_asset, p.quote_asset,
           p.leverage, p.trailing_down, p.trailing_up, p.trailing_type, p.latest_matched_count, p.matched_count, p.min_investment,
           p.concluded
@@ -310,7 +309,6 @@ var strategyColumns = []string{
 	"strategy_type",
 	"direction",
 	"user_id",
-	"price_difference",
 	"time_discovered",
 	"rois_fetched_at",
 	"type",
@@ -337,7 +335,7 @@ var userColumns = []string{
 
 var strategyCL = `symbol, copy_count, roi, pnl,
      running_time, strategy_id, strategy_type, direction,
-     user_id, price_difference, time_discovered, rois_fetched_at,
+     user_id, time_discovered, rois_fetched_at,
      type, lower_limit, upper_limit, grid_count,
      trigger_price, stop_lower_limit, stop_upper_limit, base_asset,
      quote_asset, leverage, trailing_up, trailing_down,
@@ -360,7 +358,6 @@ func addToRankingStore(ss Strategies) error {
 			s.StrategyType,
 			s.Direction,
 			s.UserID,
-			s.PriceDifference,
 			s.TimeDiscovered,
 			s.RoisFetchedAt,
 			s.StrategyParams.Type,
@@ -417,7 +414,6 @@ SELECT `+strategyCL+` FROM _temp_strategies ON CONFLICT (strategy_id) DO UPDATE 
             pnl,
             running_time,
             direction,
-            price_difference,
             lower_limit,
             upper_limit,
             grid_count,
@@ -437,7 +433,6 @@ SELECT `+strategyCL+` FROM _temp_strategies ON CONFLICT (strategy_id) DO UPDATE 
             excluded.pnl,
             excluded.running_time,
             excluded.direction,
-            excluded.price_difference,
             excluded.lower_limit,
             excluded.upper_limit,
             excluded.grid_count,
