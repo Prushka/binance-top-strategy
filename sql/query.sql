@@ -137,7 +137,7 @@ SELECT
     u.*
 FROM
     UserOriginalInputs u
-WHERE u.total_original_input >= 8500 AND strategy_count >= 24 AND min_roi >= 0.01 AND total_roi >= 0.04 AND avg_original_input >= 1000
+WHERE u.total_original_input >= 8500 AND strategy_count >= 22 AND min_roi >= 0.01 AND total_roi >= 0.04 AND avg_original_input >= 1000
 ORDER BY
     total_roi DESC;
 
@@ -196,8 +196,6 @@ SELECT
         ORDER BY p.total_roi DESC, f.original_input DESC;
 
 SELECT * FROM ThePool;
-
-
 
 
 

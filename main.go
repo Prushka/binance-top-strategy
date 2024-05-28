@@ -176,9 +176,14 @@ func tick() error {
 		return nil
 	}
 	blacklistedInPool := mapset.NewSet[string]()
-	place := func(maxChunks, existingChunks int, currency string, balance float64) error {
+	var place func(maxChunks, existingChunks int, currency, overwriteQuote string, balance float64) error
+	place = func(maxChunks, existingChunks int, currency, overwriteQuote string, balance float64) error {
 		chunksInt := maxChunks - existingChunks
 		chunks := float64(chunksInt)
+		if chunksInt == 0 {
+			discord.Infof("Max Chunks reached for %s, Skip", currency)
+			return nil
+		}
 		invChunk := balance / chunks
 		if config.TheConfig.MaxPerChunk != -1 {
 			invChunk = math.Min(balance/chunks, config.TheConfig.MaxPerChunk)
@@ -189,8 +194,9 @@ func tick() error {
 			invChunk = idealInvChunk
 		}
 		if invChunk < config.TheConfig.MinInvestmentPerChunk && !config.TheConfig.Paper {
-			discord.Infof("Investment too low (%f), Skip", invChunk)
-			return nil
+			adjusted := int(balance/config.TheConfig.MinInvestmentPerChunk) + existingChunks
+			discord.Infof("Investment too low (%f), Adjusting max chunks to %d", invChunk, adjusted)
+			return place(adjusted, existingChunks, currency, overwriteQuote, balance)
 		}
 		invChunk = float64(int(invChunk))
 		if time.Now().Minute() < 19 {
@@ -327,6 +333,10 @@ func tick() error {
 				continue
 			}
 
+			if overwriteQuote != "" {
+				s.Symbol = s.Symbol[:len(s.Symbol)-len(currency)] + "USDC"
+			}
+
 			discord.Infof(gsp.Display(s, nil, "New", c+1, len(gsp.GetPool().Strategies)))
 			errr := gsp.PlaceGrid(*s, invChunk, leverage)
 			if !config.TheConfig.Paper {
@@ -348,11 +358,15 @@ func tick() error {
 		}
 		return nil
 	}
-	err = place(config.TheConfig.MaxUSDTChunks, usdtChunks, "USDT", usdt)
+	err = place(config.TheConfig.MaxUSDTChunks, usdtChunks, "USDT", "", usdt)
 	if err != nil {
 		return err
 	}
-	err = place(config.TheConfig.MaxUSDCChunks, usdcChunks, "USDC", usdc)
+	err = place(config.TheConfig.MaxUSDCChunks, usdcChunks, "USDC", "", usdc)
+	if err != nil {
+		return err
+	}
+	err = place(config.TheConfig.MaxUSDCChunks, usdcChunks, "USDT", "USDC", usdc)
 	if err != nil {
 		return err
 	}
@@ -473,20 +487,21 @@ func main() {
 	case "playground":
 		utils.ResetTime()
 		sdk.ClearSessionSymbolPrice()
-		userWl, err := gsp.UserWLCache.Get("174742987")
+		s := getTestStrategy(392963381)
+		currency := "USDT"
+		s.Symbol = s.Symbol[:len(s.Symbol)-len(currency)] + "USDC"
+		err := gsp.PlaceGrid(*s, 30, 20)
 		if err != nil {
 			panic(err)
-
 		}
-		log.Info(utils.AsJson(userWl))
 	}
 	scheduler.StartAsync()
 	<-blocking
 }
 
-func getTestStrategy() *gsp.Strategy {
+func getTestStrategy(id int) *gsp.Strategy {
 	s := gsp.ChosenStrategyDB{}
-	err := sql.GetDB().ScanOne(&s, `SELECT * FROM bts.strategy WHERE strategy_id = 392699245`)
+	err := sql.GetDB().ScanOne(&s, `SELECT * FROM bts.strategy WHERE strategy_id = $1`, id)
 	if err != nil {
 		panic(err)
 	}
