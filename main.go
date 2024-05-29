@@ -171,7 +171,8 @@ func tick() error {
 	usdcChunks := gridsOpen.GetChunks("USDC")
 	if config.TheConfig.MaxUSDTChunks-usdtChunks <= 0 &&
 		config.TheConfig.MaxUSDCChunks-usdcChunks <= 0 && !config.TheConfig.Paper {
-		discord.Infof("Max Chunks reached (%d, %d), No cancel - Skip current run", usdtChunks, usdcChunks)
+		discord.Infof("Max Chunks reached (%d/%d, %d/%d), No cancel - Skip current run", usdtChunks,
+			config.TheConfig.MaxUSDTChunks, usdcChunks, config.TheConfig.MaxUSDCChunks)
 		return nil
 	}
 	if mapset.NewSetFromMapKeys(gsp.GetPool().SymbolCount).Difference(gsp.GGrids.ExistingSymbols).Cardinality() == 0 && !config.TheConfig.Paper {
