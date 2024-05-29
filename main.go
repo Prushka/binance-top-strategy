@@ -189,7 +189,7 @@ func tick() error {
 		chunksInt := maxChunks - existingChunks
 		chunks := float64(chunksInt)
 		if chunksInt == 0 {
-			discord.Infof("Max Chunks reached for %s, Skip", currency)
+			discord.Infof("Max Chunks reached for %s %s, Skip", currency, overwriteQuote)
 			return nil
 		}
 		invChunk := balance / chunks
