@@ -1,1 +1,8 @@
-CHeck prices in between opening and closing to see wl during that range
+CHeck if price out of opposite bounds during strategy run time
+
+
+neutral win stricter
+put the previous user back to selected
+
+Stoploss is not reliable, the user may not cancel and we have positive >>>>>> all the way
+Stoploss normalized at 20x

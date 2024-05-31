@@ -46,14 +46,14 @@ type Config struct {
 	MinInvestmentPerChunk             float64   `env:"MIN_INVESTMENT_PER_CHUNK" envDefault:"40"`
 	MaxCancelLossStrategyDeleted      float64   `env:"MAX_CANCEL_LOSS_STRATEGY_DELETED" envDefault:"0"`
 	Mode                              string    `env:"MODE" envDefault:"trading"`
-	PreferredLeverage                 int       `env:"PREFERRED_LEVERAGE" envDefault:"22"`
+	PreferredLeverage                 int       `env:"PREFERRED_LEVERAGE" envDefault:"30"`
 	MaxLeverage                       int       `env:"MAX_LEVERAGE" envDefault:"40"`
 	KeepTopNStrategiesOfSameSymbol    int       `env:"KEEP_TOP_N_STRATEGIES_OF_SAME_SYMBOL" envDefault:"99"`
 	Last3HrWeight                     float64   `env:"LAST_3_HR_WEIGHT" envDefault:"0"`
 	Last2HrWeight                     float64   `env:"LAST_2_HR_WEIGHT" envDefault:"1"`
 	LastHrWeight                      float64   `env:"LAST_1_HR_WEIGHT" envDefault:"0"`
-	StopLossMarkForRemoval            []float64 `env:"STOP_LOSS_MARK_FOR_REMOVAL" envDefault:"-0.35,-0.55,-0.75"`
-	StopLossMarkForRemovalSLAt        []float64 `env:"STOP_LOSS_MARK_FOR_REMOVAL_SL_AT" envDefault:"0,-0.1,-0.17"`
+	StopLossMarkForRemoval            []float64 `env:"STOP_LOSS_MARK_FOR_REMOVAL" envDefault:"-0.45,-0.65,-0.85"`
+	StopLossMarkForRemovalSLAt        []float64 `env:"STOP_LOSS_MARK_FOR_REMOVAL_SL_AT" envDefault:"0,-0.1,-0.15"`
 	NeutralRangeDiff                  float64   `env:"NEUTRAL_RANGE_DIFF" envDefault:"0.4"`
 	ShortRangeDiff                    float64   `env:"SHORT_RANGE_DIFF" envDefault:"0.4"`
 	LongRangeDiff                     float64   `env:"LONG_RANGE_DIFF" envDefault:"0.4"`
@@ -71,6 +71,6 @@ func Init() {
 	}
 }
 
-func GetScaledProfits(pf float64, leverage int) float64 {
+func GetNormalized(pf float64, leverage int) float64 {
 	return (pf / 23) * float64(leverage)
 }

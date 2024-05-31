@@ -55,7 +55,7 @@ func checkOppositeDirections(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 
 func checkTakeProfits(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 	for c, gpMax := range config.TheConfig.TakeProfits {
-		gpMax = config.GetScaledProfits(gpMax, grid.InitialLeverage)
+		gpMax = config.GetNormalized(gpMax, grid.InitialLeverage)
 		if grid.LastRoi >= gpMax {
 			gpLookBack := time.Duration(config.TheConfig.TakeProfitsMaxLookbackMinutes[c]) * time.Minute
 			gpBlock := time.Duration(config.TheConfig.TakeProfitsBlockMinutes[c]) * time.Minute
@@ -79,7 +79,7 @@ func checkTakeProfits(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 func checkStopLoss(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 	for c, sl := range config.TheConfig.StopLossMarkForRemoval {
 		slAt := config.TheConfig.StopLossMarkForRemovalSLAt[c]
-		if grid.LastRoi < sl {
+		if grid.LastRoi < config.GetNormalized(sl, grid.InitialLeverage) {
 			gsp.GridMarkForRemoval(grid.GID, slAt)
 			discord.Infof(fmt.Sprintf("**stop loss marked for removal**: %.2f%%", (slAt)*100))
 		}
