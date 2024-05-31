@@ -2,6 +2,7 @@ package sdk
 
 import (
 	"BinanceTopStrategies/config"
+	"BinanceTopStrategies/utils"
 	"context"
 	"fmt"
 	"github.com/adshao/go-binance/v2"
@@ -44,6 +45,23 @@ func fetchMarketPrice(symbol string) (float64, error) {
 		}
 	}
 	return 0, fmt.Errorf("symbol not found")
+}
+
+func PopulatePrices(symbol string, timeStart int64, timeEnd int64) error {
+	res, err := FuturesClient.NewKlinesService().Symbol(symbol).Interval("1m").
+		StartTime(timeStart).EndTime(timeEnd).Limit(2000).Do(context.Background())
+	if err != nil {
+		log.Errorf("Start: %d, End: %d", timeStart, timeEnd)
+		return err
+	}
+	if len(res) == 0 {
+		return fmt.Errorf("no data")
+	}
+	for _, r := range res {
+		log.Info(utils.AsJson(r))
+	}
+	log.Infof("Populated %d prices", len(res))
+	return nil
 }
 
 func GetPrices(symbol string, timeStart int64, timeEnd int64) (float64, float64, error) {

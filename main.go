@@ -495,12 +495,12 @@ func main() {
 	case "playground":
 		utils.ResetTime()
 		sdk.ClearSessionSymbolPrice()
-		s := getTestStrategy(392963381)
-		currency := "USDT"
-		s.Symbol = s.Symbol[:len(s.Symbol)-len(currency)] + "USDC"
-		err := gsp.PlaceGrid(*s, 30, 20)
+		err := sdk.PopulatePrices(
+			"BTCUSDT", time.Now().Add(-10*24*365*time.Hour).UnixMilli(), time.Now().UnixMilli(),
+		)
 		if err != nil {
 			panic(err)
+
 		}
 	}
 	scheduler.StartAsync()

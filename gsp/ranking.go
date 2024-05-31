@@ -39,39 +39,45 @@ type UserStrategy struct {
 }
 
 type StrategyDB struct {
-	Symbol             string  `db:"symbol"`
-	CopyCount          int     `db:"copy_count"`
-	ROI                float64 `db:"roi"`
-	rois               StrategyRoi
-	PNL                float64    `db:"pnl"`
-	RunningTime        int        `db:"running_time"`
-	StrategyID         int64      `db:"strategy_id"` // Use int64 for BIGINT
-	StrategyType       int        `db:"strategy_type"`
-	Direction          int        `db:"direction"`
-	UserID             int64      `db:"user_id"` // Use int64 for BIGINT
-	TimeDiscovered     time.Time  `db:"time_discovered"`
-	RoisFetchedAt      time.Time  `db:"rois_fetched_at"`
-	Type               string     `db:"type"`
-	LowerLimit         float64    `db:"lower_limit"`
-	UpperLimit         float64    `db:"upper_limit"`
-	GridCount          int        `db:"grid_count"`
-	TriggerPrice       *float64   `db:"trigger_price"` // Use pointer for nullable columns
-	StopLowerLimit     *float64   `db:"stop_lower_limit"`
-	StopUpperLimit     *float64   `db:"stop_upper_limit"`
-	BaseAsset          *string    `db:"base_asset"` // Use pointer for nullable columns
-	QuoteAsset         *string    `db:"quote_asset"`
-	Leverage           *int       `db:"leverage"`
-	TrailingUp         *bool      `db:"trailing_up"`
-	TrailingDown       *bool      `db:"trailing_down"`
-	TrailingType       *string    `db:"trailing_type"`
-	LatestMatchedCount *int       `db:"latest_matched_count"`
-	MatchedCount       *int       `db:"matched_count"`
-	MinInvestment      *float64   `db:"min_investment"`
-	Concluded          *bool      `db:"concluded"`
-	StartTime          *time.Time `db:"start_time"`
-	EndTime            *time.Time `db:"end_time"`
-	StartPrice         *float64   `db:"start_price"`
-	EndPrice           *float64   `db:"end_price"`
+	Symbol                string  `db:"symbol"`
+	CopyCount             int     `db:"copy_count"`
+	ROI                   float64 `db:"roi"`
+	rois                  StrategyRoi
+	PNL                   float64    `db:"pnl"`
+	RunningTime           int        `db:"running_time"`
+	StrategyID            int64      `db:"strategy_id"` // Use int64 for BIGINT
+	StrategyType          int        `db:"strategy_type"`
+	Direction             int        `db:"direction"`
+	UserID                int64      `db:"user_id"` // Use int64 for BIGINT
+	TimeDiscovered        time.Time  `db:"time_discovered"`
+	RoisFetchedAt         time.Time  `db:"rois_fetched_at"`
+	Type                  string     `db:"type"`
+	LowerLimit            float64    `db:"lower_limit"`
+	UpperLimit            float64    `db:"upper_limit"`
+	GridCount             int        `db:"grid_count"`
+	TriggerPrice          *float64   `db:"trigger_price"` // Use pointer for nullable columns
+	StopLowerLimit        *float64   `db:"stop_lower_limit"`
+	StopUpperLimit        *float64   `db:"stop_upper_limit"`
+	BaseAsset             *string    `db:"base_asset"` // Use pointer for nullable columns
+	QuoteAsset            *string    `db:"quote_asset"`
+	Leverage              *int       `db:"leverage"`
+	TrailingUp            *bool      `db:"trailing_up"`
+	TrailingDown          *bool      `db:"trailing_down"`
+	TrailingType          *string    `db:"trailing_type"`
+	LatestMatchedCount    *int       `db:"latest_matched_count"`
+	MatchedCount          *int       `db:"matched_count"`
+	MinInvestment         *float64   `db:"min_investment"`
+	Concluded             *bool      `db:"concluded"`
+	StartTime             *time.Time `db:"start_time"`
+	EndTime               *time.Time `db:"end_time"`
+	StartPrice            *float64   `db:"start_price"`
+	EndPrice              *float64   `db:"end_price"`
+	StartPriceExact       *float64   `db:"start_price_exact"`
+	EndPriceExact         *float64   `db:"end_price_exact"`
+	LowPrice              *float64   `db:"low_price"`
+	HighPrice             *float64   `db:"high_price"`
+	StartPrice30MinBefore *float64   `db:"start_price_30_min_before"`
+	EndPrice30MinBefore   *float64   `db:"end_price_30_min_before"`
 }
 
 func floatPtrToStringPtr(f *float64) *string {
