@@ -38,7 +38,7 @@ var RoisCache = cache.CreateMapCache[StrategyRoi](
 )
 
 type UserWL struct {
-	Win          int       `json:"wins"`
+	Win          float64   `json:"wins"`
 	UpdatedAt    time.Time `json:"updatedAt"`
 	ShortRunning int       `json:"shortRunning"`
 	Total        int       `json:"total"`
@@ -105,9 +105,16 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 					prefix = "won "
 				}
 			case NEUTRAL:
+				threshold := 0.08
+				mid := (s.LowerLimit + s.UpperLimit) / 2
 				if end < s.UpperLimit && end > s.LowerLimit {
-					wl.Win++
-					prefix = "won "
+					if (end < mid*(1+threshold) && end > mid*(1-threshold)) || (end < start*(1+threshold) && end > start*(1-threshold)) {
+						wl.Win++
+						prefix = "won "
+					} else {
+						wl.Win += 0.5
+						prefix = "won "
+					}
 				}
 			}
 			if s.RunningTime <= 3600*4 {

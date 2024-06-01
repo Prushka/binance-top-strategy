@@ -76,8 +76,8 @@ type StrategyDB struct {
 	EndPriceExact         *float64   `db:"end_price_exact"`
 	LowPrice              *float64   `db:"low_price"`
 	HighPrice             *float64   `db:"high_price"`
-	StartPrice30MinBefore *float64   `db:"start_price_30_min_before"`
-	EndPrice30MinBefore   *float64   `db:"end_price_30_min_before"`
+	StartPrice30MinBefore *float64   `db:"start_price_30m_before"`
+	EndPrice30MinBefore   *float64   `db:"end_price_30m_before"`
 }
 
 func floatPtrToStringPtr(f *float64) *string {

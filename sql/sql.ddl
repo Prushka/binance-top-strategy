@@ -1,3 +1,30 @@
+CREATE TABLE symbol
+(
+    symbol_id   SERIAL PRIMARY KEY,
+    symbol_name VARCHAR(255) UNIQUE NOT NULL
+);
+
+-- Create your main table without price_id, using a composite primary key
+CREATE TABLE price
+(
+    symbol_id              INT         NOT NULL,
+    open                   NUMERIC     NOT NULL,
+    high                   NUMERIC     NOT NULL,
+    low                    NUMERIC     NOT NULL,
+    close                  NUMERIC     NOT NULL,
+    volume                 NUMERIC     NOT NULL,
+    quote_volume           NUMERIC     NOT NULL,
+    trade_number           NUMERIC     NOT NULL,
+    taker_buy_base_volume  NUMERIC     NOT NULL,
+    taker_buy_quote_volume NUMERIC     NOT NULL,
+    open_time                   TIMESTAMPTZ NOT NULL,
+    close_time                  TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (symbol_id, open_time, close_time),
+    FOREIGN KEY (symbol_id) REFERENCES symbol (symbol_id)
+);
+
+
+
 CREATE TABLE b_user
 (
     user_id BIGINT PRIMARY KEY
@@ -45,10 +72,10 @@ CREATE TABLE strategy
 
 CREATE TABLE roi
 (
-    strategy_id  BIGINT,
-    roi          NUMERIC,
-    pnl          NUMERIC,
-    time         TIMESTAMP WITH TIME ZONE,
+    strategy_id BIGINT,
+    roi         NUMERIC,
+    pnl         NUMERIC,
+    time        TIMESTAMP WITH TIME ZONE,
 
     CONSTRAINT fk_strategy
         FOREIGN KEY (strategy_id)
@@ -57,21 +84,24 @@ CREATE TABLE roi
             ON UPDATE CASCADE
 );
 
-CREATE TABLE config (
-    KEY TEXT primary key not null,
+CREATE TABLE config
+(
+    KEY   TEXT primary key not null,
     VALUE TEXT
 );
 
 SELECT public.create_hypertable('bts.roi', 'time', if_not_exists => TRUE);
 CREATE INDEX IF NOT EXISTS roi_pnl_idx ON bts.roi (time, strategy_id);
 
-ALTER TABLE roi SET (
-    timescaledb.compress=false,
-    timescaledb.compress_segmentby = 'strategy_id'
-    );
+ALTER TABLE roi
+    SET (
+        timescaledb.compress= false,
+        timescaledb.compress_segmentby = 'strategy_id'
+        );
 SELECT public.decompress_chunk(c, true)
 FROM public.show_chunks('bts.roi') c;
 
 SELECT public.add_compression_policy('roi', INTERVAL '2 days', if_not_exists => TRUE);
 SELECT public.remove_compression_policy('roi');
-SELECT * FROM timescaledb_information.jobs;
+SELECT *
+FROM timescaledb_information.jobs;

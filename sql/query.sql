@@ -75,7 +75,9 @@ select count(*) FROM strategy WHERE concluded = TRUE AND strategy_type = 2;
 
 SELECT * FROM strategy ORDER BY rois_fetched_at LIMIT 10;
 
+SELECT COUNT(*) FROM strategy WHERE start_price IS NOT NULL;
 
+SELECT COUNT(*) FROM roi;
 
 CREATE OR REPLACE VIEW TheChosen AS WITH LatestRoi AS (
     SELECT
@@ -311,6 +313,6 @@ SELECT
     u.*
 FROM
     UserOriginalInputs u
-WHERE u.user_id = 174742987
+WHERE u.user_id = 25699917
 ORDER BY
     total_roi DESC;
