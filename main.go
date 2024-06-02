@@ -233,8 +233,6 @@ func tick() error {
 			if err != nil {
 				return err
 			}
-			discord.Infof("User %d Win Loss %.1f/%d (%.2f), Short running %d/%d (%.2f)",
-				s.UserID, userWl.Win, userWl.Total, userWl.WinRatio, userWl.ShortRunning, userWl.Total, userWl.ShortRunningRatio)
 			if userWl.WinRatio < 0.84 || (userWl.ShortRunningRatio > 0.231 && userWl.WinRatio != 1.0) {
 				discord.Infof("User %d not performing well, Skip", s.UserID)
 				continue
@@ -247,6 +245,12 @@ func tick() error {
 			return iWL.WinRatio > jWL.WinRatio
 		})
 		for c, s := range sortedStrategies {
+			userWl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", s.UserID))
+			if err != nil {
+				return err
+			}
+			discord.Infof("User %d Win Loss %.1f/%d (%.2f), Short running %d/%d (%.2f)",
+				s.UserID, userWl.Win, userWl.Total, userWl.WinRatio, userWl.ShortRunning, userWl.Total, userWl.ShortRunningRatio)
 			sInPool := s
 			s, err := gsp.DiscoverRootStrategy(s.SID, s.Symbol, s.Direction, time.Duration(s.RunningTime)*time.Second)
 			if err != nil {
