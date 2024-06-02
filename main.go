@@ -157,6 +157,10 @@ func tick() error {
 		return nil
 	}
 	blacklistedInPool := mapset.NewSet[string]()
+	if time.Now().Minute() < 19 {
+		discord.Infof("Only trade after min 19, Skip")
+		return nil
+	}
 	var place func(maxChunks, existingChunks int, currency, overwriteQuote string, balance float64) error
 	place = func(maxChunks, existingChunks int, currency, overwriteQuote string, balance float64) error {
 		chunksInt := maxChunks - existingChunks
@@ -180,10 +184,6 @@ func tick() error {
 			return place(adjusted, existingChunks, currency, overwriteQuote, balance)
 		}
 		invChunk = float64(int(invChunk))
-		if time.Now().Minute() < 19 {
-			discord.Infof("Only trade after min 19, Skip")
-			return nil
-		}
 		sessionSymbols := gsp.GGrids.ExistingSymbols.Clone()
 		sortedStrategies := make(gsp.Strategies, 0)
 	out:
