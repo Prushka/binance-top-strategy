@@ -369,7 +369,7 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 			mid := (l + u) / 2
 			relative = (mp - mid) / mid * 100
 		}
-		return fmt.Sprintf("%s-%s, %.1f%%, R :%.1f%%", lower, upper, diff, relative)
+		return fmt.Sprintf("%s-%s, %.1f%%, R: %.1f%%", lower, upper, diff, relative)
 	}
 	formatRunTime := func(rt int64) string {
 		return fmt.Sprintf("%s", utils.ShortDur((time.Duration(rt) * time.Second).Round(time.Minute)))
