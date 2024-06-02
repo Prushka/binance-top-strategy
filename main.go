@@ -260,7 +260,7 @@ func tick() error {
 				return err
 			}
 			if s == nil {
-				discord.Errorf("Strategy candidate %d %s not running", sInPool.SID, sInPool.Symbol)
+				discord.Infof("Strategy candidate %d %s not running", sInPool.SID, sInPool.Symbol)
 				continue
 			}
 			err = s.PopulateRois()
