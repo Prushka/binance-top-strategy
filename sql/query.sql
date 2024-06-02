@@ -70,16 +70,11 @@ ORDER BY
     r.time DESC
 LIMIT 10;
 
+REFRESH MATERIALIZED VIEW TheChosen;
 
-select count(*) FROM strategy WHERE concluded = TRUE AND strategy_type = 2;
+SELECT * FROM TheChosen;
 
-SELECT * FROM strategy ORDER BY rois_fetched_at LIMIT 10;
-
-SELECT COUNT(*) FROM strategy WHERE start_price IS NOT NULL;
-
-SELECT COUNT(*) FROM roi;
-
-CREATE OR REPLACE VIEW TheChosen AS WITH LatestRoi AS (
+CREATE MATERIALIZED VIEW TheChosen AS WITH LatestRoi AS (
     SELECT
         strategy_id,
         roi as roi,

@@ -450,6 +450,15 @@ func main() {
 			}
 			discord.Infof("*Prices run took: %v*", time.Since(t))
 		}))
+		panicOnErrorSec(scheduler.SingletonMode().Every(1).Minutes().Do(func() {
+			t := time.Now()
+			discord.Infof("### Refresh TheChosen: %v", time.Now().Format("2006-01-02 15:04:05"))
+			err := gsp.RefreshTheChosen()
+			if err != nil {
+				discord.Errorf("TheChosen: %v", err)
+			}
+			discord.Infof("*TheChosen run took: %v*", time.Since(t))
+		}))
 		scheduler.StartAsync()
 		for {
 			t := time.Now()
@@ -472,11 +481,10 @@ func main() {
 		}
 	case "playground":
 		utils.ResetTime()
-		m, err := gsp.GetPrices("BTCUSDT", timeNowHourPrecision().Add(-1*time.Hour).UnixMilli(), timeNowHourPrecision().Add(-1*time.Hour).UnixMilli())
+		err := gsp.RefreshTheChosen()
 		if err != nil {
-			panic(err)
+			discord.Errorf("TheChosen: %v", err)
 		}
-		log.Info(utils.AsJson(m))
 	}
 	scheduler.StartAsync()
 	<-blocking

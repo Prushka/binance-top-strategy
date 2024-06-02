@@ -40,7 +40,7 @@ type Config struct {
 	TakeProfitsBlockMinutes           []int     `env:"TAKE_PROFITS_BLOCK_MINUTES" envDefault:"40,-1,-1,-1"`
 	StopLossNotPickedHrs              []int     `env:"STOP_LOSS_NOT_PICKED_HRS" envDefault:"1,2,3,4,5,6"`
 	StopLossNotPicked                 []float64 `env:"STOP_LOSS_NOT_PICKED" envDefault:"0,-0.05,-0.1,-0.15,-0.2,-0.3"`
-	TickEverySeconds                  int       `env:"TICK_EVERY_SECONDS" envDefault:"180"`
+	TickEverySeconds                  int       `env:"TICK_EVERY_SECONDS" envDefault:"120"`
 	MaxUSDTChunks                     int       `env:"MAX_USDT_CHUNKS" envDefault:"4"`
 	MaxUSDCChunks                     int       `env:"MAX_USDC_CHUNKS" envDefault:"1"`
 	MinInvestmentPerChunk             float64   `env:"MIN_INVESTMENT_PER_CHUNK" envDefault:"10"`
@@ -52,7 +52,7 @@ type Config struct {
 	Last3HrWeight                     float64   `env:"LAST_3_HR_WEIGHT" envDefault:"0"`
 	Last2HrWeight                     float64   `env:"LAST_2_HR_WEIGHT" envDefault:"1"`
 	LastHrWeight                      float64   `env:"LAST_1_HR_WEIGHT" envDefault:"0"`
-	StopLossMarkForRemoval            []float64 `env:"STOP_LOSS_MARK_FOR_REMOVAL" envDefault:"-0.4,-0.6,-0.8"`
+	StopLossMarkForRemoval            []float64 `env:"STOP_LOSS_MARK_FOR_REMOVAL" envDefault:"-0.35,-0.55,-0.75"`
 	StopLossMarkForRemovalSLAt        []float64 `env:"STOP_LOSS_MARK_FOR_REMOVAL_SL_AT" envDefault:"0,-0.1,-0.15"`
 	NeutralRangeDiff                  float64   `env:"NEUTRAL_RANGE_DIFF" envDefault:"0.3"`
 	ShortRangeDiff                    float64   `env:"SHORT_RANGE_DIFF" envDefault:"0.3"`

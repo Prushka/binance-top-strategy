@@ -219,6 +219,11 @@ func GetPrices(symbol string, timeStart int64, timeEnd int64) (*PriceMetrics, er
 	return metrics, nil
 }
 
+func RefreshTheChosen() error {
+	_, err := sql.GetDB().Exec(context.Background(), `REFRESH MATERIALIZED VIEW bts.TheChosen`)
+	return err
+}
+
 func PopulatePrices() error {
 	strategies := make([]*UserStrategy, 0)
 	err := sql.GetDB().Scan(&strategies, `WITH Pool AS (
