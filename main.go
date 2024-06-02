@@ -187,6 +187,7 @@ func tick() error {
 		sessionSymbols := gsp.GGrids.ExistingSymbols.Clone()
 		sortedStrategies := make(gsp.Strategies, 0)
 
+	out:
 		for _, s := range gsp.GetPool().Strategies {
 			if s.RunningTime > 60*config.TheConfig.MaxLookBackBookingMinutes {
 				log.Infof("Strategy running for more than %d minutes, Skip", config.TheConfig.MaxLookBackBookingMinutes)
@@ -241,8 +242,6 @@ func tick() error {
 			jWL, _ := gsp.UserWLCache.Get(fmt.Sprintf("%d", sortedStrategies[j].UserID))
 			return iWL.WinRatio > jWL.WinRatio
 		})
-	out:
-
 		for c, s := range sortedStrategies {
 			strategyQuote := s.Symbol[len(s.Symbol)-4:]
 			if strategyQuote != currency {
