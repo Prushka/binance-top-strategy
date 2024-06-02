@@ -344,15 +344,15 @@ func tick() error {
 		}
 		return nil
 	}
+	err = place(config.TheConfig.MaxUSDCChunks, usdcChunks, "USDT", "USDC", usdc)
+	if err != nil {
+		return err
+	}
 	err = place(config.TheConfig.MaxUSDTChunks, usdtChunks, "USDT", "", usdt)
 	if err != nil {
 		return err
 	}
 	err = place(config.TheConfig.MaxUSDCChunks, usdcChunks, "USDC", "", usdc)
-	if err != nil {
-		return err
-	}
-	err = place(config.TheConfig.MaxUSDCChunks, usdcChunks, "USDT", "USDC", usdc)
 	if err != nil {
 		return err
 	}
