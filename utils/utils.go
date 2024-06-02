@@ -13,6 +13,10 @@ import (
 	"time"
 )
 
+func OverwriteQuote(symbol, quote string, currencyLength int) string {
+	return symbol[:len(symbol)-currencyLength] + quote
+}
+
 func ShortDur(d time.Duration) string {
 	s := d.String()
 	if strings.HasSuffix(s, "m0s") {

@@ -201,7 +201,9 @@ func tick() error {
 				discord.Infof("* Strategy %d - %s exists in open grids, Skip", s.SID, s.SD())
 				continue
 			}
-			if sessionSymbols.Contains(s.Symbol) {
+			if sessionSymbols.Contains(s.Symbol) ||
+				sessionSymbols.Contains(utils.OverwriteQuote(s.Symbol, "USDT", 4)) ||
+				sessionSymbols.Contains(utils.OverwriteQuote(s.Symbol, "USDC", 4)) {
 				log.Infof("Symbol exists in open grids, Skip")
 				continue
 			}
@@ -318,7 +320,7 @@ func tick() error {
 			}
 
 			if overwriteQuote != "" {
-				s.Symbol = s.Symbol[:len(s.Symbol)-len(currency)] + overwriteQuote
+				s.Symbol = utils.OverwriteQuote(s.Symbol, overwriteQuote, len(currency))
 			}
 
 			discord.Infof(gsp.Display(s, nil, "New", c+1, len(sortedStrategies)))
