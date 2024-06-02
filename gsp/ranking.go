@@ -265,7 +265,7 @@ func PopulatePrices() error {
           p.grid_count, p.trigger_price, p.stop_lower_limit, p.stop_upper_limit, p.base_asset, p.quote_asset,
           p.leverage, p.trailing_down, p.trailing_up, p.trailing_type, p.latest_matched_count, p.matched_count, p.min_investment,
           p.concluded
-FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.original_input IS NOT NULL AND f.runtime > 0;`)
+FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.original_input IS NOT NULL AND f.runtime > 0 AND f.runtime < 30000;`)
 	if err != nil {
 		return err
 	}
@@ -276,6 +276,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 			s.StartTime.UnixMilli(), s.EndTime.UnixMilli())
 		if err != nil {
 			if strings.Contains(err.Error(), "Too many requests") {
+				discord.Errorf("Too many requests: %v", err)
 				break
 			} else {
 				discord.Errorf("Error fetching prices %d: %v", s.StrategyID, err)

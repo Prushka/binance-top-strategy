@@ -294,14 +294,6 @@ func tick() error {
 				} else if minLeverage > leverage {
 					leverage = minLeverage
 				}
-				if marketPrice < s.StrategyParams.LowerLimit+gap*config.TheConfig.NeutralRangeDiff {
-					discord.Infof("Market Price too low for neutral, Skip")
-					continue
-				}
-				if marketPrice > s.StrategyParams.UpperLimit-gap*config.TheConfig.NeutralRangeDiff {
-					discord.Infof("Market Price too high for neutral, Skip")
-					continue
-				}
 			case gsp.SHORT:
 				if marketPrice < s.StrategyParams.LowerLimit+gap*config.TheConfig.ShortRangeDiff {
 					discord.Infof("Market Price too low for short, Skip")

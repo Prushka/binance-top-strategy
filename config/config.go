@@ -54,9 +54,9 @@ type Config struct {
 	LastHrWeight                      float64   `env:"LAST_1_HR_WEIGHT" envDefault:"0"`
 	StopLossMarkForRemoval            []float64 `env:"STOP_LOSS_MARK_FOR_REMOVAL" envDefault:"-0.4,-0.6,-0.8"`
 	StopLossMarkForRemovalSLAt        []float64 `env:"STOP_LOSS_MARK_FOR_REMOVAL_SL_AT" envDefault:"0,-0.1,-0.15"`
-	NeutralRangeDiff                  float64   `env:"NEUTRAL_RANGE_DIFF" envDefault:"0.4"`
-	ShortRangeDiff                    float64   `env:"SHORT_RANGE_DIFF" envDefault:"0.4"`
-	LongRangeDiff                     float64   `env:"LONG_RANGE_DIFF" envDefault:"0.4"`
+	NeutralRangeDiff                  float64   `env:"NEUTRAL_RANGE_DIFF" envDefault:"0.3"`
+	ShortRangeDiff                    float64   `env:"SHORT_RANGE_DIFF" envDefault:"0.3"`
+	LongRangeDiff                     float64   `env:"LONG_RANGE_DIFF" envDefault:"0.3"`
 	TriggerRangeDiff                  float64   `env:"TRIGGER_RANGE_DIFF" envDefault:"0.04"`
 	PGUrl                             string    `env:"PGURL" envDefault:"postgresql://postgres:password@localhost:5432"`
 	MaxLookBackBookingMinutes         int       `env:"MAX_LOOK_BACK_BOOKING_MIN" envDefault:"180"`
