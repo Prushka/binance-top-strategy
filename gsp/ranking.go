@@ -154,13 +154,23 @@ func GetPrices(symbol string, timeStart int64, timeEnd int64) (*PriceMetrics, er
 		}
 		return nil, fmt.Errorf("insufficient data total: (%d)", len(res))
 	}
-	if res[0].OpenTime != timeStart-30*60*1000 ||
-		res[1].OpenTime != timeStart ||
-		res[1].CloseTime != timeStart+30*60*1000-1 ||
-		res[len(res)-2].OpenTime != timeEnd-30*60*1000 ||
-		res[len(res)-1].OpenTime != timeEnd ||
-		res[len(res)-1].CloseTime != timeEnd+30*60*1000-1 {
-		return nil, fmt.Errorf("invalid data")
+	if res[0].OpenTime != timeStart-30*60*1000 {
+		return nil, fmt.Errorf("1: open time mismatch: %d, %d", res[0].OpenTime, timeStart-30*60*1000)
+	}
+	if res[1].OpenTime != timeStart {
+		return nil, fmt.Errorf("2: open time mismatch: %d, %d", res[1].OpenTime, timeStart)
+	}
+	if res[1].CloseTime != timeStart+30*60*1000-1 {
+		return nil, fmt.Errorf("3: close time mismatch: %d, %d", res[1].CloseTime, timeStart+30*60*1000-1)
+	}
+	if res[len(res)-2].OpenTime != timeEnd-30*60*1000 {
+		return nil, fmt.Errorf("4: open time mismatch: %d, %d", res[len(res)-2].OpenTime, timeEnd-30*60*1000)
+	}
+	if res[len(res)-1].OpenTime != timeEnd {
+		return nil, fmt.Errorf("5: open time mismatch: %d, %d", res[len(res)-1].OpenTime, timeEnd)
+	}
+	if res[len(res)-1].CloseTime != timeEnd+30*60*1000-1 {
+		return nil, fmt.Errorf("6: close time mismatch: %d, %d", res[len(res)-1].CloseTime, timeEnd+30*60*1000-1)
 	}
 	metrics.StartPrice30MinBefore, err = utils.ParseFloatPointer(res[0].Open) // start time - 30 minutes
 	if err != nil {
@@ -255,7 +265,7 @@ func PopulatePrices() error {
           p.grid_count, p.trigger_price, p.stop_lower_limit, p.stop_upper_limit, p.base_asset, p.quote_asset,
           p.leverage, p.trailing_down, p.trailing_up, p.trailing_type, p.latest_matched_count, p.matched_count, p.min_investment,
           p.concluded
-FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.original_input IS NOT NULL AND running_time > 0;`)
+FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.original_input IS NOT NULL AND f.runtime > 0;`)
 	if err != nil {
 		return err
 	}
