@@ -277,9 +277,9 @@ func (s *Strategy) String() string {
 	if !s.Rois.isRunning() {
 		ended = "Ended: " + time.Unix(s.Rois[0].Time, 0).Format("2006-01-02 15:04:05") + " ,"
 	}
-	return fmt.Sprintf("%sPnL: %.2f, Rois: %s, [A/D/3/2/1H: %s%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s%s, User: %d-$%.1f/%.1f",
+	return fmt.Sprintf("%sPnL: %.2f, Rois: %s, [A/D/3/2/1H: %.1f%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s%s, User: %d-$%.1f/$%.1f",
 		ended, s.Pnl, s.Rois.lastNRecords(config.TheConfig.LastNHoursNoDips),
-		s.RoiStr,
+		s.Rois[0].Roi,
 		s.LastDayRoiChange*100, s.Last3HrRoiChange*100, s.Last2HrRoiChange*100, s.LastHrRoiChange*100, s.MinInvestment, ranking, s.UserID, s.UserInput, s.UserTotalInput)
 }
 
@@ -369,7 +369,7 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 			mid := (l + u) / 2
 			relative = (mp - mid) / mid * 100
 		}
-		return fmt.Sprintf("%s-%s, %.1f%%, R:%.1f", lower, upper, diff, relative)
+		return fmt.Sprintf("%s-%s, %.1f%%, R :%.1f%%", lower, upper, diff, relative)
 	}
 	formatRunTime := func(rt int64) string {
 		return fmt.Sprintf("%s", utils.ShortDur((time.Duration(rt) * time.Second).Round(time.Minute)))
