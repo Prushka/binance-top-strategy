@@ -186,15 +186,10 @@ func tick() error {
 		invChunk = float64(int(invChunk))
 		sessionSymbols := gsp.GGrids.ExistingSymbols.Clone()
 		sortedStrategies := make(gsp.Strategies, 0)
-	out:
+
 		for _, s := range gsp.GetPool().Strategies {
 			if s.RunningTime > 60*config.TheConfig.MaxLookBackBookingMinutes {
 				log.Infof("Strategy running for more than %d minutes, Skip", config.TheConfig.MaxLookBackBookingMinutes)
-				continue
-			}
-			strategyQuote := s.Symbol[len(s.Symbol)-4:]
-			if strategyQuote != currency {
-				log.Infof("wrong quote (%s, %s), Skip", currency, strategyQuote)
 				continue
 			}
 			if gsp.GGrids.ExistingSIDs.Contains(s.SID) {
@@ -236,7 +231,7 @@ func tick() error {
 				return err
 			}
 			if userWl.WinRatio < 0.84 || (userWl.ShortRunningRatio > 0.231 && userWl.WinRatio != 1.0) {
-				discord.Infof("User %d not performing well, Skip", s.UserID)
+				discord.Infof("User %d not skipped, %.2f/%d (%.2f), %d/%d (%.2f)", s.UserID, userWl.Win, userWl.Total, userWl.WinRatio, userWl.ShortRunning, userWl.Total, userWl.ShortRunningRatio)
 				continue
 			}
 			sortedStrategies = append(sortedStrategies, s)
@@ -246,7 +241,14 @@ func tick() error {
 			jWL, _ := gsp.UserWLCache.Get(fmt.Sprintf("%d", sortedStrategies[j].UserID))
 			return iWL.WinRatio > jWL.WinRatio
 		})
+	out:
+
 		for c, s := range sortedStrategies {
+			strategyQuote := s.Symbol[len(s.Symbol)-4:]
+			if strategyQuote != currency {
+				log.Infof("wrong quote (%s, %s), Skip", currency, strategyQuote)
+				continue
+			}
 			userWl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", s.UserID))
 			if err != nil {
 				return err
