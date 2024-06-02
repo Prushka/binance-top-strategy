@@ -140,9 +140,9 @@ func (db *ChosenStrategyDB) ToStrategy() *Strategy {
 }
 
 func GetPrices(symbol string, timeStart int64, timeEnd int64) (*PriceMetrics, error) {
+	metrics := &PriceMetrics{}
 	res, err := sdk.FuturesClient.NewKlinesService().Symbol(symbol).Interval("30m").
 		StartTime(timeStart - 30*60*1000).EndTime(timeEnd).Limit(1500).Do(context.Background())
-	metrics := &PriceMetrics{}
 	if err != nil {
 		log.Errorf("Start: %d, End: %d", timeStart, timeEnd)
 		return nil, err
