@@ -8,6 +8,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -82,6 +83,17 @@ func Float64Pointer(f float64) *float64 {
 
 func Int64Pointer(i int64) *int64 {
 	return &i
+}
+
+func ParseFloatPointer(s string) (*float64, error) {
+	if s == "" {
+		return nil, nil
+	}
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return nil, err
+	}
+	return &f, nil
 }
 
 func GenerateRandomNumberUUID() string {

@@ -2,7 +2,6 @@ package sdk
 
 import (
 	"BinanceTopStrategies/config"
-	"BinanceTopStrategies/utils"
 	"context"
 	"fmt"
 	"github.com/adshao/go-binance/v2"
@@ -45,47 +44,6 @@ func fetchMarketPrice(symbol string) (float64, error) {
 		}
 	}
 	return 0, fmt.Errorf("symbol not found")
-}
-
-func PopulatePrices(symbol string, timeStart int64, timeEnd int64) error {
-	res, err := FuturesClient.NewKlinesService().Symbol(symbol).Interval("1m").
-		StartTime(timeStart).EndTime(timeEnd).Limit(2000).Do(context.Background())
-	if err != nil {
-		log.Errorf("Start: %d, End: %d", timeStart, timeEnd)
-		return err
-	}
-	if len(res) == 0 {
-		return fmt.Errorf("no data")
-	}
-	for _, r := range res {
-		log.Info(utils.AsJson(r))
-	}
-	log.Infof("Populated %d prices", len(res))
-	return nil
-}
-
-func GetPrices(symbol string, timeStart int64, timeEnd int64) (float64, float64, error) {
-	if timeStart == timeEnd {
-		timeEnd = timeStart + 3600*1000
-	}
-	res, err := FuturesClient.NewKlinesService().Symbol(symbol).Interval("30m").
-		StartTime(timeStart).EndTime(timeEnd).Do(context.Background())
-	if err != nil {
-		log.Errorf("Start: %d, End: %d", timeStart, timeEnd)
-		return 0, 0, err
-	}
-	if len(res) == 0 {
-		return 0, 0, fmt.Errorf("no data")
-	}
-	start, err := strconv.ParseFloat(res[0].Close, 64) // start time + 30 minutes
-	if err != nil {
-		return 0, 0, err
-	}
-	end, err := strconv.ParseFloat(res[len(res)-1].Close, 64) // end time + 30 minutes
-	if err != nil {
-		return 0, 0, err
-	}
-	return start, end, nil
 }
 
 func GetFuture(currency string) (float64, error) {

@@ -4,11 +4,13 @@ import (
 	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/sdk"
 	"BinanceTopStrategies/sql"
+	"BinanceTopStrategies/utils"
 	"context"
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/jackc/pgx/v5"
 	log "github.com/sirupsen/logrus"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -39,35 +41,39 @@ type UserStrategy struct {
 }
 
 type StrategyDB struct {
-	Symbol                string  `db:"symbol"`
-	CopyCount             int     `db:"copy_count"`
-	ROI                   float64 `db:"roi"`
-	rois                  StrategyRoi
-	PNL                   float64    `db:"pnl"`
-	RunningTime           int        `db:"running_time"`
-	StrategyID            int64      `db:"strategy_id"` // Use int64 for BIGINT
-	StrategyType          int        `db:"strategy_type"`
-	Direction             int        `db:"direction"`
-	UserID                int64      `db:"user_id"` // Use int64 for BIGINT
-	TimeDiscovered        time.Time  `db:"time_discovered"`
-	RoisFetchedAt         time.Time  `db:"rois_fetched_at"`
-	Type                  string     `db:"type"`
-	LowerLimit            float64    `db:"lower_limit"`
-	UpperLimit            float64    `db:"upper_limit"`
-	GridCount             int        `db:"grid_count"`
-	TriggerPrice          *float64   `db:"trigger_price"` // Use pointer for nullable columns
-	StopLowerLimit        *float64   `db:"stop_lower_limit"`
-	StopUpperLimit        *float64   `db:"stop_upper_limit"`
-	BaseAsset             *string    `db:"base_asset"` // Use pointer for nullable columns
-	QuoteAsset            *string    `db:"quote_asset"`
-	Leverage              *int       `db:"leverage"`
-	TrailingUp            *bool      `db:"trailing_up"`
-	TrailingDown          *bool      `db:"trailing_down"`
-	TrailingType          *string    `db:"trailing_type"`
-	LatestMatchedCount    *int       `db:"latest_matched_count"`
-	MatchedCount          *int       `db:"matched_count"`
-	MinInvestment         *float64   `db:"min_investment"`
-	Concluded             *bool      `db:"concluded"`
+	Symbol             string  `db:"symbol"`
+	CopyCount          int     `db:"copy_count"`
+	ROI                float64 `db:"roi"`
+	rois               StrategyRoi
+	PNL                float64   `db:"pnl"`
+	RunningTime        int       `db:"running_time"`
+	StrategyID         int64     `db:"strategy_id"` // Use int64 for BIGINT
+	StrategyType       int       `db:"strategy_type"`
+	Direction          int       `db:"direction"`
+	UserID             int64     `db:"user_id"` // Use int64 for BIGINT
+	TimeDiscovered     time.Time `db:"time_discovered"`
+	RoisFetchedAt      time.Time `db:"rois_fetched_at"`
+	Type               string    `db:"type"`
+	LowerLimit         float64   `db:"lower_limit"`
+	UpperLimit         float64   `db:"upper_limit"`
+	GridCount          int       `db:"grid_count"`
+	TriggerPrice       *float64  `db:"trigger_price"` // Use pointer for nullable columns
+	StopLowerLimit     *float64  `db:"stop_lower_limit"`
+	StopUpperLimit     *float64  `db:"stop_upper_limit"`
+	BaseAsset          *string   `db:"base_asset"` // Use pointer for nullable columns
+	QuoteAsset         *string   `db:"quote_asset"`
+	Leverage           *int      `db:"leverage"`
+	TrailingUp         *bool     `db:"trailing_up"`
+	TrailingDown       *bool     `db:"trailing_down"`
+	TrailingType       *string   `db:"trailing_type"`
+	LatestMatchedCount *int      `db:"latest_matched_count"`
+	MatchedCount       *int      `db:"matched_count"`
+	MinInvestment      *float64  `db:"min_investment"`
+	Concluded          *bool     `db:"concluded"`
+	PriceMetrics
+}
+
+type PriceMetrics struct {
 	StartTime             *time.Time `db:"start_time"`
 	EndTime               *time.Time `db:"end_time"`
 	StartPrice            *float64   `db:"start_price"`
@@ -133,10 +139,80 @@ func (db *ChosenStrategyDB) ToStrategy() *Strategy {
 	return s
 }
 
+func GetPrices(symbol string, timeStart int64, timeEnd int64) (*PriceMetrics, error) {
+	res, err := sdk.FuturesClient.NewKlinesService().Symbol(symbol).Interval("30m").
+		StartTime(timeStart - 30*60*1000).EndTime(timeEnd).Limit(1500).Do(context.Background())
+	metrics := &PriceMetrics{}
+	if err != nil {
+		log.Errorf("Start: %d, End: %d", timeStart, timeEnd)
+		return nil, err
+	}
+	if len(res) < 4 {
+		for _, k := range res {
+			log.Infof("Open: %s, Close: %s, High: %s, Low: %s, OpenTime: %d, CloseTime: %d",
+				k.Open, k.Close, k.High, k.Low, k.OpenTime, k.CloseTime)
+		}
+		return nil, fmt.Errorf("insufficient data total: (%d)", len(res))
+	}
+	if res[0].OpenTime != timeStart-30*60*1000 ||
+		res[1].OpenTime != timeStart ||
+		res[1].CloseTime != timeStart+30*60*1000-1 ||
+		res[len(res)-2].OpenTime != timeEnd-30*60*1000 ||
+		res[len(res)-1].OpenTime != timeEnd ||
+		res[len(res)-1].CloseTime != timeEnd+30*60*1000-1 {
+		return nil, fmt.Errorf("invalid data")
+	}
+	metrics.StartPrice30MinBefore, err = utils.ParseFloatPointer(res[0].Open) // start time - 30 minutes
+	if err != nil {
+		return nil, err
+	}
+	metrics.StartPriceExact, err = utils.ParseFloatPointer(res[1].Open) // start time
+	if err != nil {
+		return nil, err
+	}
+	metrics.StartPrice, err = utils.ParseFloatPointer(res[1].Close) // start time + 30 minutes
+	if err != nil {
+		return nil, err
+	}
+	metrics.EndPrice30MinBefore, err = utils.ParseFloatPointer(res[len(res)-2].Open) // end time - 30 minutes
+	if err != nil {
+		return nil, err
+	}
+	metrics.EndPriceExact, err = utils.ParseFloatPointer(res[len(res)-1].Open) // end time
+	if err != nil {
+		return nil, err
+	}
+	metrics.EndPrice, err = utils.ParseFloatPointer(res[len(res)-1].Close) // end time - 30 minutes
+	if err != nil {
+		return nil, err
+	}
+	startT := time.Unix(timeStart/1000, 0)
+	endT := time.Unix(timeEnd/1000, 0)
+	metrics.StartTime = &startT
+	metrics.EndTime = &endT
+	for _, k := range res {
+		high, err := strconv.ParseFloat(k.High, 64)
+		if err != nil {
+			return nil, err
+		}
+		low, err := strconv.ParseFloat(k.Low, 64)
+		if err != nil {
+			return nil, err
+		}
+		if metrics.HighPrice == nil || high > *metrics.HighPrice {
+			metrics.HighPrice = &high
+		}
+		if metrics.LowPrice == nil || low < *metrics.LowPrice {
+			metrics.LowPrice = &low
+		}
+	}
+	return metrics, nil
+}
+
 func PopulatePrices() error {
 	strategies := make([]*UserStrategy, 0)
 	err := sql.GetDB().Scan(&strategies, `WITH Pool AS (
-    SELECT * FROM bts.strategy WHERE concluded=true AND start_price IS NULL
+    SELECT * FROM bts.strategy WHERE concluded=true AND high_price IS NULL
 ), LatestRoi AS (
     SELECT
         r.strategy_id,
@@ -179,16 +255,14 @@ func PopulatePrices() error {
           p.grid_count, p.trigger_price, p.stop_lower_limit, p.stop_upper_limit, p.base_asset, p.quote_asset,
           p.leverage, p.trailing_down, p.trailing_up, p.trailing_type, p.latest_matched_count, p.matched_count, p.min_investment,
           p.concluded
-FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.original_input IS NOT NULL;`)
+FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.original_input IS NOT NULL AND running_time > 0;`)
 	if err != nil {
 		return err
 	}
 	discord.Infof("Populating prices for %d strategies", len(strategies))
 	counter := 0
-	start := 0.0
-	end := 0.0
 	for _, s := range strategies {
-		start, end, err = sdk.GetPrices(s.Symbol,
+		metrics, err := GetPrices(s.Symbol,
 			s.StartTime.UnixMilli(), s.EndTime.UnixMilli())
 		if err != nil {
 			if strings.Contains(err.Error(), "Too many requests") {
@@ -198,8 +272,19 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 				continue
 			}
 		}
-		_, err = sql.GetDB().Exec(context.Background(), `UPDATE bts.strategy SET start_price = $1, end_price = $2,
-                        start_time=$3, end_time=$4 WHERE strategy_id = $5`, start, end, s.StartTime, s.EndTime, s.StrategyID)
+		_, err = sql.GetDB().Exec(context.Background(), `UPDATE bts.strategy SET 
+                        start_price = $1, end_price = $2,
+                        start_time = $3, end_time = $4,
+                        start_price_exact = $5, end_price_exact = $6,
+                        low_price = $7, high_price = $8,
+                        start_price_30m_before = $9, end_price_30m_before = $10
+                        WHERE strategy_id = $11`,
+			metrics.StartPrice, metrics.EndPrice,
+			metrics.StartTime, metrics.EndTime,
+			metrics.StartPriceExact, metrics.EndPriceExact,
+			metrics.LowPrice, metrics.HighPrice,
+			metrics.StartPrice30MinBefore, metrics.EndPrice30MinBefore,
+			s.StrategyID)
 		if err != nil {
 			break
 		}

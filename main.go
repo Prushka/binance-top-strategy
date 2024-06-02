@@ -26,33 +26,6 @@ import (
 
 var scheduler = gocron.NewScheduler(time.Now().Location())
 
-func checkOppositeDirections(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
-	symbolDifferentDirectionsHigherRanking := 0
-	possibleDirections := mapset.NewSet[string]()
-	for _, s := range gsp.GetPool().Strategies {
-		if s.Symbol == grid.Symbol {
-			if gsp.DirectionMap[s.Direction] != grid.Direction {
-				symbolDifferentDirectionsHigherRanking++
-				possibleDirections.Add(gsp.DirectionMap[s.Direction])
-			} else {
-				break
-			}
-		}
-	}
-	existsNonBlacklistedOpposite := false
-	for _, d := range possibleDirections.ToSlice() {
-		if bl, _ := blacklist.SymbolDirectionBlacklisted(grid.Symbol, d); !bl {
-			existsNonBlacklistedOpposite = true
-			break
-		}
-	}
-	if symbolDifferentDirectionsHigherRanking >= config.TheConfig.MinOppositeDirectionHigherRanking &&
-		existsNonBlacklistedOpposite {
-		toCancel.AddGridToCancel(grid, 0,
-			fmt.Sprintf("opposite directions at top: %d", symbolDifferentDirectionsHigherRanking))
-	}
-}
-
 func checkTakeProfits(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 	for c, gpMax := range config.TheConfig.TakeProfits {
 		gpMax = config.GetNormalized(gpMax, grid.InitialLeverage)
@@ -212,8 +185,9 @@ func tick() error {
 			return nil
 		}
 		sessionSymbols := gsp.GGrids.ExistingSymbols.Clone()
+		sortedStrategies := make(gsp.Strategies, 0)
 	out:
-		for c, s := range gsp.GetPool().Strategies {
+		for _, s := range gsp.GetPool().Strategies {
 			if s.RunningTime > 60*config.TheConfig.MaxLookBackBookingMinutes {
 				log.Infof("Strategy running for more than %d minutes, Skip", config.TheConfig.MaxLookBackBookingMinutes)
 				continue
@@ -255,18 +229,24 @@ func tick() error {
 					continue out
 				}
 			}
-
 			userWl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", s.UserID))
 			if err != nil {
 				return err
 			}
-			userWlRatio := float64(userWl.Win) / float64(userWl.Total)
-			shortRunningRatio := float64(userWl.ShortRunning) / float64(userWl.Total)
-			discord.Infof("User %d Win Loss %d/%d (%.2f), Short running %d/%d (%.2f)", s.UserID, userWl.Win, userWl.Total, userWlRatio, userWl.ShortRunning, userWl.Total, shortRunningRatio)
-			if userWlRatio < 0.84 || (shortRunningRatio > 0.231 && userWlRatio != 1.0) {
+			discord.Infof("User %d Win Loss %.1f/%d (%.2f), Short running %d/%d (%.2f)",
+				s.UserID, userWl.Win, userWl.Total, userWl.WinRatio, userWl.ShortRunning, userWl.Total, userWl.ShortRunningRatio)
+			if userWl.WinRatio < 0.84 || (userWl.ShortRunningRatio > 0.231 && userWl.WinRatio != 1.0) {
 				discord.Infof("User %d not performing well, Skip", s.UserID)
 				continue
 			}
+			sortedStrategies = append(sortedStrategies, s)
+		}
+		sort.Slice(sortedStrategies, func(i, j int) bool {
+			iWL, _ := gsp.UserWLCache.Get(fmt.Sprintf("%d", sortedStrategies[i].UserID))
+			jWL, _ := gsp.UserWLCache.Get(fmt.Sprintf("%d", sortedStrategies[j].UserID))
+			return iWL.WinRatio > jWL.WinRatio
+		})
+		for c, s := range sortedStrategies {
 			sInPool := s
 			s, err := gsp.DiscoverRootStrategy(s.SID, s.Symbol, s.Direction, time.Duration(s.RunningTime)*time.Second)
 			if err != nil {
@@ -345,7 +325,7 @@ func tick() error {
 				s.Symbol = s.Symbol[:len(s.Symbol)-len(currency)] + overwriteQuote
 			}
 
-			discord.Infof(gsp.Display(s, nil, "New", c+1, len(gsp.GetPool().Strategies)))
+			discord.Infof(gsp.Display(s, nil, "New", c+1, len(sortedStrategies)))
 			errr := gsp.PlaceGrid(*s, invChunk, leverage)
 			if !config.TheConfig.Paper {
 				if errr != nil {
@@ -355,7 +335,7 @@ func tick() error {
 						break
 					}
 				} else {
-					discord.Actionf(gsp.Display(s, nil, "**Opened Grid**", c+1, len(gsp.GetPool().Strategies)))
+					discord.Actionf(gsp.Display(s, nil, "**Opened Grid**", c+1, len(sortedStrategies)))
 					chunksInt -= 1
 					sessionSymbols.Add(s.Symbol)
 					if chunksInt <= 0 {
@@ -494,17 +474,19 @@ func main() {
 		}
 	case "playground":
 		utils.ResetTime()
-		sdk.ClearSessionSymbolPrice()
-		err := sdk.PopulatePrices(
-			"BTCUSDT", time.Now().Add(-10*24*365*time.Hour).UnixMilli(), time.Now().UnixMilli(),
-		)
+		m, err := gsp.GetPrices("BTCUSDT", timeNowHourPrecision().Add(-1*time.Hour).UnixMilli(), timeNowHourPrecision().Add(-1*time.Hour).UnixMilli())
 		if err != nil {
 			panic(err)
-
 		}
+		log.Info(utils.AsJson(m))
 	}
 	scheduler.StartAsync()
 	<-blocking
+}
+
+func timeNowHourPrecision() time.Time {
+	t := time.Now()
+	return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), 0, 0, 0, time.Local)
 }
 
 func getTestStrategy(id int) *gsp.Strategy {

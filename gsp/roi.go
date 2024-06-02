@@ -38,10 +38,15 @@ var RoisCache = cache.CreateMapCache[StrategyRoi](
 )
 
 type UserWL struct {
-	Win          float64   `json:"wins"`
-	UpdatedAt    time.Time `json:"updatedAt"`
-	ShortRunning int       `json:"shortRunning"`
-	Total        int       `json:"total"`
+	Win               float64   `json:"wins"`
+	UpdatedAt         time.Time `json:"updatedAt"`
+	ShortRunning      int       `json:"shortRunning"`
+	Total             int       `json:"total"`
+	Neutrals          int       `json:"neutrals"`
+	Longs             int       `json:"longs"`
+	Shorts            int       `json:"shorts"`
+	WinRatio          float64   `json:"winRatio"`
+	ShortRunningRatio float64   `json:"shortRunningRatio"`
 }
 
 var UserWLCache = cache.CreateMapCache[UserWL](
@@ -99,11 +104,13 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 					wl.Win++
 					prefix = "won "
 				}
+				wl.Longs++
 			case SHORT:
 				if end < start {
 					wl.Win++
 					prefix = "won "
 				}
+				wl.Shorts++
 			case NEUTRAL:
 				threshold := 0.08
 				mid := (s.LowerLimit + s.UpperLimit) / 2
@@ -112,10 +119,11 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 						wl.Win++
 						prefix = "won "
 					} else {
-						wl.Win += 0.5
+						wl.Win += 0.6
 						prefix = "won "
 					}
 				}
+				wl.Neutrals++
 			}
 			if s.RunningTime <= 3600*4 {
 				wl.ShortRunning++
@@ -123,6 +131,8 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 			log.Debugf("%sSymbol: %s, Direction: %d, Start: %.5f, End: %.5f, %v (%.5f, %.5f)",
 				prefix, s.Symbol, s.Direction, start, end, time.Duration(s.RunningTime)*time.Second, s.LowerLimit, s.UpperLimit)
 		}
+		wl.WinRatio = wl.Win / float64(wl.Total)
+		wl.ShortRunningRatio = float64(wl.ShortRunning) / float64(wl.Total)
 		return wl, nil
 	},
 	func(wl UserWL) bool {
