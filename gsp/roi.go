@@ -47,6 +47,13 @@ type UserWL struct {
 	Shorts            int       `json:"shorts"`
 	WinRatio          float64   `json:"winRatio"`
 	ShortRunningRatio float64   `json:"shortRunningRatio"`
+	UserId            int       `json:"userId"`
+}
+
+func (wl UserWL) String() string {
+	return fmt.Sprintf("User %d - WL %.1f/%d (%.2f), Short %d/%d (%.2f), L/S/N: %d/%d/%d (%d)",
+		wl.UserId, wl.Win, wl.Total, wl.WinRatio, wl.ShortRunning, wl.Total, wl.ShortRunningRatio,
+		wl.Longs, wl.Shorts, wl.Neutrals, wl.Total)
 }
 
 var UserWLCache = cache.CreateMapCache[UserWL](
@@ -89,7 +96,9 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 		if err != nil {
 			return UserWL{}, err
 		}
-		wl := UserWL{Win: 0, Total: len(strategies), ShortRunning: 0, UpdatedAt: time.Now()}
+		wl := UserWL{Win: 0, Total: len(strategies),
+			ShortRunning: 0, UpdatedAt: time.Now(),
+			UserId: user}
 		for _, s := range strategies {
 			start := *s.StartPrice
 			end := *s.EndPrice

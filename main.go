@@ -252,8 +252,7 @@ func tick() error {
 			if err != nil {
 				return err
 			}
-			discord.Infof("User %d Win Loss %.1f/%d (%.2f), Short running %d/%d (%.2f)",
-				s.UserID, userWl.Win, userWl.Total, userWl.WinRatio, userWl.ShortRunning, userWl.Total, userWl.ShortRunningRatio)
+			discord.Infof(userWl.String())
 			sInPool := s
 			s, err := gsp.DiscoverRootStrategy(s.SID, s.Symbol, s.Direction, time.Duration(s.RunningTime)*time.Second)
 			if err != nil {

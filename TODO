@@ -1,13 +1,10 @@
 CHeck if price out of opposite bounds during strategy run time
 
 
-neutral win stricter
 put the previous user back to selected
 
 Stoploss is not reliable, the user may not cancel and we have positive >>>>>> all the way
 Volatility limit?
 
 Insufficient margin balance
-Too much neutral?
-Runtime 0 strategies aren't included in short running
-Log L/S/N in wl all the time
+Too much neutral? neutral win stricter

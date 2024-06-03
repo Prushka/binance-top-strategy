@@ -414,9 +414,7 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 			}
 			userWl, err := UserWLCache.Get(fmt.Sprintf("%d", s.UserID))
 			if err == nil {
-				wl = fmt.Sprintf(", W/L: %.2f/%d (%.2f), ShortRunning: %d/%d (%.2f), LSN: %d/%d/%d (%d)",
-					userWl.Win, userWl.Total, userWl.WinRatio, userWl.ShortRunning, userWl.Total,
-					userWl.ShortRunningRatio, userWl.Longs, userWl.Shorts, userWl.Neutrals, userWl.Total)
+				wl = userWl.String()
 			}
 		}
 	}
