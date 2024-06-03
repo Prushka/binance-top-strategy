@@ -145,7 +145,6 @@ func GetPrices(symbol string, timeStart int64, timeEnd int64) (*PriceMetrics, er
 		timeEnd = timeStart + 3600*1000
 	}
 	metrics := &PriceMetrics{}
-	log.Infof("Fetching prices for %s: %d, %d", symbol, timeStart, timeEnd)
 	startRes, err := sdk.FuturesClient.NewKlinesService().Symbol(symbol).Interval("30m").
 		StartTime(timeStart - 30*60*1000).EndTime(timeStart).Limit(4).Do(context.Background())
 	if err != nil {
@@ -295,6 +294,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 	discord.Infof("Populating prices for %d strategies", len(strategies))
 	counter := 0
 	for _, s := range strategies {
+		log.Infof("Fetching prices for %s: %d, %d", s.Symbol, s.StrategyID, s.UserID)
 		metrics, err := GetPrices(s.Symbol,
 			s.StartTime.UnixMilli(), s.EndTime.UnixMilli())
 		if err != nil {
