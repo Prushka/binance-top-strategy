@@ -482,10 +482,13 @@ func main() {
 		}
 	case "playground":
 		utils.ResetTime()
-		err := gsp.RefreshTheChosen()
+		metrics, err := gsp.GetPrices("BTCUSDT",
+			timeNowHourPrecision().Add(-2*time.Hour).UnixMilli(),
+			timeNowHourPrecision().Add(-2*time.Hour).UnixMilli())
 		if err != nil {
-			discord.Errorf("TheChosen: %v", err)
+			panic(err)
 		}
+		log.Infof(utils.AsJson(metrics))
 	}
 	scheduler.StartAsync()
 	<-blocking

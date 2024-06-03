@@ -7,6 +7,7 @@ import (
 	"BinanceTopStrategies/utils"
 	"context"
 	"fmt"
+	"github.com/adshao/go-binance/v2/futures"
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/jackc/pgx/v5"
 	log "github.com/sirupsen/logrus"
@@ -140,59 +141,72 @@ func (db *ChosenStrategyDB) ToStrategy() *Strategy {
 }
 
 func GetPrices(symbol string, timeStart int64, timeEnd int64) (*PriceMetrics, error) {
+	if timeStart == timeEnd {
+		timeEnd = timeStart + 3600*1000
+	}
 	metrics := &PriceMetrics{}
-	res, err := sdk.FuturesClient.NewKlinesService().Symbol(symbol).Interval("30m").
-		StartTime(timeStart - 30*60*1000).EndTime(timeEnd).Limit(1500).Do(context.Background())
-	if err != nil {
-		log.Errorf("Start: %d, End: %d", timeStart, timeEnd)
-		return nil, err
-	}
-	if len(res) < 4 {
-		for _, k := range res {
-			log.Infof("Open: %s, Close: %s, High: %s, Low: %s, OpenTime: %d, CloseTime: %d",
-				k.Open, k.Close, k.High, k.Low, k.OpenTime, k.CloseTime)
-		}
-		return nil, fmt.Errorf("insufficient data total: (%d)", len(res))
-	}
-	if res[0].OpenTime != timeStart-30*60*1000 {
-		return nil, fmt.Errorf("1: open time mismatch: %d, %d", res[0].OpenTime, timeStart-30*60*1000)
-	}
-	if res[1].OpenTime != timeStart {
-		return nil, fmt.Errorf("2: open time mismatch: %d, %d", res[1].OpenTime, timeStart)
-	}
-	if res[1].CloseTime != timeStart+30*60*1000-1 {
-		return nil, fmt.Errorf("3: close time mismatch: %d, %d", res[1].CloseTime, timeStart+30*60*1000-1)
-	}
-	if res[len(res)-2].OpenTime != timeEnd-30*60*1000 {
-		return nil, fmt.Errorf("4: open time mismatch: %d, %d", res[len(res)-2].OpenTime, timeEnd-30*60*1000)
-	}
-	if res[len(res)-1].OpenTime != timeEnd {
-		return nil, fmt.Errorf("5: open time mismatch: %d, %d", res[len(res)-1].OpenTime, timeEnd)
-	}
-	if res[len(res)-1].CloseTime != timeEnd+30*60*1000-1 {
-		return nil, fmt.Errorf("6: close time mismatch: %d, %d", res[len(res)-1].CloseTime, timeEnd+30*60*1000-1)
-	}
-	metrics.StartPrice30MinBefore, err = utils.ParseFloatPointer(res[0].Open) // start time - 30 minutes
+	log.Infof("Fetching prices for %s: %d, %d", symbol, timeStart, timeEnd)
+	startRes, err := sdk.FuturesClient.NewKlinesService().Symbol(symbol).Interval("30m").
+		StartTime(timeStart - 30*60*1000).EndTime(timeStart).Limit(4).Do(context.Background())
 	if err != nil {
 		return nil, err
 	}
-	metrics.StartPriceExact, err = utils.ParseFloatPointer(res[1].Open) // start time
+	endRes, err := sdk.FuturesClient.NewKlinesService().Symbol(symbol).Interval("30m").
+		StartTime(timeEnd - 30*60*1000).EndTime(timeEnd).Limit(4).Do(context.Background())
 	if err != nil {
 		return nil, err
 	}
-	metrics.StartPrice, err = utils.ParseFloatPointer(res[1].Close) // start time + 30 minutes
+	minMaxRes, err := sdk.FuturesClient.NewKlinesService().Symbol(symbol).Interval("1h").
+		StartTime(timeStart).EndTime(timeEnd).Limit(1500).Do(context.Background())
 	if err != nil {
 		return nil, err
 	}
-	metrics.EndPrice30MinBefore, err = utils.ParseFloatPointer(res[len(res)-2].Open) // end time - 30 minutes
+	minMaxRes = minMaxRes[:len(minMaxRes)-1]
+	if len(startRes) < 2 || len(endRes) < 2 || len(minMaxRes) < 1 {
+		return nil, fmt.Errorf("insufficient data total: (%d/%d/%d)", len(startRes), len(endRes), len(minMaxRes))
+	}
+	if minMaxRes[0].OpenTime != timeStart || minMaxRes[len(minMaxRes)-1].CloseTime != timeEnd-1 {
+		return nil, fmt.Errorf("time mismatch: %d, %d, %d, %d", minMaxRes[0].OpenTime, timeStart, minMaxRes[len(minMaxRes)-1].OpenTime, timeEnd)
+	}
+	if startRes[0].OpenTime != timeStart-30*60*1000 && startRes[0].OpenTime != timeStart {
+		return nil, fmt.Errorf("1: open time mismatch: %d, %d", startRes[0].OpenTime, timeStart-30*60*1000)
+	}
+	if startRes[1].OpenTime != timeStart {
+		return nil, fmt.Errorf("2: open time mismatch: %d, %d", startRes[1].OpenTime, timeStart)
+	}
+	if startRes[1].CloseTime != timeStart+30*60*1000-1 {
+		return nil, fmt.Errorf("3: close time mismatch: %d, %d", startRes[1].CloseTime, timeStart+30*60*1000-1)
+	}
+	if endRes[0].OpenTime != timeEnd-30*60*1000 {
+		return nil, fmt.Errorf("4: open time mismatch: %d, %d", endRes[0].OpenTime, timeEnd-30*60*1000)
+	}
+	if endRes[1].OpenTime != timeEnd {
+		return nil, fmt.Errorf("5: open time mismatch: %d, %d", endRes[1].OpenTime, timeEnd)
+	}
+	if endRes[1].CloseTime != timeEnd+30*60*1000-1 {
+		return nil, fmt.Errorf("6: close time mismatch: %d, %d", endRes[1].CloseTime, timeEnd+30*60*1000-1)
+	}
+	metrics.StartPrice30MinBefore, err = utils.ParseFloatPointer(startRes[0].Open) // start time - 30 minutes
 	if err != nil {
 		return nil, err
 	}
-	metrics.EndPriceExact, err = utils.ParseFloatPointer(res[len(res)-1].Open) // end time
+	metrics.StartPriceExact, err = utils.ParseFloatPointer(startRes[1].Open) // start time
 	if err != nil {
 		return nil, err
 	}
-	metrics.EndPrice, err = utils.ParseFloatPointer(res[len(res)-1].Close) // end time - 30 minutes
+	metrics.StartPrice, err = utils.ParseFloatPointer(startRes[1].Close) // start time + 30 minutes
+	if err != nil {
+		return nil, err
+	}
+	metrics.EndPrice30MinBefore, err = utils.ParseFloatPointer(endRes[0].Open) // end time - 30 minutes
+	if err != nil {
+		return nil, err
+	}
+	metrics.EndPriceExact, err = utils.ParseFloatPointer(endRes[1].Open) // end time
+	if err != nil {
+		return nil, err
+	}
+	metrics.EndPrice, err = utils.ParseFloatPointer(endRes[1].Close) // end time - 30 minutes
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +214,11 @@ func GetPrices(symbol string, timeStart int64, timeEnd int64) (*PriceMetrics, er
 	endT := time.Unix(timeEnd/1000, 0)
 	metrics.StartTime = &startT
 	metrics.EndTime = &endT
-	for _, k := range res {
+	merged := make([]*futures.Kline, 0)
+	merged = append(merged, startRes...)
+	merged = append(merged, endRes...)
+	merged = append(merged, minMaxRes...)
+	for _, k := range merged {
 		high, err := strconv.ParseFloat(k.High, 64)
 		if err != nil {
 			return nil, err
@@ -270,7 +288,7 @@ func PopulatePrices() error {
           p.grid_count, p.trigger_price, p.stop_lower_limit, p.stop_upper_limit, p.base_asset, p.quote_asset,
           p.leverage, p.trailing_down, p.trailing_up, p.trailing_type, p.latest_matched_count, p.matched_count, p.min_investment,
           p.concluded
-FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.original_input IS NOT NULL AND f.runtime > 0 AND f.runtime < 30000;`)
+FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.original_input IS NOT NULL AND f.runtime < 5400000;`)
 	if err != nil {
 		return err
 	}
