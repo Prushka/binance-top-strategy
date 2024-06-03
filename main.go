@@ -232,7 +232,7 @@ func tick() error {
 				return err
 			}
 			if userWl.WinRatio < 0.84 || (userWl.ShortRunningRatio > 0.231 && userWl.WinRatio != 1.0) {
-				discord.Infof("User %d skipped, %.2f/%d (%.2f), %d/%d (%.2f)", s.UserID, userWl.Win, userWl.Total, userWl.WinRatio, userWl.ShortRunning, userWl.Total, userWl.ShortRunningRatio)
+				discord.Infof("User %d skipped, %v", s.UserID, userWl)
 				continue
 			}
 			sortedStrategies = append(sortedStrategies, s)
