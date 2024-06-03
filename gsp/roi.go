@@ -112,7 +112,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 				}
 				wl.Shorts++
 			case NEUTRAL:
-				threshold := 0.07
+				threshold := 0.05
 				mid := (s.LowerLimit + s.UpperLimit) / 2
 				if end < s.UpperLimit && end > s.LowerLimit {
 					if (end < mid*(1+threshold) && end > mid*(1-threshold)) || (end < start*(1+threshold) && end > start*(1-threshold)) {
@@ -125,7 +125,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 				}
 				wl.Neutrals++
 			}
-			if s.RunningTime <= 3600*4 {
+			if s.RunningTime <= 3600*3 {
 				wl.ShortRunning++
 			}
 			log.Debugf("%sSymbol: %s, Direction: %d, Start: %.5f, End: %.5f, %v (%.5f, %.5f)",

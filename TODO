@@ -8,3 +8,6 @@ Stoploss is not reliable, the user may not cancel and we have positive >>>>>> al
 Volatility limit?
 
 Insufficient margin balance
+Too much neutral?
+Runtime 0 strategies aren't included in short running
+Log L/S/N in wl all the time
