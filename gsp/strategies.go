@@ -277,10 +277,10 @@ func (s *Strategy) String() string {
 	if !s.Rois.isRunning() {
 		ended = "Ended: " + time.Unix(s.Rois[0].Time, 0).Format("2006-01-02 15:04:05") + " ,"
 	}
-	return fmt.Sprintf("%sPnL: %.2f, Rois: %s, [A/D/3/2/1H: %.1f%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s%s, User: %d-$%.1f/$%.1f",
+	return fmt.Sprintf("%sPnL: %.2f, Rois: %s, [A/D/3/2/1H: %.1f%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s%s, User: $%.1f/$%.1f",
 		ended, s.Pnl, s.Rois.lastNRecords(config.TheConfig.LastNHoursNoDips),
 		s.Rois[0].Roi,
-		s.LastDayRoiChange*100, s.Last3HrRoiChange*100, s.Last2HrRoiChange*100, s.LastHrRoiChange*100, s.MinInvestment, ranking, s.UserID, s.UserInput, s.UserTotalInput)
+		s.LastDayRoiChange*100, s.Last3HrRoiChange*100, s.Last2HrRoiChange*100, s.LastHrRoiChange*100, s.MinInvestment, ranking, s.UserInput, s.UserTotalInput)
 }
 
 func (s *Strategy) GetMetric() float64 {
@@ -428,7 +428,7 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		seq = fmt.Sprintf("%d/%d - ", index, length)
 	}
 
-	return fmt.Sprintf("* [%s%s%s, %s, %s, %f/%s, %s Grids, %s%s] %s: %s%s",
+	return fmt.Sprintf("* [%s%s%s, %s, %s, %f/%s, %s Grids, %s %s] %s: %s%s",
 		seq, utils.FormatPair(symbol), direction, leverage, runTime,
 		marketPrice, priceRange, grids, strategyId, wl, action, ss, gg)
 }
