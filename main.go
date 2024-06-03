@@ -482,8 +482,8 @@ func main() {
 	case "playground":
 		utils.ResetTime()
 		metrics, err := gsp.GetPrices("BTCUSDT",
-			timeNowHourPrecision().Add(-2*time.Hour).UnixMilli(),
-			timeNowHourPrecision().Add(-2*time.Hour).UnixMilli())
+			timeNowHourPrecision().Add(-5*time.Hour).UnixMilli(),
+			timeNowHourPrecision().Add(-5*time.Hour).UnixMilli())
 		if err != nil {
 			panic(err)
 		}
