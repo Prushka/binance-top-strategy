@@ -323,7 +323,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 			break
 		}
 		counter++
-		if counter > 200 {
+		if counter > 160 {
 			break
 		}
 	}
