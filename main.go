@@ -162,6 +162,7 @@ func tick() error {
 		return nil
 	}
 	sessionSymbols := gsp.GGrids.ExistingSymbols.Clone()
+	sessionSIDs := gsp.GGrids.ExistingSIDs.Clone()
 	sortedStrategies := make(gsp.Strategies, 0)
 
 out:
@@ -223,7 +224,7 @@ out:
 				continue
 			}
 
-			if gsp.GGrids.ExistingSIDs.Contains(s.SID) {
+			if sessionSIDs.Contains(s.SID) {
 				discord.Infof("* Strategy %d - %s exists in open grids, Skip", s.SID, s.SD())
 				continue
 			}
@@ -337,6 +338,7 @@ out:
 					discord.Actionf(gsp.Display(s, nil, "**Opened Grid**", c+1, len(sortedStrategies)))
 					chunksInt -= 1
 					sessionSymbols.Add(s.Symbol)
+					sessionSIDs.Add(s.SID)
 					if chunksInt <= 0 {
 						break
 					}
