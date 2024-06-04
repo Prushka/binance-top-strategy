@@ -161,6 +161,38 @@ func tick() error {
 		discord.Infof("Only trade after min 19, Skip")
 		return nil
 	}
+	sessionSymbols := gsp.GGrids.ExistingSymbols.Clone()
+	sortedStrategies := make(gsp.Strategies, 0)
+
+out:
+	for _, s := range gsp.GetPool().Strategies {
+		if s.RunningTime > 60*config.TheConfig.MaxLookBackBookingMinutes {
+			log.Infof("Strategy running for more than %d minutes, Skip", config.TheConfig.MaxLookBackBookingMinutes)
+			continue
+		}
+
+		userStrategies := gsp.GetPool().StrategiesByUserId[s.UserID]
+		for _, us := range userStrategies {
+			if us.Symbol == s.Symbol && us.Direction != s.Direction {
+				discord.Infof("Same symbol hedging, Skip")
+				continue out
+			}
+		}
+		userWl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", s.UserID))
+		if err != nil {
+			return err
+		}
+		if userWl.WinRatio < 0.84 || (userWl.ShortRunningRatio > 0.231 && userWl.WinRatio != 1.0) {
+			discord.Infof("Skipped, %v", userWl)
+			continue
+		}
+		sortedStrategies = append(sortedStrategies, s)
+	}
+	sort.Slice(sortedStrategies, func(i, j int) bool {
+		iWL, _ := gsp.UserWLCache.Get(fmt.Sprintf("%d", sortedStrategies[i].UserID))
+		jWL, _ := gsp.UserWLCache.Get(fmt.Sprintf("%d", sortedStrategies[j].UserID))
+		return iWL.WinRatio > jWL.WinRatio
+	})
 	var place func(maxChunks, existingChunks int, currency, overwriteQuote string, balance float64) error
 	place = func(maxChunks, existingChunks int, currency, overwriteQuote string, balance float64) error {
 		chunksInt := maxChunks - existingChunks
@@ -184,15 +216,13 @@ func tick() error {
 			return place(adjusted, existingChunks, currency, overwriteQuote, balance)
 		}
 		invChunk = float64(int(invChunk))
-		sessionSymbols := gsp.GGrids.ExistingSymbols.Clone()
-		sortedStrategies := make(gsp.Strategies, 0)
-
-	out:
-		for _, s := range gsp.GetPool().Strategies {
-			if s.RunningTime > 60*config.TheConfig.MaxLookBackBookingMinutes {
-				log.Infof("Strategy running for more than %d minutes, Skip", config.TheConfig.MaxLookBackBookingMinutes)
+		for c, s := range sortedStrategies {
+			strategyQuote := s.Symbol[len(s.Symbol)-4:]
+			if strategyQuote != currency {
+				log.Infof("wrong quote (%s, %s), Skip", currency, strategyQuote)
 				continue
 			}
+
 			if gsp.GGrids.ExistingSIDs.Contains(s.SID) {
 				discord.Infof("* Strategy %d - %s exists in open grids, Skip", s.SID, s.SD())
 				continue
@@ -217,35 +247,6 @@ func tick() error {
 			if bl, till := blacklist.SymbolBlacklisted(s.Symbol); bl {
 				blacklistedInPool.Add(s.Symbol)
 				log.Infof("Symbol blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
-				continue
-			}
-
-			userStrategies := gsp.GetPool().StrategiesByUserId[s.UserID]
-			for _, us := range userStrategies {
-				if us.Symbol == s.Symbol && us.Direction != s.Direction {
-					discord.Infof("Same symbol hedging, Skip")
-					continue out
-				}
-			}
-			userWl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", s.UserID))
-			if err != nil {
-				return err
-			}
-			if userWl.WinRatio < 0.84 || (userWl.ShortRunningRatio > 0.231 && userWl.WinRatio != 1.0) {
-				discord.Infof("Skipped, %v", userWl)
-				continue
-			}
-			sortedStrategies = append(sortedStrategies, s)
-		}
-		sort.Slice(sortedStrategies, func(i, j int) bool {
-			iWL, _ := gsp.UserWLCache.Get(fmt.Sprintf("%d", sortedStrategies[i].UserID))
-			jWL, _ := gsp.UserWLCache.Get(fmt.Sprintf("%d", sortedStrategies[j].UserID))
-			return iWL.WinRatio > jWL.WinRatio
-		})
-		for c, s := range sortedStrategies {
-			strategyQuote := s.Symbol[len(s.Symbol)-4:]
-			if strategyQuote != currency {
-				log.Infof("wrong quote (%s, %s), Skip", currency, strategyQuote)
 				continue
 			}
 			userWl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", s.UserID))
@@ -361,7 +362,6 @@ func tick() error {
 		discord.Infof("Blacklisted in pool: %s", blacklistedInPool)
 	}
 	utils.Time("Place/Cancel done")
-	discord.Infof("### New Grids:")
 	err = gsp.UpdateOpenGrids(false)
 	if err != nil {
 		return err
@@ -481,13 +481,7 @@ func main() {
 		}
 	case "playground":
 		utils.ResetTime()
-		metrics, err := gsp.GetPrices("BTCUSDT",
-			timeNowHourPrecision().Add(-5*time.Hour).UnixMilli(),
-			timeNowHourPrecision().Add(-5*time.Hour).UnixMilli())
-		if err != nil {
-			panic(err)
-		}
-		log.Infof(utils.AsJson(metrics))
+		log.Infof("%s", utils.OverwriteQuote("ENAUSDC", "USDC", 4))
 	}
 	scheduler.StartAsync()
 	<-blocking
