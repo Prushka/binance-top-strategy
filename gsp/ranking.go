@@ -161,7 +161,7 @@ func GetPrices(symbol string, timeStart int64, timeEnd int64) (*PriceMetrics, er
 		return nil, err
 	}
 	minMaxRes = minMaxRes[:len(minMaxRes)-1]
-	if len(startRes) != 2 || len(endRes) != 2 || len(minMaxRes) < 1 {
+	if (len(startRes) != 2 && len(startRes) != 1) || len(endRes) != 2 || len(minMaxRes) < 1 {
 		return nil, fmt.Errorf("insufficient data total: (%d/%d/%d)", len(startRes), len(endRes), len(minMaxRes))
 	}
 	if minMaxRes[0].OpenTime != timeStart || minMaxRes[len(minMaxRes)-1].CloseTime != timeEnd-1 {
@@ -169,6 +169,9 @@ func GetPrices(symbol string, timeStart int64, timeEnd int64) (*PriceMetrics, er
 	}
 	if startRes[0].OpenTime != timeStart-30*60*1000 && startRes[0].OpenTime != timeStart {
 		return nil, fmt.Errorf("1: open time mismatch: %d, %d", startRes[0].OpenTime, timeStart-30*60*1000)
+	}
+	if startRes[0].OpenTime != timeStart-30*60*1000 && len(startRes) == 1 {
+		startRes = append(startRes, startRes[0])
 	}
 	if startRes[1].OpenTime != timeStart {
 		return nil, fmt.Errorf("2: open time mismatch: %d, %d", startRes[1].OpenTime, timeStart)

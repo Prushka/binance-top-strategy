@@ -8,3 +8,4 @@ Volatility limit?
 
 Insufficient margin balance
 Too much neutral? neutral win stricter
+Short strategies shouldn't count towards long short wins
