@@ -69,6 +69,7 @@ func tick() error {
 	utils.ResetTime()
 	sdk.ClearSessionSymbolPrice()
 	discord.Infof("## Run: %v", time.Now().Format("2006-01-02 15:04:05"))
+	discord.Infof("Time since cookie: %v", time.Since(config.TheConfig.CookieTimeParsed))
 	usdt, err := sdk.GetFuture("USDT")
 	if err != nil {
 		return err
@@ -84,7 +85,7 @@ func tick() error {
 	if err != nil {
 		return err
 	}
-	utils.Time("Fetch the chosen")
+	utils.Time("Fetched the pool")
 	users := mapset.NewSet[int64]()
 	for _, u := range poolDB {
 		users.Add(u.UserID)
@@ -410,6 +411,13 @@ func configPop() {
 			s = strings.ReplaceAll(s, "\n", "")
 			reflect.ValueOf(config.TheConfig).Elem().FieldByName(v.Name).SetString(s)
 		}
+	}
+	if config.TheConfig.CookieTime != "" {
+		i, err := strconv.ParseInt(config.TheConfig.CookieTime, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		config.TheConfig.CookieTimeParsed = time.Unix(i, 0)
 	}
 }
 

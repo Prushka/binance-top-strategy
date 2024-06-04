@@ -3,15 +3,18 @@ package config
 import (
 	"github.com/caarlos0/env"
 	log "github.com/sirupsen/logrus"
+	"time"
 )
 
 type Config struct {
-	Redis                             string    `env:"REDIS" envDefault:"localhost:6379"`
-	RedisPassword                     string    `env:"REDIS_PASSWORD" envDefault:""`
-	ApiKey                            string    `env:"API_KEY"`
-	SecretKey                         string    `env:"SECRET_KEY"`
-	CSRFToken                         string    `db:"CSRF"`
-	COOKIE                            string    `db:"COOKIE"`
+	Redis                             string `env:"REDIS" envDefault:"localhost:6379"`
+	RedisPassword                     string `env:"REDIS_PASSWORD" envDefault:""`
+	ApiKey                            string `env:"API_KEY"`
+	SecretKey                         string `env:"SECRET_KEY"`
+	CSRFToken                         string `db:"CSRF"`
+	Cookie                            string `db:"COOKIE"`
+	CookieTime                        string `db:"COOKIE_TIME"`
+	CookieTimeParsed                  time.Time
 	MarginType                        string    `env:"MARGIN_TYPE" envDefault:"CROSSED"`
 	StrategiesCount                   int       `env:"STRATEGIES_COUNT" envDefault:"3000"`
 	RuntimeMinHours                   int       `env:"RUNTIME_MIN_HOURS" envDefault:"3"`

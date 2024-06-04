@@ -53,7 +53,7 @@ func Request[T BinanceResponse](url string, payload any, response T) (T, []byte,
 func PrivateRequest[T BinanceResponse](url, method string, payload any, response T) (T, []byte, error) {
 	headers := map[string]string{
 		"Clienttype":         "web",
-		"Cookie":             config.TheConfig.COOKIE,
+		"Cookie":             config.TheConfig.Cookie,
 		"Csrftoken":          config.TheConfig.CSRFToken,
 		"Accept":             "*/*",
 		"Accept-Language":    "en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
