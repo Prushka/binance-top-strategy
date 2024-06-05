@@ -141,7 +141,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 						wl.Win++
 						prefix = "won "
 					} else {
-						wl.Win += 0.5
+						wl.Win += 0.4
 						prefix = "won "
 					}
 				}
