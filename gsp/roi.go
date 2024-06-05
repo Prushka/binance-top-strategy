@@ -134,11 +134,14 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 				}
 				wl.Shorts++
 			case NEUTRAL:
-				threshold := 0.045
+				threshold := 0.05
 				mid := (s.LowerLimit + s.UpperLimit) / 2
 				if end < s.UpperLimit && end > s.LowerLimit {
-					if (end < mid*(1+threshold) && end > mid*(1-threshold)) || (end < start*(1+threshold) && end > start*(1-threshold)) {
+					if end < start*(1+threshold) && end > start*(1-threshold) {
 						wl.Win++
+						prefix = "won "
+					} else if end < mid*(1+threshold) && end > mid*(1-threshold) {
+						wl.Win += 0.8
 						prefix = "won "
 					} else {
 						wl.Win += 0.4
