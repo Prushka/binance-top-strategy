@@ -184,7 +184,7 @@ out:
 		if err != nil {
 			return err
 		}
-		if userWl.WinRatio < 0.84 || (userWl.ShortRunningRatio > 0.231 && userWl.WinRatio != 1.0) {
+		if userWl.WinRatio < 0.84 || (userWl.ShortRunningRatio > 0.241 && userWl.WinRatio != 1.0) {
 			discord.Infof("Skipped, %v", userWl)
 			continue
 		}
@@ -491,8 +491,33 @@ func main() {
 		}
 	case "playground":
 		utils.ResetTime()
-		wl, _ := gsp.UserWLCache.Get("358863226")
-		log.Info(utils.AsJson(wl))
+		poolDB := make([]*gsp.ChosenStrategyDB, 0)
+		err := sql.GetDB().Scan(&poolDB, `SELECT * FROM bts.ThePool`)
+		if err != nil {
+			panic(err)
+		}
+		utils.Time("Fetched the pool")
+		users := mapset.NewSet[int64]()
+		for _, u := range poolDB {
+			users.Add(u.UserID)
+		}
+		for _, user := range users.ToSlice() {
+			_, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", user))
+			if err != nil {
+				panic(err)
+			}
+		}
+		for _, user := range users.ToSlice() {
+			wl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", user))
+			if err != nil {
+				panic(err)
+			}
+			if float64(wl.Shorts)/float64(wl.Total) > 0.2 || float64(wl.Longs)/float64(wl.Total) > 0.2 {
+				if wl.WinRatio > 0.6 {
+					log.Info(wl)
+				}
+			}
+		}
 	}
 	scheduler.StartAsync()
 	<-blocking
