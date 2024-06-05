@@ -164,6 +164,7 @@ func tick() error {
 	}
 	sessionSymbols := gsp.GGrids.ExistingSymbols.Clone()
 	sessionSIDs := gsp.GGrids.ExistingSIDs.Clone()
+	sessionNeutrals := gsp.GGrids.Neutrals.Cardinality()
 	sortedStrategies := make(gsp.Strategies, 0)
 
 out:
@@ -233,6 +234,11 @@ out:
 				sessionSymbols.Contains(utils.OverwriteQuote(s.Symbol, "USDT", 4)) ||
 				sessionSymbols.Contains(utils.OverwriteQuote(s.Symbol, "USDC", 4)) {
 				log.Infof("Symbol exists in open grids, Skip")
+				continue
+			}
+
+			if sessionNeutrals >= config.TheConfig.MaxNeutrals && s.Direction == gsp.NEUTRAL {
+				discord.Infof("Max Neutrals reached (%d/%d), Skip", sessionNeutrals, config.TheConfig.MaxNeutrals)
 				continue
 			}
 
@@ -340,6 +346,9 @@ out:
 					chunksInt -= 1
 					sessionSymbols.Add(s.Symbol)
 					sessionSIDs.Add(s.SID)
+					if s.Direction == gsp.NEUTRAL {
+						sessionNeutrals++
+					}
 					if chunksInt <= 0 {
 						break
 					}

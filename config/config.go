@@ -44,8 +44,9 @@ type Config struct {
 	StopLossNotPickedHrs              []int     `env:"STOP_LOSS_NOT_PICKED_HRS" envDefault:"1,2,3,4,5,6"`
 	StopLossNotPicked                 []float64 `env:"STOP_LOSS_NOT_PICKED" envDefault:"0,-0.05,-0.1,-0.15,-0.2,-0.3"`
 	TickEverySeconds                  int       `env:"TICK_EVERY_SECONDS" envDefault:"120"`
-	MaxUSDTChunks                     int       `env:"MAX_USDT_CHUNKS" envDefault:"4"`
-	MaxUSDCChunks                     int       `env:"MAX_USDC_CHUNKS" envDefault:"1"`
+	MaxUSDTChunks                     int       `env:"MAX_USDT_CHUNKS" envDefault:"5"`
+	MaxUSDCChunks                     int       `env:"MAX_USDC_CHUNKS" envDefault:"2"`
+	MaxNeutrals                       int       `env:"MAX_NEUTRALS" envDefault:"6"`
 	MinInvestmentPerChunk             float64   `env:"MIN_INVESTMENT_PER_CHUNK" envDefault:"10"`
 	MaxCancelLossStrategyDeleted      float64   `env:"MAX_CANCEL_LOSS_STRATEGY_DELETED" envDefault:"0"`
 	Mode                              string    `env:"MODE" envDefault:"trading"`
