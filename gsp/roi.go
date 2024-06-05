@@ -42,6 +42,7 @@ type UserWL struct {
 	UpdatedAt         time.Time `json:"updatedAt"`
 	ShortRunning      int       `json:"shortRunning"`
 	Total             int       `json:"total"`
+	TotalWL           float64   `json:"totalWL"`
 	Neutrals          int       `json:"neutrals"`
 	Longs             int       `json:"longs"`
 	Shorts            int       `json:"shorts"`
@@ -51,8 +52,8 @@ type UserWL struct {
 }
 
 func (wl UserWL) String() string {
-	return fmt.Sprintf("User %d - WL %.1f/%d (%.2f), Short %d/%d (%.2f), L/S/N: %d/%d/%d (%d)",
-		wl.UserId, wl.Win, wl.Total, wl.WinRatio, wl.ShortRunning, wl.Total, wl.ShortRunningRatio,
+	return fmt.Sprintf("User %d - WL %.1f/%.1f (%.2f), Short %d/%d (%.2f), L/S/N: %d/%d/%d (%d)",
+		wl.UserId, wl.Win, wl.TotalWL, wl.WinRatio, wl.ShortRunning, wl.Total, wl.ShortRunningRatio,
 		wl.Longs, wl.Shorts, wl.Neutrals, wl.Total)
 }
 
@@ -98,7 +99,8 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 		}
 		wl := UserWL{Win: 0, Total: len(strategies),
 			ShortRunning: 0, UpdatedAt: time.Now(),
-			UserId: user}
+			TotalWL: float64(len(strategies)),
+			UserId:  user}
 		for _, s := range strategies {
 			start := *s.StartPrice
 			end := *s.EndPrice
@@ -107,14 +109,25 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 				return UserWL{}, err
 			}
 			prefix := "lost "
+			priceDiffPct := (end - start) / start
+			smlChange := priceDiffPct < 0.01
+			shortRunning := s.RunningTime <= 3600*3
 			switch s.Direction {
 			case LONG:
+				if shortRunning && smlChange {
+					wl.TotalWL -= 1
+					break
+				}
 				if end > start {
 					wl.Win++
 					prefix = "won "
 				}
 				wl.Longs++
 			case SHORT:
+				if shortRunning && smlChange {
+					wl.TotalWL -= 1
+					break
+				}
 				if end < start {
 					wl.Win++
 					prefix = "won "
@@ -134,13 +147,13 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 				}
 				wl.Neutrals++
 			}
-			if s.RunningTime <= 3600*3 {
+			if shortRunning {
 				wl.ShortRunning++
 			}
 			log.Debugf("%sSymbol: %s, Direction: %d, Start: %.5f, End: %.5f, %v (%.5f, %.5f)",
 				prefix, s.Symbol, s.Direction, start, end, time.Duration(s.RunningTime)*time.Second, s.LowerLimit, s.UpperLimit)
 		}
-		wl.WinRatio = wl.Win / float64(wl.Total)
+		wl.WinRatio = wl.Win / wl.TotalWL
 		wl.ShortRunningRatio = float64(wl.ShortRunning) / float64(wl.Total)
 		return wl, nil
 	},
