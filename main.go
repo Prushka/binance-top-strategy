@@ -288,17 +288,15 @@ out:
 			notionalLeverage := notional.GetLeverage(s.Symbol, invChunk)
 			leverage := utils.IntMin(notionalLeverage, config.TheConfig.PreferredLeverage)
 			gap := s.StrategyParams.UpperLimit - s.StrategyParams.LowerLimit
-			priceDifference := s.StrategyParams.UpperLimit/s.StrategyParams.LowerLimit - 1
-			if priceDifference < 0.1 {
-				discord.Infof("Price difference too low, Skip")
-				continue
-			}
+			priceDiff := s.StrategyParams.UpperLimit/s.StrategyParams.LowerLimit - 1
+			minPriceDiff := 0.0
 			switch s.Direction {
 			case gsp.LONG:
 				if marketPrice > s.StrategyParams.UpperLimit-gap*config.TheConfig.LongRangeDiff {
 					discord.Infof("Market Price too high for long, Skip")
 					continue
 				}
+				minPriceDiff = 0.02
 			case gsp.NEUTRAL:
 				minInvestPerLeverage := minInvestment * float64(s.StrategyParams.Leverage)
 				minLeverage := int(math.Ceil(minInvestPerLeverage / invChunk))
@@ -308,11 +306,17 @@ out:
 				} else if minLeverage > leverage {
 					leverage = minLeverage
 				}
+				minPriceDiff = 0.08
 			case gsp.SHORT:
 				if marketPrice < s.StrategyParams.LowerLimit+gap*config.TheConfig.ShortRangeDiff {
 					discord.Infof("Market Price too low for short, Skip")
 					continue
 				}
+				minPriceDiff = 0.02
+			}
+			if priceDiff < minPriceDiff {
+				discord.Infof("Price difference too low, Skip")
+				continue
 			}
 
 			if s.StrategyParams.TriggerPrice != nil {
