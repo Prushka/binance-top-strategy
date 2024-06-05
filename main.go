@@ -166,7 +166,7 @@ func tick() error {
 	sessionSIDs := gsp.GGrids.ExistingSIDs.Clone()
 	sessionNeutrals := gsp.GGrids.Neutrals.Cardinality()
 	sortedStrategies := make(gsp.Strategies, 0)
-
+	filteredUsers := mapset.NewSet[int]()
 out:
 	for _, s := range gsp.GetPool().Strategies {
 		if s.RunningTime > 60*config.TheConfig.MaxLookBackBookingMinutes {
@@ -190,12 +190,15 @@ out:
 			continue
 		}
 		sortedStrategies = append(sortedStrategies, s)
+		filteredUsers.Add(s.UserID)
 	}
 	sort.Slice(sortedStrategies, func(i, j int) bool {
 		iWL, _ := gsp.UserWLCache.Get(fmt.Sprintf("%d", sortedStrategies[i].UserID))
 		jWL, _ := gsp.UserWLCache.Get(fmt.Sprintf("%d", sortedStrategies[j].UserID))
 		return iWL.WinRatio > jWL.WinRatio
 	})
+	longs, shorts, neutrals := sortedStrategies.GetLSN()
+	discord.Infof("Filtered strategies by WL: %d, %d users | L/S/N: %d, %d, %d", len(sortedStrategies), filteredUsers.Cardinality(), longs, shorts, neutrals)
 	var place func(maxChunks, existingChunks int, currency, overwriteQuote string, balance float64) error
 	place = func(maxChunks, existingChunks int, currency, overwriteQuote string, balance float64) error {
 		chunksInt := maxChunks - existingChunks

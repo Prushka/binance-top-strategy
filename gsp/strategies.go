@@ -132,6 +132,23 @@ type QueryTopStrategy struct {
 
 type Strategies []*Strategy
 
+func (by Strategies) GetLSN() (int, int, int) {
+	longs := 0
+	shorts := 0
+	neutrals := 0
+	for _, s := range by {
+		switch s.Direction {
+		case LONG:
+			longs++
+		case SHORT:
+			shorts++
+		case NEUTRAL:
+			neutrals++
+		}
+	}
+	return longs, shorts, neutrals
+}
+
 func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 	sss := &TrackedStrategies{
 		StrategiesBySID:      make(map[int]*Strategy),
