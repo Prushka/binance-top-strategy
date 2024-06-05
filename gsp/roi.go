@@ -110,7 +110,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 			}
 			prefix := "lost "
 			priceDiffPct := (end - start) / start
-			smlChange := priceDiffPct < 0.01
+			smlChange := priceDiffPct < 0.006
 			shortRunning := s.RunningTime <= 3600*3
 			switch s.Direction {
 			case LONG:

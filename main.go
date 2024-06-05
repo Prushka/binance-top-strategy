@@ -491,7 +491,8 @@ func main() {
 		}
 	case "playground":
 		utils.ResetTime()
-		log.Infof("%s", utils.OverwriteQuote("ENAUSDC", "USDC", 4))
+		wl, _ := gsp.UserWLCache.Get("358863226")
+		log.Info(utils.AsJson(wl))
 	}
 	scheduler.StartAsync()
 	<-blocking
