@@ -366,6 +366,9 @@ func PopulateRoi() error {
 				r.Pnl,
 				time.Unix(r.Time, 0)})
 		}
+		if fetchedCount > 7100 {
+			break
+		}
 	}
 	err = sql.SimpleTransaction(func(tx pgx.Tx) error {
 		_, err := tx.Exec(context.Background(), `CREATE TEMPORARY TABLE _temp_roi (LIKE bts.roi INCLUDING ALL) ON COMMIT DROP`)

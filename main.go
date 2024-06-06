@@ -494,7 +494,7 @@ func main() {
 				discord.Errorf("Roi: %v", err)
 			}
 			discord.Infof("*Roi run took: %v*", time.Since(t))
-			time.Sleep(3 * time.Minute)
+			time.Sleep(2 * time.Minute)
 
 			_ = gsp.Scrape(gsp.FUTURE, "FUTURE")
 			time.Sleep(90 * time.Second)
