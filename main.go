@@ -302,7 +302,7 @@ out:
 				minLeverage := int(math.Ceil(minInvestPerLeverage / invChunk))
 				notionalMax := notional.MaxLeverage(s.Symbol)
 				if minLeverage > config.TheConfig.MaxLeverage || minLeverage > notionalMax {
-					discord.Infof("Investment too low %f, Min leverage %d, Notional Max %d, Skip", invChunk, minLeverage, notionalMax)
+					discord.Infof("%s Investment too low %f, Min leverage %d, Notional Max %d, Skip", s.Symbol, invChunk, minLeverage, notionalMax)
 					continue
 				} else if minLeverage > leverage {
 					leverage = minLeverage
