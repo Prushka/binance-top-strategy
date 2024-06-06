@@ -494,12 +494,11 @@ func main() {
 				discord.Errorf("Roi: %v", err)
 			}
 			discord.Infof("*Roi run took: %v*", time.Since(t))
-			time.Sleep(90 * time.Second)
 
 			_ = gsp.Scrape(gsp.FUTURE, "FUTURE")
-			time.Sleep(90 * time.Second)
+			time.Sleep(80 * time.Second)
 			_ = gsp.Scrape(gsp.SPOT, "SPOT")
-			time.Sleep(90 * time.Second)
+			time.Sleep(80 * time.Second)
 		}
 	case "playground":
 		utils.ResetTime()
@@ -519,15 +518,22 @@ func main() {
 				panic(err)
 			}
 		}
+		LWUsers := mapset.NewSet[int64]()
 		for _, user := range users.ToSlice() {
 			wl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", user))
 			if err != nil {
 				panic(err)
 			}
 			if float64(wl.Shorts)/float64(wl.Total) > 0.2 || float64(wl.Longs)/float64(wl.Total) > 0.2 {
-				if wl.WinRatio > 0.6 {
+				if wl.WinRatio > 0.84 {
 					log.Info(wl)
+					LWUsers.Add(user)
 				}
+			}
+		}
+		for _, s := range poolDB {
+			if LWUsers.Contains(s.UserID) {
+				log.Infof(utils.AsJson(s))
 			}
 		}
 	}
