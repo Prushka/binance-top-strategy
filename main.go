@@ -496,9 +496,9 @@ func main() {
 			discord.Infof("*Roi run took: %v*", time.Since(t))
 			time.Sleep(3 * time.Minute)
 
-			gsp.Scrape(gsp.FUTURE, "FUTURE")
+			_ = gsp.Scrape(gsp.FUTURE, "FUTURE")
 			time.Sleep(90 * time.Second)
-			gsp.Scrape(gsp.SPOT, "SPOT")
+			_ = gsp.Scrape(gsp.SPOT, "SPOT")
 			time.Sleep(90 * time.Second)
 		}
 	case "playground":
