@@ -337,15 +337,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 func PopulateRoi() error {
 	strategies := make([]*StrategyDB, 0)
 	err := sql.GetDB().Scan(&strategies, `SELECT
-    s.*
-FROM
-    bts.strategy s
-WHERE
-    (s.concluded = FALSE OR s.concluded IS NULL)
-  AND
-    strategy_type = 2
-  AND rois_fetched_at <= NOW() - INTERVAL '45 minutes'
-    ORDER BY s.rois_fetched_at, s.time_discovered;`)
+    * FROM bts.ToPopulate;`)
 	if err != nil {
 		return err
 	}

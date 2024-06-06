@@ -488,22 +488,22 @@ func main() {
 		scheduler.StartAsync()
 		for {
 			t := time.Now()
-			discord.Infof("### Strategies: %v", time.Now().Format("2006-01-02 15:04:05"))
-			err := gsp.Scrape()
-			if err != nil {
-				discord.Errorf("Strategies: %v", err)
-			}
-			discord.Infof("*Strategies run took: %v*", time.Since(t))
-			time.Sleep(5 * time.Minute)
-
-			t = time.Now()
 			discord.Infof("### Roi: %v", time.Now().Format("2006-01-02 15:04:05"))
-			err = gsp.PopulateRoi()
+			err := gsp.PopulateRoi()
 			if err != nil {
 				discord.Errorf("Roi: %v", err)
 			}
 			discord.Infof("*Roi run took: %v*", time.Since(t))
-			time.Sleep(5 * time.Minute)
+			time.Sleep(3 * time.Minute)
+
+			t = time.Now()
+			discord.Infof("### Strategies: %v", time.Now().Format("2006-01-02 15:04:05"))
+			err = gsp.Scrape()
+			if err != nil {
+				discord.Errorf("Strategies: %v", err)
+			}
+			discord.Infof("*Strategies run took: %v*", time.Since(t))
+			time.Sleep(3 * time.Minute)
 		}
 	case "playground":
 		utils.ResetTime()

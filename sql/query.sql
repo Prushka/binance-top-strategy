@@ -192,7 +192,7 @@ SELECT
         WHERE f.original_input > 1498 AND f.original_input >= p.avg_original_input * 0.7
         ORDER BY p.total_roi DESC, f.original_input DESC;
 
-SELECT * FROM ThePool;
+SELECT * FROM ThePool WHERE running_time < 86400;
 
 
 
@@ -311,3 +311,49 @@ FROM
 WHERE u.user_id = 25699917
 ORDER BY
     total_roi DESC;
+
+
+
+
+SELECT
+    COUNT(s.strategy_id)
+FROM
+    bts.strategy s
+WHERE
+    (s.concluded = FALSE OR s.concluded IS NULL)
+  AND
+    strategy_type = 2
+  AND rois_fetched_at <= NOW() - INTERVAL '45 minutes';
+
+
+DROP VIEW ToPopulate;
+
+CREATE OR REPLACE VIEW ToPopulate AS WITH ACTIVE AS (SELECT
+                    *
+                FROM
+                    bts.strategy s
+                WHERE
+                    (s.concluded = FALSE OR s.concluded IS NULL)
+                  AND
+                    strategy_type = 2),
+    LatestRoi AS (
+    SELECT
+        l.strategy_id,
+        l.roi as roi,
+        l.pnl,
+        l.time,
+        ROW_NUMBER() OVER (PARTITION BY l.strategy_id ORDER BY time DESC) AS rn
+    FROM
+        bts.roi l
+) SELECT a.* FROM ACTIVE a JOIN
+                       LatestRoi l ON l.strategy_id = a.strategy_id
+WHERE
+    l.rn = 1 AND NOW() > l.time + interval '70m' AND
+    NOT (
+        EXTRACT(HOUR FROM rois_fetched_at) = EXTRACT(HOUR FROM NOW())
+            AND EXTRACT(MINUTE FROM rois_fetched_at) > 30
+            AND rois_fetched_at::date = NOW()::date
+        ) AND rois_fetched_at <= NOW() - INTERVAL '5 minutes'
+ORDER BY l.pnl/NULLIF(l.roi, 0) desc;
+
+SELECT COUNT(*) FROM ToPopulate;
