@@ -501,11 +501,10 @@ func mergeStrategies(sps ...StrategyQuery) (*TrackedStrategies, error) {
 	return sss.toTrackedStrategies(), nil
 }
 
-func getTopStrategies(symbol string) (*TrackedStrategies, error) {
+func getTopStrategies(sType int) (*TrackedStrategies, error) {
 	var queries []StrategyQuery
 	for i := 0; i < 48; i += 2 {
-		queries = append(queries, StrategyQuery{Type: FUTURE, Sort: SortByRoi, RuntimeMin: time.Duration(i) * time.Hour, RuntimeMax: time.Duration(i+2) * time.Hour, Symbol: symbol})
-		queries = append(queries, StrategyQuery{Type: SPOT, Sort: SortByRoi, RuntimeMin: time.Duration(i) * time.Hour, RuntimeMax: time.Duration(i+2) * time.Hour, Symbol: symbol})
+		queries = append(queries, StrategyQuery{Type: sType, Sort: SortByRoi, RuntimeMin: time.Duration(i) * time.Hour, RuntimeMax: time.Duration(i+2) * time.Hour})
 	}
 	merged, err := mergeStrategies(queries...)
 	if err != nil {

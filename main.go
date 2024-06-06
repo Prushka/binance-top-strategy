@@ -496,14 +496,10 @@ func main() {
 			discord.Infof("*Roi run took: %v*", time.Since(t))
 			time.Sleep(3 * time.Minute)
 
-			t = time.Now()
-			discord.Infof("### Strategies: %v", time.Now().Format("2006-01-02 15:04:05"))
-			err = gsp.Scrape()
-			if err != nil {
-				discord.Errorf("Strategies: %v", err)
-			}
-			discord.Infof("*Strategies run took: %v*", time.Since(t))
-			time.Sleep(3 * time.Minute)
+			gsp.Scrape(gsp.FUTURE, "FUTURE")
+			time.Sleep(90 * time.Second)
+			gsp.Scrape(gsp.SPOT, "SPOT")
+			time.Sleep(90 * time.Second)
 		}
 	case "playground":
 		utils.ResetTime()
