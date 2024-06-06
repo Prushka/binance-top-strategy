@@ -366,10 +366,11 @@ func PopulateRoi() error {
 				r.Pnl,
 				time.Unix(r.Time, 0)})
 		}
-		if fetchedCount > 7100 {
+		if fetchedCount > 6500 {
 			break
 		}
 	}
+	discord.Infof("Fetched %d strategies roi", fetchedCount)
 	err = sql.SimpleTransaction(func(tx pgx.Tx) error {
 		_, err := tx.Exec(context.Background(), `CREATE TEMPORARY TABLE _temp_roi (LIKE bts.roi INCLUDING ALL) ON COMMIT DROP`)
 		if err != nil {
@@ -411,7 +412,7 @@ func PopulateRoi() error {
 		}
 		return nil
 	})
-	discord.Infof("Concluded %d strategies, Fetched %d strategies", concludedCount, fetchedCount)
+	discord.Infof("Concluded %d strategies", concludedCount)
 	return err
 }
 
