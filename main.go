@@ -185,8 +185,8 @@ out:
 		if err != nil {
 			return err
 		}
-		if userWl.WinRatio < 0.84 || (userWl.ShortRunningRatio > 0.241 && userWl.WinRatio != 1.0) {
-			discord.Infof("Skipped, %v", userWl)
+		if userWl.WinRatio < 0.819 || (userWl.ShortRunningRatio > 0.245 && userWl.WinRatio < 0.979) {
+			log.Infof("Skipped, %v", userWl)
 			continue
 		}
 		sortedStrategies = append(sortedStrategies, s)
@@ -296,8 +296,16 @@ out:
 					discord.Infof("Market Price too high for long, Skip")
 					continue
 				}
+				if userWl.WinRatio < 0.819 {
+					log.Infof("Win Ratio too low for long, Skip")
+					continue
+				}
 				minPriceDiff = 0.02
 			case gsp.NEUTRAL:
+				if userWl.WinRatio < 0.839 {
+					log.Infof("Win Ratio too low for neutral, Skip")
+					continue
+				}
 				minInvestPerLeverage := minInvestment * float64(s.StrategyParams.Leverage)
 				minLeverage := int(math.Ceil(minInvestPerLeverage / invChunk))
 				notionalMax := notional.MaxLeverage(s.Symbol)
@@ -311,6 +319,10 @@ out:
 			case gsp.SHORT:
 				if marketPrice < s.StrategyParams.LowerLimit+gap*config.TheConfig.ShortRangeDiff {
 					discord.Infof("Market Price too low for short, Skip")
+					continue
+				}
+				if userWl.WinRatio < 0.819 {
+					log.Infof("Win Ratio too low for short, Skip")
 					continue
 				}
 				minPriceDiff = 0.02
@@ -526,14 +538,14 @@ func main() {
 				panic(err)
 			}
 			if float64(wl.Shorts)/float64(wl.Total) > 0.2 || float64(wl.Longs)/float64(wl.Total) > 0.2 {
-				if wl.WinRatio > 0.84 {
+				if wl.WinRatio > 0.8 {
 					log.Info(wl)
 					LWUsers.Add(user)
 				}
 			}
 		}
 		for _, s := range poolDB {
-			if LWUsers.Contains(s.UserID) {
+			if LWUsers.Contains(s.UserID) && s.RunningTime < 3600*30 {
 				log.Infof(utils.AsJson(s))
 			}
 		}
