@@ -300,8 +300,9 @@ out:
 			case gsp.NEUTRAL:
 				minInvestPerLeverage := minInvestment * float64(s.StrategyParams.Leverage)
 				minLeverage := int(math.Ceil(minInvestPerLeverage / invChunk))
-				if minLeverage > config.TheConfig.MaxLeverage {
-					discord.Infof("Investment too low %f, Min leverage %d, Skip", invChunk, minLeverage)
+				notionalMax := notional.MaxLeverage(s.Symbol)
+				if minLeverage > config.TheConfig.MaxLeverage || minLeverage > notionalMax {
+					discord.Infof("Investment too low %f, Min leverage %d, Notional Max %d, Skip", invChunk, minLeverage, notionalMax)
 					continue
 				} else if minLeverage > leverage {
 					leverage = minLeverage

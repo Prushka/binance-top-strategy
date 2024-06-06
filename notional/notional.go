@@ -3,6 +3,7 @@ package notional
 import (
 	"BinanceTopStrategies/cache"
 	"BinanceTopStrategies/request"
+	"BinanceTopStrategies/utils"
 	"math"
 	"sort"
 	"time"
@@ -55,6 +56,22 @@ func GetLeverage(symbol string, initialAsset float64) int {
 		}
 	}
 	return -1
+}
+
+func MaxLeverage(symbol string) int {
+	brackets, err := bracketsCache.Get()
+	if err != nil {
+		return -1
+	}
+	s, ok := brackets.SymbolMap[symbol]
+	if !ok {
+		return -1
+	}
+	m := 0
+	for _, b := range s.RiskBrackets {
+		m = utils.IntMax(m, b.MaxOpenPosLeverage)
+	}
+	return m
 }
 
 func getBrackets() (*response, error) {
