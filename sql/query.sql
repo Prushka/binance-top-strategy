@@ -335,7 +335,12 @@ CREATE OR REPLACE VIEW ToPopulate AS WITH ACTIVE AS (SELECT
                 WHERE
                     (s.concluded = FALSE OR s.concluded IS NULL)
                   AND
-                    strategy_type = 2),
+                    strategy_type = 2 AND
+                    NOT (
+        EXTRACT(HOUR FROM rois_fetched_at) = EXTRACT(HOUR FROM NOW())
+        AND EXTRACT(MINUTE FROM rois_fetched_at) > 30
+        AND rois_fetched_at::date = NOW()::date
+        ) AND rois_fetched_at <= NOW() - INTERVAL '5 minutes'),
     LatestRoi AS (
     SELECT
         l.strategy_id,
@@ -345,15 +350,11 @@ CREATE OR REPLACE VIEW ToPopulate AS WITH ACTIVE AS (SELECT
         ROW_NUMBER() OVER (PARTITION BY l.strategy_id ORDER BY time DESC) AS rn
     FROM
         bts.roi l
-) SELECT a.* FROM ACTIVE a JOIN
+) SELECT a.* FROM ACTIVE a LEFT JOIN
                        LatestRoi l ON l.strategy_id = a.strategy_id
 WHERE
-    l.rn = 1 AND NOW() > l.time + interval '70m' AND
-    NOT (
-        EXTRACT(HOUR FROM rois_fetched_at) = EXTRACT(HOUR FROM NOW())
-            AND EXTRACT(MINUTE FROM rois_fetched_at) > 30
-            AND rois_fetched_at::date = NOW()::date
-        ) AND rois_fetched_at <= NOW() - INTERVAL '5 minutes'
+    ((l.rn = 1 AND NOW() > l.time + interval '70m')
+  OR l.rn IS NULL)
 ORDER BY l.pnl/NULLIF(l.roi, 0) desc;
 
-SELECT COUNT(*) FROM ToPopulate;
+SELECT * FROM ToPopulate WHERE strategy_id=393284525;
