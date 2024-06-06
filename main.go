@@ -290,22 +290,15 @@ out:
 			gap := s.StrategyParams.UpperLimit - s.StrategyParams.LowerLimit
 			priceDiff := s.StrategyParams.UpperLimit/s.StrategyParams.LowerLimit - 1
 			minPriceDiff := 0.0
+			minWinRatio := 0.819
 			switch s.Direction {
 			case gsp.LONG:
 				if marketPrice > s.StrategyParams.UpperLimit-gap*config.TheConfig.LongRangeDiff {
 					discord.Infof("Market Price too high for long, Skip")
 					continue
 				}
-				if userWl.WinRatio < 0.819 {
-					log.Infof("Win Ratio too low for long, Skip")
-					continue
-				}
 				minPriceDiff = 0.02
 			case gsp.NEUTRAL:
-				if userWl.WinRatio < 0.839 {
-					log.Infof("Win Ratio too low for neutral, Skip")
-					continue
-				}
 				minInvestPerLeverage := minInvestment * float64(s.StrategyParams.Leverage)
 				minLeverage := int(math.Ceil(minInvestPerLeverage / invChunk))
 				notionalMax := notional.MaxLeverage(s.Symbol)
@@ -316,19 +309,20 @@ out:
 					leverage = minLeverage
 				}
 				minPriceDiff = 0.08
+				minWinRatio = 0.839
 			case gsp.SHORT:
 				if marketPrice < s.StrategyParams.LowerLimit+gap*config.TheConfig.ShortRangeDiff {
 					discord.Infof("Market Price too low for short, Skip")
-					continue
-				}
-				if userWl.WinRatio < 0.819 {
-					log.Infof("Win Ratio too low for short, Skip")
 					continue
 				}
 				minPriceDiff = 0.02
 			}
 			if priceDiff < minPriceDiff {
 				discord.Infof("Price difference too low, Skip")
+				continue
+			}
+			if userWl.WinRatio < minWinRatio {
+				log.Infof("Win Ratio too low for long, Skip")
 				continue
 			}
 
