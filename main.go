@@ -274,13 +274,13 @@ out:
 				discord.Infof("Strategy candidate %d %s not running", sInPool.SID, sInPool.Symbol)
 				continue
 			}
-			err = s.PopulateRois()
-			if err != nil {
-				return err
-			}
 			if s.RunningTime > 60*config.TheConfig.MaxLookBackBookingMinutes {
 				discord.Infof("Strategy %d running for more than %d minutes, Skip", s.SID, config.TheConfig.MaxLookBackBookingMinutes)
 				continue
+			}
+			err = s.PopulateRois()
+			if err != nil {
+				return err
 			}
 
 			marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)
