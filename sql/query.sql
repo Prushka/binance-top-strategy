@@ -101,10 +101,10 @@ WHERE u.total_original_input >= 8500
   AND strategy_count >= 23
 --   AND min_roi >= 0.001
   AND total_roi >= 0.04
-  AND avg_original_input >= 900
+  AND avg_original_input >= 700
 ORDER BY total_roi DESC;
 
-SELECT *
+SELECT COUNT(*)
 FROM TheChosen;
 
 CREATE OR REPLACE VIEW ThePool AS
