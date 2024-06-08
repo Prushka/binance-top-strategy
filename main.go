@@ -69,7 +69,7 @@ func tick() error {
 	utils.ResetTime()
 	sdk.ClearSessionSymbolPrice()
 	discord.Infof("## Run: %v", time.Now().Format("2006-01-02 15:04:05"))
-	discord.Infof("Time since cookie: %v", time.Since(config.TheConfig.CookieTimeParsed))
+	discord.Infof("Days since cookie: %.2f", time.Since(config.TheConfig.CookieTimeParsed).Hours()/24)
 	usdt, err := sdk.GetFuture("USDT")
 	if err != nil {
 		return err
