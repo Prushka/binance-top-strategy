@@ -345,7 +345,7 @@ out:
 			if overwriteQuote != "" {
 				s.Symbol = utils.OverwriteQuote(s.Symbol, overwriteQuote, len(currency))
 			}
-
+		place:
 			discord.Infof(gsp.Display(s, nil, "New", c+1, len(sortedStrategies)))
 			errr := gsp.PlaceGrid(*s, invChunk, leverage)
 			if !config.TheConfig.Paper {
@@ -354,6 +354,14 @@ out:
 					if strings.Contains(errr.Error(), "Create grid too frequently") {
 						discord.Infof("**Too Frequent Error, Skip Current Run**")
 						break
+					}
+					if strings.Contains(errr.Error(), "notional") && s.Direction != gsp.NEUTRAL && leverage < config.TheConfig.MaxLeverage {
+						leverage += 3
+						if leverage > config.TheConfig.MaxLeverage {
+							leverage = config.TheConfig.MaxLeverage
+						}
+						discord.Infof("Increase leverage to %d", leverage)
+						goto place
 					}
 				} else {
 					discord.Actionf(gsp.Display(s, nil, "**Opened Grid**", c+1, len(sortedStrategies)))
