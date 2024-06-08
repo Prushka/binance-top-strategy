@@ -283,14 +283,14 @@ func PopulatePrices() error {
          WHERE
              l.rn = 1 AND e.rn = 1
      )SELECT
-          f.roi as roi, f.pnl as pnl, f.original_input, f.runtime as running_time,
+          f.roi as roi, f.pnl as pnl, NULLIF(f.original_input, 0), f.runtime as running_time,
 		  f.start_time, f.end_time,
           p.symbol, p.copy_count, p.strategy_id, p.strategy_type, p.direction, p.time_discovered,
           p.user_id, p.rois_fetched_at, p.type, p.lower_limit, p.upper_limit,
           p.grid_count, p.trigger_price, p.stop_lower_limit, p.stop_upper_limit, p.base_asset, p.quote_asset,
           p.leverage, p.trailing_down, p.trailing_up, p.trailing_type, p.latest_matched_count, p.matched_count, p.min_investment,
           p.concluded
-FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.original_input IS NOT NULL AND f.runtime < 5400000;`)
+FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id;`)
 	if err != nil {
 		return err
 	}
