@@ -30,7 +30,7 @@ type Config struct {
 	ShiftMinutesAfterHour             int       `env:"SHIFT_MINUTES_AFTER_HOUR" envDefault:"0"`
 	LastNHoursNoDips                  int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"6"`
 	LastNHoursAllPositive             int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"6"`
-	Reserved                          float64   `env:"RESERVED" envDefault:"0.1"`
+	Reserved                          float64   `env:"RESERVED" envDefault:"0.15"`
 	MaxPerChunk                       float64   `env:"MAX_PER_CHUNK" envDefault:"35"`
 	CancelNoChangeMinutes             int       `env:"CANCEL_NO_CHANGE_MINUTES" envDefault:"30"`
 	MinOppositeDirectionHigherRanking int       `env:"MIN_OPPOSITE_DIRECTION_HIGHER_RANKING" envDefault:"2"`
