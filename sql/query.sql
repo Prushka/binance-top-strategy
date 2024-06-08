@@ -98,10 +98,10 @@ WITH LatestRoi AS (SELECT strategy_id,
 SELECT u.*
 FROM UserOriginalInputs u
 WHERE u.total_original_input >= 8500
-  AND strategy_count >= 23
+  AND strategy_count >= 20
 --   AND min_roi >= 0.001
   AND total_roi >= 0.04
-  AND avg_original_input >= 700
+  AND avg_original_input >= 500
 ORDER BY total_roi DESC;
 
 SELECT COUNT(*)
