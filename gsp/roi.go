@@ -122,12 +122,14 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 					break
 				}
 				if end > start {
-					if low < s.LowerLimit {
+					if low <= s.LowerLimit {
 						wl.Win += 0.4
 					} else {
 						wl.Win++
 						prefix = "won "
 					}
+				} else if end <= s.LowerLimit {
+					wl.Win -= 3
 				}
 				wl.Longs++
 			case SHORT:
@@ -136,12 +138,14 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 					break
 				}
 				if end < start {
-					if high > s.UpperLimit {
+					if high >= s.UpperLimit {
 						wl.Win += 0.4
 					} else {
 						wl.Win++
 						prefix = "won "
 					}
+				} else if end >= s.UpperLimit {
+					wl.Win -= 3
 				}
 				wl.Shorts++
 			case NEUTRAL:
@@ -166,6 +170,8 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 						wl.Win += 0.4 * modifier
 						prefix = "won "
 					}
+				} else if end <= s.LowerLimit || end >= s.UpperLimit {
+					wl.Win -= 3
 				}
 				wl.Neutrals++
 			}

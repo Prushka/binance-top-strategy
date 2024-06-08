@@ -309,5 +309,5 @@ WHERE ((l.rn = 1 AND NOW() > l.time + interval '70m')
     OR l.rn IS NULL)
 ORDER BY l.pnl / NULLIF(l.roi, 0) desc;
 
-SELECT *
-FROM strategy WHERE concluded = TRUE and high_price IS NULL and strategy_type=2 ORDER BY time_discovered;
+SELECT COUNT(*)
+FROM strategy WHERE concluded = TRUE and high_price IS NULL and strategy_type=2;
