@@ -349,7 +349,7 @@ func (rois StrategyRoi) isRunning() bool {
 }
 
 func Display(s *Strategy, grid *Grid, action string, index int, length int) string {
-	if s != nil {
+	if s != nil && len(s.Rois) == 0 {
 		err := s.PopulateRois()
 		if err != nil {
 			discord.Errorf("Error populating rois for %d: %s", s.SID, err)

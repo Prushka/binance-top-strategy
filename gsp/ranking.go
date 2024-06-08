@@ -366,7 +366,7 @@ func PopulateRoi() error {
 				r.Pnl,
 				time.Unix(r.Time, 0)})
 		}
-		if fetchedCount > 6500 {
+		if fetchedCount > 5500 {
 			break
 		}
 	}
