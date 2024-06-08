@@ -283,7 +283,7 @@ func PopulatePrices() error {
          WHERE
              l.rn = 1 AND e.rn = 1
      )SELECT
-          f.roi as roi, f.pnl as pnl, NULLIF(f.original_input, 0), f.runtime as running_time,
+          f.roi as roi, f.pnl as pnl, NULLIF(f.original_input, 0) as original_input, f.runtime as running_time,
 		  f.start_time, f.end_time,
           p.symbol, p.copy_count, p.strategy_id, p.strategy_type, p.direction, p.time_discovered,
           p.user_id, p.rois_fetched_at, p.type, p.lower_limit, p.upper_limit,

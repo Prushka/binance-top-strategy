@@ -76,7 +76,7 @@ WITH LatestRoi AS (SELECT strategy_id,
                                      JOIN strategy s ON l.strategy_id = s.strategy_id
                             WHERE l.rn = 1
                               AND e.rn = 1
-                              AND (l.roi > 0.01 OR l.roi < -0.01)
+                              AND (l.roi >= 0.001 OR l.roi <= -0.001)
                               AND s.strategy_type = 2),
      UserOriginalInputs AS (SELECT f.user_id,
                                    SUM(f.original_input)              AS total_original_input, -- Calculating original input and summing it per user
@@ -99,9 +99,9 @@ SELECT u.*
 FROM UserOriginalInputs u
 WHERE u.total_original_input >= 8500
   AND strategy_count >= 23
-  AND min_roi >= 0.01
+--   AND min_roi >= 0.001
   AND total_roi >= 0.04
-  AND avg_original_input >= 1000
+  AND avg_original_input >= 900
 ORDER BY total_roi DESC;
 
 SELECT *
@@ -173,7 +173,7 @@ SELECT f.roi     as roi,
        p.concluded
 FROM FilteredStrategies f
          JOIN Pool p ON f.strategy_id = p.strategy_id
-WHERE f.original_input > 1498
+WHERE f.original_input > 1298
   AND f.original_input >= p.avg_original_input * 0.7
 ORDER BY p.total_roi DESC, f.original_input DESC;
 
