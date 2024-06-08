@@ -63,7 +63,7 @@ var UserWLCache = cache.CreateMapCache[UserWL](
 		strategies := make([]*UserStrategy, 0)
 		err := sql.GetDB().Scan(&strategies,
 			`WITH Pool AS (
-    SELECT * FROM bts.strategy WHERE user_id = $1 AND concluded=true AND start_price IS NOT NULL
+    SELECT * FROM bts.strategy WHERE user_id = $1 AND concluded=true AND high_price IS NOT NULL
 ), LatestRoi AS (
     SELECT
         r.strategy_id,
@@ -104,6 +104,8 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 		for _, s := range strategies {
 			start := *s.StartPrice
 			end := *s.EndPrice
+			high := *s.HighPrice
+			low := *s.LowPrice
 			s.RunningTime = int(s.EndTime.Sub(*s.StartTime).Seconds())
 			if err != nil {
 				return UserWL{}, err
@@ -119,8 +121,12 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 					break
 				}
 				if end > start {
-					wl.Win++
-					prefix = "won "
+					if low < s.LowerLimit {
+						wl.Win += 0.4
+					} else {
+						wl.Win++
+						prefix = "won "
+					}
 				}
 				wl.Longs++
 			case SHORT:
@@ -129,22 +135,30 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 					break
 				}
 				if end < start {
-					wl.Win++
-					prefix = "won "
+					if high > s.UpperLimit {
+						wl.Win += 0.4
+					} else {
+						wl.Win++
+						prefix = "won "
+					}
 				}
 				wl.Shorts++
 			case NEUTRAL:
 				threshold := 0.05
 				mid := (s.LowerLimit + s.UpperLimit) / 2
 				if end < s.UpperLimit && end > s.LowerLimit {
+					modifier := 1.0
+					if low < s.LowerLimit || high > s.UpperLimit {
+						modifier = 0.3
+					}
 					if end < start*(1+threshold) && end > start*(1-threshold) {
-						wl.Win++
+						wl.Win += 1 * modifier
 						prefix = "won "
 					} else if end < mid*(1+threshold) && end > mid*(1-threshold) {
-						wl.Win += 0.8
+						wl.Win += 0.8 * modifier
 						prefix = "won "
 					} else {
-						wl.Win += 0.4
+						wl.Win += 0.4 * modifier
 						prefix = "won "
 					}
 				}
