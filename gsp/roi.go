@@ -145,6 +145,10 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 				}
 				wl.Shorts++
 			case NEUTRAL:
+				if shortRunning && smlChange {
+					wl.TotalWL -= 1
+					break
+				}
 				threshold := 0.05
 				mid := (s.LowerLimit + s.UpperLimit) / 2
 				if end < s.UpperLimit && end > s.LowerLimit {
