@@ -78,8 +78,6 @@ func tick() error {
 	if err != nil {
 		return err
 	}
-	usdt *= 1 - config.TheConfig.Reserved
-	usdc *= 1 - config.TheConfig.Reserved
 	poolDB := make([]*gsp.ChosenStrategyDB, 0)
 	err = sql.GetDB().Scan(&poolDB, `SELECT * FROM bts.ThePool`)
 	if err != nil {
@@ -201,6 +199,8 @@ out:
 	discord.Infof("Filtered strategies by WL: %d, %d users | L/S/N: %d, %d, %d", len(sortedStrategies), filteredUsers.Cardinality(), longs, shorts, neutrals)
 	var place func(maxChunks, existingChunks int, currency, overwriteQuote string, balance float64) error
 	place = func(maxChunks, existingChunks int, currency, overwriteQuote string, balance float64) error {
+		total := balance + gsp.GGrids.TotalGridPnl[currency] + gsp.GGrids.TotalGridInitial[currency]
+		total *= 1 - config.TheConfig.Reserved
 		chunksInt := maxChunks - existingChunks
 		chunks := float64(chunksInt)
 		if chunksInt == 0 {
@@ -211,11 +211,9 @@ out:
 		if config.TheConfig.MaxPerChunk != -1 {
 			invChunk = math.Min(balance/chunks, config.TheConfig.MaxPerChunk)
 		}
-		idealInvChunk := (balance + gsp.GGrids.TotalGridPnl[currency] + gsp.GGrids.TotalGridInitial[currency]) / float64(maxChunks)
+		idealInvChunk := total / float64(maxChunks)
 		discord.Infof("### Opening %d chunks for %s %s (%.2f, %.2f):", chunksInt, currency, overwriteQuote, idealInvChunk, invChunk)
-		if invChunk > idealInvChunk {
-			invChunk = idealInvChunk
-		}
+		invChunk = math.Min(invChunk, idealInvChunk)
 		if invChunk < config.TheConfig.MinInvestmentPerChunk && !config.TheConfig.Paper {
 			adjusted := int(balance/config.TheConfig.MinInvestmentPerChunk) + existingChunks
 			discord.Infof("Investment too low (%f), Adjusting max chunks to %d", invChunk, adjusted)
