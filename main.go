@@ -165,20 +165,7 @@ func tick() error {
 	sessionNeutrals := gsp.GGrids.Neutrals.Cardinality()
 	sortedStrategies := make(gsp.Strategies, 0)
 	filteredUsers := mapset.NewSet[int]()
-out:
 	for _, s := range gsp.GetPool().Strategies {
-		if s.RunningTime > 60*config.TheConfig.MaxLookBackBookingMinutes {
-			log.Infof("Strategy running for more than %d minutes, Skip", config.TheConfig.MaxLookBackBookingMinutes)
-			continue
-		}
-
-		userStrategies := gsp.GetPool().StrategiesByUserId[s.UserID]
-		for _, us := range userStrategies {
-			if us.Symbol == s.Symbol && us.Direction != s.Direction {
-				discord.Infof("Same symbol hedging, Skip")
-				continue out
-			}
-		}
 		userWl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", s.UserID))
 		if err != nil {
 			return err
@@ -220,7 +207,20 @@ out:
 			return place(adjusted, existingChunks, currency, overwriteQuote, balance)
 		}
 		invChunk = float64(int(invChunk))
+	out:
 		for c, s := range sortedStrategies {
+			if s.RunningTime > 60*config.TheConfig.MaxLookBackBookingMinutes {
+				log.Infof("Strategy running for more than %d minutes, Skip", config.TheConfig.MaxLookBackBookingMinutes)
+				continue
+			}
+
+			userStrategies := gsp.GetPool().StrategiesByUserId[s.UserID]
+			for _, us := range userStrategies {
+				if us.Symbol == s.Symbol && us.Direction != s.Direction {
+					discord.Infof("Same symbol hedging, Skip")
+					continue out
+				}
+			}
 			strategyQuote := s.Symbol[len(s.Symbol)-4:]
 			if strategyQuote != currency {
 				log.Infof("wrong quote (%s, %s), Skip", currency, strategyQuote)
