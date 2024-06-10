@@ -353,7 +353,8 @@ func tick() error {
 						discord.Infof("**Too Frequent Error, Skip Current Run**")
 						break
 					}
-					if strings.Contains(errr.Error(), "notional") && s.Direction != gsp.NEUTRAL && leverage < config.TheConfig.MaxLeverage && leverage < notionalMax {
+					if (strings.Contains(errr.Error(), "notional") || strings.Contains(errr.Error(), "margin is below minimum")) &&
+						s.Direction != gsp.NEUTRAL && leverage < config.TheConfig.MaxLeverage && leverage < notionalMax {
 						leverage += 3
 						if leverage > config.TheConfig.MaxLeverage {
 							leverage = config.TheConfig.MaxLeverage
