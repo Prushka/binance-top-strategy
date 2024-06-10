@@ -171,7 +171,7 @@ func tick() error {
 			return err
 		}
 		if userWl.WinRatio < 0.819 || (userWl.ShortRunningRatio > 0.245 && userWl.WinRatio < 0.979) {
-			log.Infof("Skipped, %v", userWl)
+			log.Debugf("Skipped, %v", userWl)
 			continue
 		}
 		sortedStrategies = append(sortedStrategies, s)

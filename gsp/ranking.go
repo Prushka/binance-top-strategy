@@ -350,7 +350,7 @@ func PopulateRoi() error {
 	populatedStrategies := make(map[int64]*StrategyDB)
 	rRows := make([][]interface{}, 0)
 	for _, s := range strategies {
-		log.Info("Fetching Roi: ", s.StrategyID)
+		log.Debugf("Fetching Roi: %d", s.StrategyID)
 		rois, err := getStrategyRois(s.StrategyID, s.UserID)
 		if err != nil {
 			discord.Errorf("Error fetching roi: %v", err)
