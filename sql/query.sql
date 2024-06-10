@@ -176,7 +176,7 @@ SELECT f.roi     as roi,
        p.concluded
 FROM FilteredStrategies f
          JOIN Pool p ON f.strategy_id = p.strategy_id
-WHERE f.original_input > 1298
+WHERE f.original_input > 998
   AND f.original_input >= p.avg_original_input * 0.7
 ORDER BY p.total_roi DESC, f.original_input DESC;
 
