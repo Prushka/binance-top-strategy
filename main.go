@@ -289,6 +289,7 @@ func tick() error {
 			priceDiff := s.StrategyParams.UpperLimit/s.StrategyParams.LowerLimit - 1
 			minPriceDiff := 0.0
 			minWinRatio := 0.819
+			notionalMax := notional.MaxLeverage(s.Symbol)
 			switch s.Direction {
 			case gsp.LONG:
 				if marketPrice > s.StrategyParams.UpperLimit-gap*config.TheConfig.LongRangeDiff {
@@ -299,7 +300,6 @@ func tick() error {
 			case gsp.NEUTRAL:
 				minInvestPerLeverage := minInvestment * float64(s.StrategyParams.Leverage)
 				minLeverage := int(math.Ceil(minInvestPerLeverage / invChunk))
-				notionalMax := notional.MaxLeverage(s.Symbol)
 				if minLeverage > config.TheConfig.MaxLeverage || minLeverage > notionalMax {
 					discord.Infof("%s Investment too low %f, Min leverage %d, Notional Max %d, Skip", s.Symbol, invChunk, minLeverage, notionalMax)
 					continue
@@ -353,7 +353,7 @@ func tick() error {
 						discord.Infof("**Too Frequent Error, Skip Current Run**")
 						break
 					}
-					if strings.Contains(errr.Error(), "notional") && s.Direction != gsp.NEUTRAL && leverage < config.TheConfig.MaxLeverage {
+					if strings.Contains(errr.Error(), "notional") && s.Direction != gsp.NEUTRAL && leverage < config.TheConfig.MaxLeverage && leverage < notionalMax {
 						leverage += 3
 						if leverage > config.TheConfig.MaxLeverage {
 							leverage = config.TheConfig.MaxLeverage
@@ -537,15 +537,13 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			if float64(wl.Shorts)/float64(wl.Total) > 0.2 || float64(wl.Longs)/float64(wl.Total) > 0.2 {
-				if wl.WinRatio > 0.8 {
-					log.Info(wl)
-					LWUsers.Add(user)
-				}
+			if wl.WinRatio > 0.8 {
+				log.Info(wl)
+				LWUsers.Add(user)
 			}
 		}
 		for _, s := range poolDB {
-			if LWUsers.Contains(s.UserID) && s.RunningTime < 3600*30 {
+			if LWUsers.Contains(s.UserID) && s.Direction == gsp.SHORT {
 				log.Infof(utils.AsJson(s))
 			}
 		}
