@@ -93,7 +93,7 @@ WITH LatestRoi AS (SELECT strategy_id,
                                    SUM(f.original_input) / COUNT(*)   AS avg_original_input
                             FROM FilteredStrategies f
                             WHERE f.runtime >= 14400
-                              AND f.original_input > 498
+                              AND f.original_input > 198
                             GROUP BY f.user_id)
 SELECT u.*
 FROM UserOriginalInputs u
@@ -106,6 +106,9 @@ ORDER BY total_roi DESC;
 
 SELECT COUNT(*)
 FROM TheChosen;
+
+DROP VIEW ThePool;
+DROP MATERIALIZED VIEW TheChosen;
 
 CREATE OR REPLACE VIEW ThePool AS
 WITH Pool AS (SELECT strategy.*,
@@ -311,3 +314,6 @@ ORDER BY l.pnl / NULLIF(l.roi, 0) desc;
 
 SELECT COUNT(*)
 FROM strategy WHERE concluded = TRUE and high_price IS NULL and strategy_type=2;
+
+
+SELECT count(*) FROM ThePool;
