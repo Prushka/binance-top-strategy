@@ -144,7 +144,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 					if low <= s.LowerLimit {
 						modifier *= 0.4
 					}
-					if priceDiffPct < 0.008 {
+					if smlChange {
 						modifier *= 0.4
 					}
 					w.Win += modifier * 1
@@ -157,7 +157,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 					if high >= s.UpperLimit {
 						modifier *= 0.4
 					}
-					if priceDiffPct < 0.008 {
+					if smlChange {
 						modifier *= 0.4
 					}
 					w.Win += modifier * 1
