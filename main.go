@@ -171,7 +171,9 @@ func tick() error {
 			return err
 		}
 		wl := userWl.DirectionWL[s.Direction]
-		if wl.WinRatio < 0.819 || (wl.ShortRunningRatio > 0.245 && wl.WinRatio < 0.979) {
+		if wl.WinRatio < 0.819 ||
+			(wl.ShortRunningRatio > 0.245 && wl.WinRatio < 0.979) ||
+			wl.TotalWL < 5 {
 			log.Debugf("Skipped, %v", userWl)
 			continue
 		}
