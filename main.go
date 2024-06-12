@@ -547,11 +547,10 @@ func wlInspect() {
 		if err != nil {
 			panic(err)
 		}
-		wl := userWl.DirectionWL[gsp.TOTAL]
 		wlShort := userWl.DirectionWL[gsp.SHORT]
 		wlLong := userWl.DirectionWL[gsp.LONG]
 		if (wlLong.TotalWL >= 5 && wlLong.WinRatio >= 0.7) || (wlShort.TotalWL >= 5 && wlShort.WinRatio >= 0.7) {
-			log.Info(wl)
+			log.Info(userWl)
 			LWUsers.Add(user)
 		}
 	}

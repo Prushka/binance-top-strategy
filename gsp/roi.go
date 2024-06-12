@@ -8,6 +8,7 @@ import (
 	"BinanceTopStrategies/utils"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"math"
 	"slices"
 	"sort"
 	"strconv"
@@ -124,7 +125,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 			if err != nil {
 				return UserWL{}, err
 			}
-			priceDiffPct := (end - start) / start
+			priceDiffPct := math.Abs((end - start) / start)
 			smlChange := priceDiffPct < 0.006
 			shortRunning := s.RunningTime <= 3600*3
 			w := directionWL[s.Direction]
@@ -148,8 +149,8 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 						modifier *= 0.4
 					}
 					w.Win += modifier * 1
-				} else {
-					w.Win -= 3
+				} else if !smlChange {
+					w.Win -= 1
 				}
 			case SHORT:
 				if end < start {
@@ -161,12 +162,12 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 						modifier *= 0.4
 					}
 					w.Win += modifier * 1
-				} else {
-					w.Win -= 3
+				} else if !smlChange {
+					w.Win -= 1
 				}
 			case NEUTRAL:
 				threshold := 0.055
-				lossThreshold := 0.22
+				lossThreshold := 0.20
 				mid := (s.LowerLimit + s.UpperLimit) / 2
 				if end < s.UpperLimit && end > s.LowerLimit {
 					modifier := 1.0
