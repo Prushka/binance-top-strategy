@@ -170,7 +170,8 @@ func tick() error {
 		if err != nil {
 			return err
 		}
-		if userWl.WinRatio < 0.819 || (userWl.ShortRunningRatio > 0.245 && userWl.WinRatio < 0.979) {
+		wl := userWl.DirectionWL[s.Direction]
+		if wl.WinRatio < 0.819 || (wl.ShortRunningRatio > 0.245 && wl.WinRatio < 0.979) {
 			log.Debugf("Skipped, %v", userWl)
 			continue
 		}
@@ -180,7 +181,9 @@ func tick() error {
 	sort.Slice(sortedStrategies, func(i, j int) bool {
 		iWL, _ := gsp.UserWLCache.Get(fmt.Sprintf("%d", sortedStrategies[i].UserID))
 		jWL, _ := gsp.UserWLCache.Get(fmt.Sprintf("%d", sortedStrategies[j].UserID))
-		return iWL.WinRatio > jWL.WinRatio
+		iWLRatio := iWL.DirectionWL[sortedStrategies[i].Direction].WinRatio
+		jWLRatio := jWL.DirectionWL[sortedStrategies[j].Direction].WinRatio
+		return iWLRatio > jWLRatio
 	})
 	longs, shorts, neutrals := sortedStrategies.GetLSN()
 	discord.Infof("Filtered strategies by WL: %d, %d users | L/S/N: %d, %d, %d", len(sortedStrategies), filteredUsers.Cardinality(), longs, shorts, neutrals)
@@ -210,7 +213,7 @@ func tick() error {
 	out:
 		for c, s := range sortedStrategies {
 			if s.RunningTime > 60*config.TheConfig.MaxLookBackBookingMinutes {
-				log.Infof("Strategy running for more than %d minutes, Skip", config.TheConfig.MaxLookBackBookingMinutes)
+				log.Debugf("Strategy running for more than %d minutes, Skip", config.TheConfig.MaxLookBackBookingMinutes)
 				continue
 			}
 
@@ -319,7 +322,8 @@ func tick() error {
 				discord.Infof("Price difference too low, Skip")
 				continue
 			}
-			if userWl.WinRatio < minWinRatio {
+			wl := userWl.DirectionWL[s.Direction]
+			if wl.WinRatio < minWinRatio {
 				log.Infof("Win Ratio too low for long, Skip")
 				continue
 			}
@@ -515,42 +519,51 @@ func main() {
 			time.Sleep(60 * time.Second)
 		}
 	case "playground":
-		utils.ResetTime()
-		poolDB := make([]*gsp.ChosenStrategyDB, 0)
-		err := sql.GetDB().Scan(&poolDB, `SELECT * FROM bts.ThePool`)
+		wl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", 163722785))
 		if err != nil {
 			panic(err)
 		}
-		utils.Time("Fetched the pool")
-		users := mapset.NewSet[int64]()
-		for _, u := range poolDB {
-			users.Add(u.UserID)
-		}
-		for _, user := range users.ToSlice() {
-			_, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", user))
-			if err != nil {
-				panic(err)
-			}
-		}
-		LWUsers := mapset.NewSet[int64]()
-		for _, user := range users.ToSlice() {
-			wl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", user))
-			if err != nil {
-				panic(err)
-			}
-			if wl.WinRatio > 0.8 {
-				log.Info(wl)
-				LWUsers.Add(user)
-			}
-		}
-		for _, s := range poolDB {
-			if LWUsers.Contains(s.UserID) && s.Direction == gsp.SHORT {
-				log.Infof(utils.AsJson(s))
-			}
-		}
+		log.Info(wl)
 	}
 	scheduler.StartAsync()
 	<-blocking
+}
+
+func wlInspect() {
+	utils.ResetTime()
+	poolDB := make([]*gsp.ChosenStrategyDB, 0)
+	err := sql.GetDB().Scan(&poolDB, `SELECT * FROM bts.ThePool`)
+	if err != nil {
+		panic(err)
+	}
+	utils.Time("Fetched the pool")
+	users := mapset.NewSet[int64]()
+	for _, u := range poolDB {
+		users.Add(u.UserID)
+	}
+	for _, user := range users.ToSlice() {
+		_, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", user))
+		if err != nil {
+			panic(err)
+		}
+	}
+	LWUsers := mapset.NewSet[int64]()
+	for _, user := range users.ToSlice() {
+		userWl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", user))
+		if err != nil {
+			panic(err)
+		}
+		wl := userWl.DirectionWL[gsp.TOTAL]
+		if wl.WinRatio > 0.8 {
+			log.Info(wl)
+			LWUsers.Add(user)
+		}
+	}
+	for _, s := range poolDB {
+		if LWUsers.Contains(s.UserID) && s.Direction == gsp.SHORT {
+			log.Infof(utils.AsJson(s))
+		}
+	}
 }
 
 func timeNowHourPrecision() time.Time {

@@ -38,23 +38,29 @@ var RoisCache = cache.CreateMapCache[StrategyRoi](
 )
 
 type UserWL struct {
-	Win               float64   `json:"wins"`
-	UpdatedAt         time.Time `json:"updatedAt"`
-	ShortRunning      int       `json:"shortRunning"`
-	Total             int       `json:"total"`
-	TotalWL           float64   `json:"totalWL"`
-	Neutrals          int       `json:"neutrals"`
-	Longs             int       `json:"longs"`
-	Shorts            int       `json:"shorts"`
-	WinRatio          float64   `json:"winRatio"`
-	ShortRunningRatio float64   `json:"shortRunningRatio"`
-	UserId            int       `json:"userId"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+	DirectionWL map[int]*WL
+	UserId      int `json:"userId"`
+}
+
+type WL struct {
+	TotalWL           float64
+	Total             float64
+	Win               float64
+	WinRatio          float64
+	ShortRunning      float64
+	ShortRunningRatio float64
 }
 
 func (wl UserWL) String() string {
-	return fmt.Sprintf("User %d - WL %.1f/%.1f (%.2f), Short %d/%d (%.2f), L/S/N: %d/%d/%d (%d)",
-		wl.UserId, wl.Win, wl.TotalWL, wl.WinRatio, wl.ShortRunning, wl.Total, wl.ShortRunningRatio,
-		wl.Longs, wl.Shorts, wl.Neutrals, wl.Total)
+	return fmt.Sprintf("User %d - Total: [%s], Neutral: [%s], Long: [%s], Short: [%s]",
+		wl.UserId, wl.DirectionWL[TOTAL],
+		wl.DirectionWL[NEUTRAL], wl.DirectionWL[LONG], wl.DirectionWL[SHORT])
+}
+
+func (wl WL) String() string {
+	return fmt.Sprintf("WL: %.1f%% (%.1f/%.1f)|Short: %.1f%% (%.1f/%.1f)",
+		wl.WinRatio*100, wl.Win, wl.TotalWL, wl.ShortRunningRatio*100, wl.ShortRunning, wl.Total)
 }
 
 var UserWLCache = cache.CreateMapCache[UserWL](
@@ -98,10 +104,17 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 		if err != nil {
 			return UserWL{}, err
 		}
-		wl := UserWL{Win: 0, Total: len(strategies),
-			ShortRunning: 0, UpdatedAt: time.Now(),
-			TotalWL: float64(len(strategies)),
-			UserId:  user}
+		directionWL := map[int]*WL{
+			TOTAL:   {},
+			LONG:    {},
+			SHORT:   {},
+			NEUTRAL: {},
+		}
+		wl := UserWL{
+			UpdatedAt:   time.Now(),
+			DirectionWL: directionWL,
+			UserId:      user}
+		log.Infof("%d", len(strategies))
 		for _, s := range strategies {
 			start := *s.StartPrice
 			end := *s.EndPrice
@@ -111,78 +124,83 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 			if err != nil {
 				return UserWL{}, err
 			}
-			prefix := "lost "
 			priceDiffPct := (end - start) / start
 			smlChange := priceDiffPct < 0.006
 			shortRunning := s.RunningTime <= 3600*3
+			w := directionWL[s.Direction]
+			w.Total++
+			if shortRunning {
+				w.ShortRunning++
+			}
+			if !(shortRunning && smlChange) {
+				w.TotalWL++
+			} else {
+				continue
+			}
 			switch s.Direction {
 			case LONG:
-				if shortRunning && smlChange {
-					wl.TotalWL -= 1
-					break
-				}
 				if end > start {
+					modifier := 1.0
 					if low <= s.LowerLimit {
-						wl.Win += 0.4
-					} else {
-						wl.Win++
-						prefix = "won "
+						modifier *= 0.4
 					}
-				} else if end <= s.LowerLimit {
-					wl.Win -= 3
+					if priceDiffPct < 0.008 {
+						modifier *= 0.4
+					}
+					w.Win += modifier * 1
+				} else {
+					w.Win -= 3
 				}
-				wl.Longs++
 			case SHORT:
-				if shortRunning && smlChange {
-					wl.TotalWL -= 1
-					break
-				}
 				if end < start {
+					modifier := 1.0
 					if high >= s.UpperLimit {
-						wl.Win += 0.4
-					} else {
-						wl.Win++
-						prefix = "won "
+						modifier *= 0.4
 					}
-				} else if end >= s.UpperLimit {
-					wl.Win -= 3
+					if priceDiffPct < 0.008 {
+						modifier *= 0.4
+					}
+					w.Win += modifier * 1
+				} else {
+					w.Win -= 3
 				}
-				wl.Shorts++
 			case NEUTRAL:
-				if shortRunning && smlChange {
-					wl.TotalWL -= 1
-					break
-				}
-				threshold := 0.05
+				threshold := 0.055
 				mid := (s.LowerLimit + s.UpperLimit) / 2
 				if end < s.UpperLimit && end > s.LowerLimit {
 					modifier := 1.0
-					if low < s.LowerLimit || high > s.UpperLimit {
-						modifier = 0.3
+					if low <= s.LowerLimit || high >= s.UpperLimit {
+						modifier *= 0.3
 					}
 					if end < start*(1+threshold) && end > start*(1-threshold) {
-						wl.Win += 1 * modifier
-						prefix = "won "
+						modifier *= 1
 					} else if end < mid*(1+threshold) && end > mid*(1-threshold) {
-						wl.Win += 0.8 * modifier
-						prefix = "won "
+						modifier *= 0.8
 					} else {
-						wl.Win += 0.4 * modifier
-						prefix = "won "
+						modifier *= 0.4
 					}
+					w.Win += modifier * 1
 				} else {
-					wl.Win -= 3
+					w.Win -= 3
 				}
-				wl.Neutrals++
 			}
-			if shortRunning {
-				wl.ShortRunning++
-			}
-			log.Debugf("%sSymbol: %s, Direction: %d, Start: %.5f, End: %.5f, %v (%.5f, %.5f)",
-				prefix, s.Symbol, s.Direction, start, end, time.Duration(s.RunningTime)*time.Second, s.LowerLimit, s.UpperLimit)
+			log.Debugf("Symbol: %s, Direction: %d, Start: %.5f, End: %.5f, %v (%.5f, %.5f)",
+				s.Symbol, s.Direction, start, end, time.Duration(s.RunningTime)*time.Second, s.LowerLimit, s.UpperLimit)
 		}
-		wl.WinRatio = wl.Win / wl.TotalWL
-		wl.ShortRunningRatio = float64(wl.ShortRunning) / float64(wl.Total)
+		directionWL[LONG].WinRatio = directionWL[LONG].Win / directionWL[LONG].TotalWL
+		directionWL[LONG].ShortRunningRatio = directionWL[LONG].ShortRunning / directionWL[LONG].Total
+		directionWL[SHORT].WinRatio = directionWL[SHORT].Win / directionWL[SHORT].TotalWL
+		directionWL[SHORT].ShortRunningRatio = directionWL[SHORT].ShortRunning / directionWL[SHORT].Total
+		directionWL[NEUTRAL].WinRatio = directionWL[NEUTRAL].Win / directionWL[NEUTRAL].TotalWL
+		directionWL[NEUTRAL].ShortRunningRatio = directionWL[NEUTRAL].ShortRunning / directionWL[NEUTRAL].Total
+		directionWL[TOTAL] = &WL{
+			TotalWL:           directionWL[LONG].TotalWL + directionWL[SHORT].TotalWL + directionWL[NEUTRAL].TotalWL,
+			Total:             directionWL[LONG].Total + directionWL[SHORT].Total + directionWL[NEUTRAL].Total,
+			Win:               directionWL[LONG].Win + directionWL[SHORT].Win + directionWL[NEUTRAL].Win,
+			WinRatio:          (directionWL[LONG].Win + directionWL[SHORT].Win + directionWL[NEUTRAL].Win) / (directionWL[LONG].TotalWL + directionWL[SHORT].TotalWL + directionWL[NEUTRAL].TotalWL),
+			ShortRunning:      directionWL[LONG].ShortRunning + directionWL[SHORT].ShortRunning + directionWL[NEUTRAL].ShortRunning,
+			ShortRunningRatio: (directionWL[LONG].ShortRunning + directionWL[SHORT].ShortRunning + directionWL[NEUTRAL].ShortRunning) / (directionWL[LONG].Total + directionWL[SHORT].Total + directionWL[NEUTRAL].Total),
+		}
 		return wl, nil
 	},
 	func(wl UserWL) bool {

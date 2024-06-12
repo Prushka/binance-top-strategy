@@ -456,6 +456,7 @@ const (
 	NEUTRAL      = 1
 	LONG         = 2
 	SHORT        = 3
+	TOTAL        = 99
 	NOT_TRAILING = "NOT_TRAILING"
 	TRAILING_UP  = "TRAILING_UP"
 
