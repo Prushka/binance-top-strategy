@@ -5,6 +5,7 @@ import (
 	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/request"
 	"BinanceTopStrategies/sql"
+	"BinanceTopStrategies/utils"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"slices"
@@ -114,7 +115,6 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 			UpdatedAt:   time.Now(),
 			DirectionWL: directionWL,
 			UserId:      user}
-		log.Infof("%d", len(strategies))
 		for _, s := range strategies {
 			start := *s.StartPrice
 			end := *s.EndPrice
@@ -166,18 +166,21 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 				}
 			case NEUTRAL:
 				threshold := 0.055
+				lossThreshold := 0.22
 				mid := (s.LowerLimit + s.UpperLimit) / 2
 				if end < s.UpperLimit && end > s.LowerLimit {
 					modifier := 1.0
 					if low <= s.LowerLimit || high >= s.UpperLimit {
 						modifier *= 0.3
 					}
-					if end < start*(1+threshold) && end > start*(1-threshold) {
+					if utils.InRange(end, start, threshold) {
 						modifier *= 1
-					} else if end < mid*(1+threshold) && end > mid*(1-threshold) {
+					} else if utils.InRange(end, mid, threshold) {
 						modifier *= 0.8
-					} else {
+					} else if utils.InRange(end, start, lossThreshold) {
 						modifier *= 0.4
+					} else {
+						modifier *= 0.1
 					}
 					w.Win += modifier * 1
 				} else {

@@ -133,3 +133,7 @@ func GetPublicIP() string {
 
 	return string(body)
 }
+
+func InRange(what, reference, pct float64) bool {
+	return what > reference*(1-pct) && what < reference*(1+pct)
+}

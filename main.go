@@ -521,11 +521,7 @@ func main() {
 			time.Sleep(60 * time.Second)
 		}
 	case "playground":
-		wl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", 163722785))
-		if err != nil {
-			panic(err)
-		}
-		log.Info(wl)
+		wlInspect()
 	}
 	scheduler.StartAsync()
 	<-blocking
@@ -533,37 +529,30 @@ func main() {
 
 func wlInspect() {
 	utils.ResetTime()
-	poolDB := make([]*gsp.ChosenStrategyDB, 0)
-	err := sql.GetDB().Scan(&poolDB, `SELECT * FROM bts.ThePool`)
+	var userIds []int64
+	err := sql.GetDB().Scan(&userIds, `SELECT user_id FROM bts.TheChosen`)
 	if err != nil {
 		panic(err)
 	}
 	utils.Time("Fetched the pool")
-	users := mapset.NewSet[int64]()
-	for _, u := range poolDB {
-		users.Add(u.UserID)
-	}
-	for _, user := range users.ToSlice() {
+	for _, user := range userIds {
 		_, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", user))
 		if err != nil {
 			panic(err)
 		}
 	}
 	LWUsers := mapset.NewSet[int64]()
-	for _, user := range users.ToSlice() {
+	for _, user := range userIds {
 		userWl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", user))
 		if err != nil {
 			panic(err)
 		}
 		wl := userWl.DirectionWL[gsp.TOTAL]
-		if wl.WinRatio > 0.8 {
+		wlShort := userWl.DirectionWL[gsp.SHORT]
+		wlLong := userWl.DirectionWL[gsp.LONG]
+		if (wlLong.TotalWL >= 5 && wlLong.WinRatio >= 0.7) || (wlShort.TotalWL >= 5 && wlShort.WinRatio >= 0.7) {
 			log.Info(wl)
 			LWUsers.Add(user)
-		}
-	}
-	for _, s := range poolDB {
-		if LWUsers.Contains(s.UserID) && s.Direction == gsp.SHORT {
-			log.Infof(utils.AsJson(s))
 		}
 	}
 }
