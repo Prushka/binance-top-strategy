@@ -127,7 +127,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 			}
 			priceDiffPct := math.Abs((end - start) / start)
 			smlChange := priceDiffPct < 0.006
-			shortRunning := s.RunningTime <= 3600*3
+			shortRunning := s.RunningTime <= 3600*2
 			w := directionWL[s.Direction]
 			w.Total++
 			if shortRunning {
