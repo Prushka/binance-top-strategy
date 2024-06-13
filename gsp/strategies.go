@@ -149,6 +149,14 @@ func (by Strategies) GetLSN() (int, int, int) {
 	return longs, shorts, neutrals
 }
 
+func (by Strategies) Users() int {
+	users := mapset.NewSet[int]()
+	for _, s := range by {
+		users.Add(s.UserID)
+	}
+	return users.Cardinality()
+}
+
 func (by Strategies) toTrackedStrategies() *TrackedStrategies {
 	sss := &TrackedStrategies{
 		StrategiesBySID:      make(map[int]*Strategy),

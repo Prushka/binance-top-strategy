@@ -164,7 +164,6 @@ func tick() error {
 	sessionSIDs := gsp.GGrids.ExistingSIDs.Clone()
 	sessionNeutrals := gsp.GGrids.Neutrals.Cardinality()
 	sortedStrategies := make(gsp.Strategies, 0)
-	filteredUsers := mapset.NewSet[int]()
 	for _, s := range gsp.GetPool().Strategies {
 		userWl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", s.UserID))
 		if err != nil {
@@ -178,7 +177,6 @@ func tick() error {
 			continue
 		}
 		sortedStrategies = append(sortedStrategies, s)
-		filteredUsers.Add(s.UserID)
 	}
 	sort.Slice(sortedStrategies, func(i, j int) bool {
 		iWL, _ := gsp.UserWLCache.Get(fmt.Sprintf("%d", sortedStrategies[i].UserID))
@@ -188,7 +186,36 @@ func tick() error {
 		return iWLRatio > jWLRatio
 	})
 	longs, shorts, neutrals := sortedStrategies.GetLSN()
-	discord.Infof("Filtered strategies by WL: %d, %d users | L/S/N: %d, %d, %d", len(sortedStrategies), filteredUsers.Cardinality(), longs, shorts, neutrals)
+	discord.Infof("Filtered strategies by WL: %d, %d users | L/S/N: %d, %d, %d", len(sortedStrategies), sortedStrategies.Users(), longs, shorts, neutrals)
+	filteredStrategies := make(gsp.Strategies, 0)
+out:
+	for _, s := range sortedStrategies {
+		if s.RunningTime > 60*config.TheConfig.MaxLookBackBookingMinutes {
+			log.Debugf("Strategy running for more than %d minutes, Skip", config.TheConfig.MaxLookBackBookingMinutes)
+			continue
+		}
+
+		userStrategies := gsp.GetPool().StrategiesByUserId[s.UserID]
+		for _, us := range userStrategies {
+			if us.Symbol == s.Symbol && us.Direction != s.Direction {
+				discord.Infof("Same symbol hedging, Skip")
+				continue out
+			}
+		}
+
+		if sessionSIDs.Contains(s.SID) {
+			discord.Infof("* Strategy %d - %s exists in open grids, Skip", s.SID, s.SD())
+			continue
+		}
+		if sessionSymbols.Contains(s.Symbol) ||
+			sessionSymbols.Contains(utils.OverwriteQuote(s.Symbol, "USDT", 4)) ||
+			sessionSymbols.Contains(utils.OverwriteQuote(s.Symbol, "USDC", 4)) {
+			log.Infof("Symbol exists in open grids, Skip")
+			continue
+		}
+	}
+	longs, shorts, neutrals = sortedStrategies.GetLSN()
+	discord.Infof("Filtered 2nd strategies by WL: %d, %d users | L/S/N: %d, %d, %d", len(filteredStrategies), filteredStrategies.Users(), longs, shorts, neutrals)
 	var place func(maxChunks, existingChunks int, currency, overwriteQuote string, balance float64) error
 	place = func(maxChunks, existingChunks int, currency, overwriteQuote string, balance float64) error {
 		total := balance + gsp.GGrids.TotalGridPnl[currency] + gsp.GGrids.TotalGridInitial[currency]
@@ -212,34 +239,10 @@ func tick() error {
 			return place(adjusted, existingChunks, currency, overwriteQuote, balance)
 		}
 		invChunk = float64(int(invChunk))
-	out:
-		for c, s := range sortedStrategies {
-			if s.RunningTime > 60*config.TheConfig.MaxLookBackBookingMinutes {
-				log.Debugf("Strategy running for more than %d minutes, Skip", config.TheConfig.MaxLookBackBookingMinutes)
-				continue
-			}
-
-			userStrategies := gsp.GetPool().StrategiesByUserId[s.UserID]
-			for _, us := range userStrategies {
-				if us.Symbol == s.Symbol && us.Direction != s.Direction {
-					discord.Infof("Same symbol hedging, Skip")
-					continue out
-				}
-			}
+		for c, s := range filteredStrategies {
 			strategyQuote := s.Symbol[len(s.Symbol)-4:]
 			if strategyQuote != currency {
 				log.Infof("wrong quote (%s, %s), Skip", currency, strategyQuote)
-				continue
-			}
-
-			if sessionSIDs.Contains(s.SID) {
-				discord.Infof("* Strategy %d - %s exists in open grids, Skip", s.SID, s.SD())
-				continue
-			}
-			if sessionSymbols.Contains(s.Symbol) ||
-				sessionSymbols.Contains(utils.OverwriteQuote(s.Symbol, "USDT", 4)) ||
-				sessionSymbols.Contains(utils.OverwriteQuote(s.Symbol, "USDC", 4)) {
-				log.Infof("Symbol exists in open grids, Skip")
 				continue
 			}
 
@@ -261,6 +264,16 @@ func tick() error {
 			if bl, till := blacklist.SymbolBlacklisted(s.Symbol); bl {
 				blacklistedInPool.Add(s.Symbol)
 				log.Infof("Symbol blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
+				continue
+			}
+			userToOpen := 0
+			for _, s := range filteredStrategies {
+				if s.UserID == userToOpen {
+					userToOpen++
+				}
+			}
+			if userToOpen > 5 {
+				discord.Infof("User %d already has %d strategies, Skip", s.UserID, userToOpen)
 				continue
 			}
 			userWl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", s.UserID))
@@ -295,6 +308,7 @@ func tick() error {
 			minPriceDiff := 0.0
 			minWinRatio := 0.819
 			notionalMax := notional.MaxLeverage(s.Symbol)
+			requiredWlCount := 4.9
 			switch s.Direction {
 			case gsp.LONG:
 				if marketPrice > s.StrategyParams.UpperLimit-gap*config.TheConfig.LongRangeDiff {
@@ -313,6 +327,7 @@ func tick() error {
 				}
 				minPriceDiff = 0.08
 				minWinRatio = 0.839
+				requiredWlCount = 8.9
 			case gsp.SHORT:
 				if marketPrice < s.StrategyParams.LowerLimit+gap*config.TheConfig.ShortRangeDiff {
 					discord.Infof("Market Price too low for short, Skip")
@@ -326,7 +341,11 @@ func tick() error {
 			}
 			wl := userWl.DirectionWL[s.Direction]
 			if wl.WinRatio < minWinRatio {
-				log.Infof("Win Ratio too low for long, Skip")
+				log.Infof("Win Ratio too low, Skip")
+				continue
+			}
+			if wl.TotalWL < requiredWlCount {
+				log.Infof("Total WL too low, Skip")
 				continue
 			}
 
