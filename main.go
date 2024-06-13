@@ -202,6 +202,11 @@ out:
 				continue out
 			}
 		}
+		userWl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", s.UserID))
+		if err != nil {
+			return err
+		}
+		discord.Infof(userWl.String())
 		filteredStrategies = append(filteredStrategies, s)
 	}
 	longs, shorts, neutrals = filteredStrategies.GetLSN()
@@ -281,7 +286,6 @@ out:
 			if err != nil {
 				return err
 			}
-			discord.Infof(userWl.String())
 			sInPool := s
 			s, err := gsp.DiscoverRootStrategy(s.SID, s.Symbol, s.Direction, time.Duration(s.RunningTime)*time.Second)
 			if err != nil {
