@@ -202,19 +202,9 @@ out:
 				continue out
 			}
 		}
-
-		if sessionSIDs.Contains(s.SID) {
-			discord.Infof("* Strategy %d - %s exists in open grids, Skip", s.SID, s.SD())
-			continue
-		}
-		if sessionSymbols.Contains(s.Symbol) ||
-			sessionSymbols.Contains(utils.OverwriteQuote(s.Symbol, "USDT", 4)) ||
-			sessionSymbols.Contains(utils.OverwriteQuote(s.Symbol, "USDC", 4)) {
-			log.Infof("Symbol exists in open grids, Skip")
-			continue
-		}
+		filteredStrategies = append(filteredStrategies, s)
 	}
-	longs, shorts, neutrals = sortedStrategies.GetLSN()
+	longs, shorts, neutrals = filteredStrategies.GetLSN()
 	discord.Infof("Filtered 2nd strategies by WL: %d, %d users | L/S/N: %d, %d, %d", len(filteredStrategies), filteredStrategies.Users(), longs, shorts, neutrals)
 	var place func(maxChunks, existingChunks int, currency, overwriteQuote string, balance float64) error
 	place = func(maxChunks, existingChunks int, currency, overwriteQuote string, balance float64) error {
@@ -251,6 +241,17 @@ out:
 				continue
 			}
 
+			if sessionSIDs.Contains(s.SID) {
+				discord.Infof("* Strategy %d - %s exists in open grids, Skip", s.SID, s.SD())
+				continue
+			}
+			if sessionSymbols.Contains(s.Symbol) ||
+				sessionSymbols.Contains(utils.OverwriteQuote(s.Symbol, "USDT", 4)) ||
+				sessionSymbols.Contains(utils.OverwriteQuote(s.Symbol, "USDC", 4)) {
+				log.Infof("Symbol exists in open grids, Skip")
+				continue
+			}
+
 			if bl, till := blacklist.SIDBlacklisted(s.SID); bl {
 				blacklistedInPool.Add(fmt.Sprintf("%d", s.SID))
 				log.Infof("Strategy blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
@@ -266,14 +267,14 @@ out:
 				log.Infof("Symbol blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
 				continue
 			}
-			userToOpen := 0
+			userStrategies := 0
 			for _, s := range filteredStrategies {
-				if s.UserID == userToOpen {
-					userToOpen++
+				if s.UserID == userStrategies {
+					userStrategies++
 				}
 			}
-			if userToOpen > 5 {
-				discord.Infof("User %d already has %d strategies, Skip", s.UserID, userToOpen)
+			if userStrategies > 5 {
+				discord.Infof("User %d already has %d strategies, Skip", s.UserID, userStrategies)
 				continue
 			}
 			userWl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", s.UserID))
@@ -369,7 +370,7 @@ out:
 				s.Symbol = utils.OverwriteQuote(s.Symbol, overwriteQuote, len(currency))
 			}
 		place:
-			discord.Infof(gsp.Display(s, nil, "New", c+1, len(sortedStrategies)))
+			discord.Infof(gsp.Display(s, nil, "New", c+1, len(filteredStrategies)))
 			errr := gsp.PlaceGrid(*s, invChunk, leverage)
 			if !config.TheConfig.Paper {
 				if errr != nil {
@@ -388,7 +389,7 @@ out:
 						goto place
 					}
 				} else {
-					discord.Actionf(gsp.Display(s, nil, "**Opened Grid**", c+1, len(sortedStrategies)))
+					discord.Actionf(gsp.Display(s, nil, "**Opened Grid**", c+1, len(filteredStrategies)))
 					chunksInt -= 1
 					sessionSymbols.Add(s.Symbol)
 					sessionSIDs.Add(s.SID)
