@@ -61,7 +61,7 @@ func checkStopLoss(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 	if maxLoss != nil && grid.LastRoi > *maxLoss {
 		reason := fmt.Sprintf("**stop loss reached**: %.2f%%", *maxLoss*100)
 		toCancel.AddGridToCancel(grid, *maxLoss, reason)
-		blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), reason)
+		blacklist.AddSymbol(grid.Symbol, utils.TillNextRefresh(), reason)
 	}
 }
 
@@ -126,6 +126,7 @@ func tick() error {
 			blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), "strategy sd not running")
 		}
 		checkStopLoss(grid, toCancel)
+		checkTakeProfits(grid, toCancel)
 	}
 	if !toCancel.IsEmpty() {
 		discord.Infof("### Expired Strategies: %s", toCancel)
