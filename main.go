@@ -521,14 +521,23 @@ func main() {
 			}
 			discord.Infof("*Prices run took: %v*", time.Since(t))
 		}))
-		panicOnErrorSec(scheduler.SingletonMode().Cron("15,18,24,30,45 * * * *").Do(func() {
+		panicOnErrorSec(scheduler.SingletonMode().Every(30).Minutes().Do(func() {
 			t := time.Now()
-			discord.Infof("### Refresh Views: %v", time.Now().Format("2006-01-02 15:04:05"))
-			err := gsp.RefreshViews()
+			discord.Infof("### Refresh TheChosen: %v", time.Now().Format("2006-01-02 15:04:05"))
+			err := gsp.RefreshChosen()
 			if err != nil {
 				discord.Errorf("TheChosen: %v", err)
 			}
 			discord.Infof("*TheChosen run took: %v*", time.Since(t))
+		}))
+		panicOnErrorSec(scheduler.SingletonMode().Cron("15,18,24,30,45 * * * *").Do(func() {
+			t := time.Now()
+			discord.Infof("### Refresh Pool: %v", time.Now().Format("2006-01-02 15:04:05"))
+			err := gsp.RefreshPool()
+			if err != nil {
+				discord.Errorf("Pool: %v", err)
+			}
+			discord.Infof("*Pool run took: %v*", time.Since(t))
 		}))
 		scheduler.StartAsync()
 		for {

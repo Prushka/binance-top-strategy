@@ -239,16 +239,14 @@ func GetPrices(symbol string, timeStart int64, timeEnd int64) (*PriceMetrics, er
 	return metrics, nil
 }
 
-func RefreshViews() error {
+func RefreshChosen() error {
 	_, err := sql.GetDB().Exec(context.Background(), `REFRESH MATERIALIZED VIEW bts.TheChosen`)
-	if err != nil {
-		return err
-	}
-	_, err = sql.GetDB().Exec(context.Background(), `REFRESH MATERIALIZED VIEW bts.ThePool`)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
+}
+
+func RefreshPool() error {
+	_, err := sql.GetDB().Exec(context.Background(), `REFRESH MATERIALIZED VIEW bts.ThePool`)
+	return err
 }
 
 func PopulatePrices() error {
