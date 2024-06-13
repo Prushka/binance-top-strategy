@@ -107,10 +107,10 @@ ORDER BY total_roi DESC;
 SELECT COUNT(*)
 FROM TheChosen;
 
-DROP VIEW ThePool;
+DROP MATERIALIZED VIEW ThePool;
 DROP MATERIALIZED VIEW TheChosen;
 
-CREATE OR REPLACE VIEW ThePool AS
+CREATE MATERIALIZED VIEW ThePool AS
 WITH Pool AS (SELECT strategy.*,
                      TheChosen.total_roi,
                      TheChosen.total_original_input,
