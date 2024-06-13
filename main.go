@@ -213,7 +213,8 @@ out:
 	discord.Infof("Filtered 2nd strategies by WL: %d, %d users | L/S/N: %d, %d, %d", len(filteredStrategies), filteredStrategies.Users(), longs, shorts, neutrals)
 	var place func(maxChunks, existingChunks int, currency, overwriteQuote string, balance float64) error
 	place = func(maxChunks, existingChunks int, currency, overwriteQuote string, balance float64) error {
-		total := balance + gsp.GGrids.TotalGridPnl[currency] + gsp.GGrids.TotalGridInitial[currency]
+		pnl := math.Min(gsp.GGrids.TotalGridPnl[currency], 0)
+		total := balance + pnl + gsp.GGrids.TotalGridInitial[currency]
 		total *= 1 - config.TheConfig.Reserved
 		chunksInt := maxChunks - existingChunks
 		chunks := float64(chunksInt)
