@@ -314,7 +314,7 @@ out:
 			minPriceDiff := 0.0
 			minWinRatio := 0.819
 			notionalMax := notional.MaxLeverage(s.Symbol)
-			requiredWlCount := 4.9
+			requiredWlCount := 5.9
 			switch s.Direction {
 			case gsp.LONG:
 				if marketPrice > s.StrategyParams.UpperLimit-gap*config.TheConfig.LongRangeDiff {
@@ -333,7 +333,7 @@ out:
 				}
 				minPriceDiff = 0.08
 				minWinRatio = 0.841
-				requiredWlCount = 8.9
+				requiredWlCount = 9.9
 			case gsp.SHORT:
 				if marketPrice < s.StrategyParams.LowerLimit+gap*config.TheConfig.ShortRangeDiff {
 					discord.Infof("Market Price too low for short, Skip")
