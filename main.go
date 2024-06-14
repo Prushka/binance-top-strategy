@@ -208,6 +208,7 @@ out:
 			return err
 		}
 		discord.Infof(userWl.String())
+		discord.Infof("%s", s)
 		filteredStrategies = append(filteredStrategies, s)
 	}
 	longs, shorts, neutrals = filteredStrategies.GetLSN()
