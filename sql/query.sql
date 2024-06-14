@@ -92,7 +92,7 @@ WITH LatestRoi AS (SELECT strategy_id,
                                    COUNT(f.concluded)                 AS concluded_count,
                                    SUM(f.original_input) / COUNT(*)   AS avg_original_input
                             FROM FilteredStrategies f
-                            WHERE f.runtime >= 14400
+                            WHERE f.runtime >= 10800
                               AND f.original_input > 198
                             GROUP BY f.user_id)
 SELECT u.*
@@ -176,7 +176,7 @@ SELECT f.roi     as roi,
        p.concluded
 FROM FilteredStrategies f
          JOIN Pool p ON f.strategy_id = p.strategy_id
-WHERE f.original_input > 998
+WHERE f.original_input > 798
   AND f.original_input >= p.avg_original_input * 0.7
 ORDER BY p.total_roi DESC, f.original_input DESC;
 
@@ -316,4 +316,6 @@ SELECT COUNT(*)
 FROM strategy WHERE concluded = TRUE and high_price IS NULL and strategy_type=2;
 
 
-SELECT count(*) FROM ThePool;
+SELECT COUNT(distinct  user_id) FROM TheChosen;
+
+SELECT COUNT(strategy_id), user_id FROM bts.strategy GROUP BY user_id ORDER BY COUNT(strategy_id) DESC LIMIT 15;
