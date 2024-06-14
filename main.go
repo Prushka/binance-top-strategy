@@ -208,7 +208,7 @@ out:
 			return err
 		}
 		discord.Infof(userWl.String())
-		discord.Infof("%s", s)
+		discord.Infof(gsp.Display(s, nil, "Candidate", 0, 0))
 		filteredStrategies = append(filteredStrategies, s)
 	}
 	longs, shorts, neutrals = filteredStrategies.GetLSN()
