@@ -171,8 +171,8 @@ func tick() error {
 			return err
 		}
 		wl := userWl.DirectionWL[s.Direction]
-		if wl.WinRatio < 0.819 ||
-			(wl.ShortRunningRatio > 0.23 && wl.WinRatio < 0.979) ||
+		if wl.WinRatio < 0.81 ||
+			(wl.ShortRunningRatio > 0.24 && wl.WinRatio < 0.979) ||
 			wl.TotalWL < 5 {
 			log.Debugf("Skipped, %v", userWl)
 			continue
@@ -313,7 +313,7 @@ out:
 			gap := s.StrategyParams.UpperLimit - s.StrategyParams.LowerLimit
 			priceDiff := s.StrategyParams.UpperLimit/s.StrategyParams.LowerLimit - 1
 			minPriceDiff := 0.0
-			minWinRatio := 0.819
+			minWinRatio := 0.81
 			notionalMax := notional.MaxLeverage(s.Symbol)
 			requiredWlCount := 5.9
 			switch s.Direction {
@@ -333,7 +333,7 @@ out:
 					leverage = minLeverage
 				}
 				minPriceDiff = 0.08
-				minWinRatio = 0.841
+				minWinRatio = 0.84
 				requiredWlCount = 9.9
 			case gsp.SHORT:
 				if marketPrice < s.StrategyParams.LowerLimit+gap*config.TheConfig.ShortRangeDiff {
@@ -556,7 +556,11 @@ func main() {
 			time.Sleep(60 * time.Second)
 		}
 	case "playground":
-		wlInspect()
+		wl, err := gsp.UserWLCache.Get("864963614")
+		if err != nil {
+			panic(err)
+		}
+		log.Info(wl)
 	}
 	scheduler.StartAsync()
 	<-blocking
