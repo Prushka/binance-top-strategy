@@ -53,7 +53,7 @@ func GetFuture(currency string) (float64, error) {
 	}
 	c := 0.0
 	for _, b := range res {
-		log.Infof("Asset: %s, Balance: %s", b.Asset, b.Balance)
+		log.Debugf("Asset: %s, Balance: %s", b.Asset, b.Balance)
 		if b.Asset == currency {
 			i, err := strconv.ParseFloat(b.Balance, 64)
 			if err != nil {

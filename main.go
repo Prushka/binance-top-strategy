@@ -310,7 +310,11 @@ out:
 			marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)
 			minInvestment, _ := strconv.ParseFloat(s.MinInvestment, 64)
 			notionalLeverage := notional.GetLeverage(s.Symbol, invChunk)
-			leverage := utils.IntMin(notionalLeverage, config.TheConfig.PreferredLeverage)
+			preferred := config.TheConfig.PreferredLeverage
+			if preferred < s.StrategyParams.Leverage && s.StrategyParams.Leverage <= config.TheConfig.MaxLeverage {
+				preferred = s.StrategyParams.Leverage
+			}
+			leverage := utils.IntMin(notionalLeverage, preferred)
 			gap := s.StrategyParams.UpperLimit - s.StrategyParams.LowerLimit
 			priceDiff := s.StrategyParams.UpperLimit/s.StrategyParams.LowerLimit - 1
 			minPriceDiff := 0.0
