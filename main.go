@@ -172,7 +172,7 @@ func tick() error {
 			return err
 		}
 		wl := userWl.DirectionWL[s.Direction]
-		if wl.WinRatio < 0.81 ||
+		if wl.WinRatio < 0.8 ||
 			(wl.ShortRunningRatio > 0.24 && wl.WinRatio < 0.979) ||
 			wl.TotalWL < 5 {
 			log.Debugf("Skipped, %v", userWl)
@@ -319,7 +319,7 @@ out:
 			gap := s.StrategyParams.UpperLimit - s.StrategyParams.LowerLimit
 			priceDiff := s.StrategyParams.UpperLimit/s.StrategyParams.LowerLimit - 1
 			minPriceDiff := 0.0
-			minWinRatio := 0.81
+			minWinRatio := 0.8
 			notionalMax := notional.MaxLeverage(s.Symbol)
 			requiredWlCount := 5.9
 			switch s.Direction {
