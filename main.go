@@ -343,7 +343,7 @@ out:
 					leverage = minLeverage
 				}
 				minPriceDiff = 0.08
-				minWinRatio = 0.84
+				minWinRatio = 0.845
 				requiredWlCount = 9.9
 			case gsp.SHORT:
 				if marketPrice < s.StrategyParams.LowerLimit+gap*config.TheConfig.ShortRangeDiff {
