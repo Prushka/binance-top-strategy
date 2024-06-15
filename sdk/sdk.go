@@ -68,7 +68,7 @@ func GetFuture(currency string) (float64, error) {
 				return 0, err
 			}
 			c = math.Min(i+unPnl, availableBalance)
-			log.Infof("%s: %f", currency, c)
+			log.Debugf("%s: %f", currency, c)
 			break
 		}
 	}

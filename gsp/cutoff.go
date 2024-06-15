@@ -79,7 +79,7 @@ func IsGridOriStrategyRunning(grid *Grid) (*Strategy, error) {
 		return nil, err
 	}
 	if discoverStrategy != nil {
-		log.Infof("Strategy %d is running", grid.SID)
+		log.Debugf("Strategy %d is running", grid.SID)
 		return discoverStrategy, nil
 	}
 	return nil, nil

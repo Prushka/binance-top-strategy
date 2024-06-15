@@ -28,7 +28,7 @@ func (c *MapCache[T]) Get(key string) (T, error) {
 	defer c.mutex.Unlock()
 	_, ok := c.Data[key]
 	if !ok || c.HasExpired(c.Data[key]) {
-		log.Infof("Cache expired %s, fetching new data", key)
+		log.Debugf("Cache expired %s, fetching new data", key)
 		data, err := c.FetchMethod(key)
 		if err != nil {
 			discord.Errorf("Error fetching data: %v", err)
@@ -43,7 +43,7 @@ func (c *Cache[T]) Get() (T, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	if c.LastFetched.Add(c.TTL).Before(time.Now()) {
-		log.Info("Cache expired, fetching new data")
+		log.Debugf("Cache expired, fetching new data")
 		data, err := c.FetchMethod()
 		if err != nil {
 			return c.Data, err

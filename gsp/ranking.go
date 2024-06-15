@@ -302,7 +302,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id;`)
 	discord.Infof("Populating prices for %d strategies", len(strategies))
 	counter := 0
 	for _, s := range strategies {
-		log.Infof("Fetching prices for %s: %d, %d", s.Symbol, s.StrategyID, s.UserID)
+		log.Debugf("Fetching prices for %s: %d, %d", s.Symbol, s.StrategyID, s.UserID)
 		metrics, err := GetPrices(s.Symbol,
 			s.StartTime.UnixMilli(), s.EndTime.UnixMilli())
 		if err != nil {
@@ -411,7 +411,7 @@ func PopulateRoi() error {
 				if err != nil {
 					return err
 				}
-				log.Infof("Concluded: %d", s.StrategyID)
+				log.Debugf("Concluded: %d", s.StrategyID)
 				concludedCount++
 			}
 		}

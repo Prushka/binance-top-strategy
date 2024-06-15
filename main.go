@@ -78,6 +78,7 @@ func tick() error {
 	if err != nil {
 		return err
 	}
+	log.Infof("USDT: %.2f, USDC: %.2f", usdt, usdc)
 	poolDB := make([]*gsp.ChosenStrategyDB, 0)
 	err = sql.GetDB().Scan(&poolDB, `SELECT * FROM bts.ThePool`)
 	if err != nil {
@@ -240,7 +241,7 @@ out:
 		for c, s := range filteredStrategies {
 			strategyQuote := s.Symbol[len(s.Symbol)-4:]
 			if strategyQuote != currency {
-				log.Infof("wrong quote (%s, %s), Skip", currency, strategyQuote)
+				log.Debugf("wrong quote (%s, %s), Skip", currency, strategyQuote)
 				continue
 			}
 
@@ -256,7 +257,7 @@ out:
 			if sessionSymbols.Contains(s.Symbol) ||
 				sessionSymbols.Contains(utils.OverwriteQuote(s.Symbol, "USDT", 4)) ||
 				sessionSymbols.Contains(utils.OverwriteQuote(s.Symbol, "USDC", 4)) {
-				log.Infof("Symbol exists in open grids, Skip")
+				log.Debugf("Symbol exists in open grids, Skip")
 				continue
 			}
 
@@ -353,11 +354,11 @@ out:
 			}
 			wl := userWl.DirectionWL[s.Direction]
 			if wl.WinRatio < minWinRatio {
-				log.Infof("Win Ratio too low, Skip")
+				log.Debugf("Win Ratio too low, Skip")
 				continue
 			}
 			if wl.TotalWL < requiredWlCount {
-				log.Infof("Total WL too low, Skip")
+				log.Debugf("Total WL too low, Skip")
 				continue
 			}
 
