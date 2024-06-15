@@ -216,8 +216,12 @@ out:
 	discord.Infof("Filtered 2nd strategies by WL: %d, %d users | L/S/N: %d, %d, %d", len(filteredStrategies), filteredStrategies.Users(), longs, shorts, neutrals)
 	var place func(maxChunks, existingChunks int, currency, overwriteQuote string, balance float64) error
 	place = func(maxChunks, existingChunks int, currency, overwriteQuote string, balance float64) error {
-		pnl := math.Min(gsp.GGrids.TotalGridPnl[currency], 0)
-		total := balance + pnl + gsp.GGrids.TotalGridInitial[currency]
+		actualCurrency := currency
+		if overwriteQuote != "" {
+			actualCurrency = overwriteQuote
+		}
+		pnl := math.Min(gsp.GGrids.TotalGridPnl[actualCurrency], 0)
+		total := balance + pnl + gsp.GGrids.TotalGridInitial[actualCurrency]
 		total *= 1 - config.TheConfig.Reserved
 		chunksInt := maxChunks - existingChunks
 		chunks := float64(chunksInt)
@@ -240,7 +244,7 @@ out:
 		invChunk = float64(int(invChunk))
 		for c, s := range filteredStrategies {
 			strategyQuote := s.Symbol[len(s.Symbol)-4:]
-			if strategyQuote != currency {
+			if strategyQuote != currency && strategyQuote != overwriteQuote {
 				log.Debugf("wrong quote (%s, %s), Skip", currency, strategyQuote)
 				continue
 			}
@@ -416,15 +420,16 @@ out:
 		}
 		return nil
 	}
+
+	err = place(config.TheConfig.MaxUSDCChunks, usdcChunks, "USDC", "", usdc)
+	if err != nil {
+		return err
+	}
 	err = place(config.TheConfig.MaxUSDCChunks, usdcChunks, "USDT", "USDC", usdc)
 	if err != nil {
 		return err
 	}
 	err = place(config.TheConfig.MaxUSDTChunks, usdtChunks, "USDT", "", usdt)
-	if err != nil {
-		return err
-	}
-	err = place(config.TheConfig.MaxUSDCChunks, usdcChunks, "USDC", "", usdc)
 	if err != nil {
 		return err
 	}
