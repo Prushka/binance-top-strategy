@@ -343,7 +343,7 @@ out:
 					leverage = minLeverage
 				}
 				minPriceDiff = 0.08
-				minWinRatio = 0.845
+				minWinRatio = 0.84
 				requiredWlCount = 9.9
 			case gsp.SHORT:
 				if marketPrice < s.StrategyParams.LowerLimit+gap*config.TheConfig.ShortRangeDiff {
@@ -567,11 +567,12 @@ func main() {
 			time.Sleep(60 * time.Second)
 		}
 	case "playground":
-		wl, err := gsp.UserWLCache.Get("864963614")
+		wl, err := gsp.UserWLCache.Get("10233812")
 		if err != nil {
 			panic(err)
 		}
 		log.Info(wl)
+		wlInspect()
 	}
 	scheduler.StartAsync()
 	<-blocking
@@ -584,7 +585,7 @@ func wlInspect() {
 	if err != nil {
 		panic(err)
 	}
-	utils.Time("Fetched the pool")
+	utils.Time("Fetched the chosen")
 	for _, user := range userIds {
 		_, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", user))
 		if err != nil {
@@ -599,7 +600,7 @@ func wlInspect() {
 		}
 		wlShort := userWl.DirectionWL[gsp.SHORT]
 		wlLong := userWl.DirectionWL[gsp.LONG]
-		if (wlLong.TotalWL >= 5 && wlLong.WinRatio >= 0.7) || (wlShort.TotalWL >= 5 && wlShort.WinRatio >= 0.7) {
+		if (wlLong.TotalWL >= 5 && wlLong.WinRatio >= 0.74) || (wlShort.TotalWL >= 5 && wlShort.WinRatio >= 0.74) {
 			log.Info(userWl)
 			LWUsers.Add(user)
 		}

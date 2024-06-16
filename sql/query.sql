@@ -318,6 +318,6 @@ FROM strategy WHERE concluded = TRUE and high_price IS NULL and strategy_type=2;
 
 SELECT COUNT(distinct  user_id) FROM TheChosen;
 
-SELECT * FROM ThePool WHERE user_id=900416725;
+SELECT * FROM strategy WHERE user_id=856563456 and concluded is null;
 
 SELECT COUNT(strategy_id), user_id FROM bts.strategy GROUP BY user_id ORDER BY COUNT(strategy_id) DESC LIMIT 15;
