@@ -126,7 +126,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 				return UserWL{}, err
 			}
 			priceDiffPct := math.Abs((end - start) / start)
-			smlChange := priceDiffPct < 0.0065
+			smlChange := priceDiffPct < 0.006
 			shortRunning := s.RunningTime <= 3600*2
 			w := directionWL[s.Direction]
 			w.Total++
@@ -146,7 +146,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 						modifier *= 0.4
 					}
 					if smlChange {
-						modifier *= 0.4
+						modifier *= 0.5
 					}
 					w.Win += modifier * 1
 				} else if !smlChange {
@@ -159,7 +159,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 						modifier *= 0.4
 					}
 					if smlChange {
-						modifier *= 0.4
+						modifier *= 0.5
 					}
 					w.Win += modifier * 1
 				} else if !smlChange {
