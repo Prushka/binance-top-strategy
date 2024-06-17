@@ -318,6 +318,11 @@ FROM strategy WHERE concluded = TRUE and high_price IS NULL and strategy_type=2;
 
 SELECT COUNT(distinct  user_id) FROM TheChosen;
 
+SELECT * FROM ThePool;
+
 SELECT * FROM strategy WHERE user_id=856563456 and concluded is null;
 
 SELECT COUNT(strategy_id), user_id FROM bts.strategy GROUP BY user_id ORDER BY COUNT(strategy_id) DESC LIMIT 15;
+
+SELECT COUNT(*) as negative_changes,l.strategy_id FROM bts.roi l JOIN bts.roi r ON l.strategy_id = r.strategy_id
+                                    WHERE l.roi < r.roi AND l.time = r.time + INTERVAL '1 hour' GROUP BY l.strategy_id;

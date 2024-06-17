@@ -45,6 +45,7 @@ type StrategyDB struct {
 	CopyCount          int     `db:"copy_count"`
 	ROI                float64 `db:"roi"`
 	rois               StrategyRoi
+	NegativeChanges    int       `db:"negative_changes"`
 	PNL                float64   `db:"pnl"`
 	RunningTime        int       `db:"running_time"`
 	StrategyID         int64     `db:"strategy_id"` // Use int64 for BIGINT
