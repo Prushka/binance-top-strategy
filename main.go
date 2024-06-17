@@ -143,25 +143,6 @@ func tick() error {
 	gridsOpen := gsp.GGrids.GridsByGid
 	usdtChunks := gridsOpen.GetChunks("USDT")
 	usdcChunks := gridsOpen.GetChunks("USDC")
-	if config.TheConfig.MaxUSDTChunks-usdtChunks <= 0 &&
-		config.TheConfig.MaxUSDCChunks-usdcChunks <= 0 && !config.TheConfig.Paper {
-		discord.Infof("Max Chunks reached (%d/%d, %d/%d), No cancel - Skip current run", usdtChunks,
-			config.TheConfig.MaxUSDTChunks, usdcChunks, config.TheConfig.MaxUSDCChunks)
-		return nil
-	}
-	if mapset.NewSetFromMapKeys(gsp.GetPool().SymbolCount).Difference(gsp.GGrids.ExistingSymbols).Cardinality() == 0 && !config.TheConfig.Paper {
-		discord.Infof("All symbols exists in open grids, Skip")
-		return nil
-	}
-	if bl, _ := blacklist.IsTradingBlocked(); bl && !config.TheConfig.Paper {
-		discord.Infof("Trading Block, Skip")
-		return nil
-	}
-	blacklistedInPool := mapset.NewSet[string]()
-	if time.Now().Minute() < 19 {
-		discord.Infof("Only trade after min 19, Skip")
-		return nil
-	}
 	sessionSymbols := gsp.GGrids.ExistingSymbols.Clone()
 	sessionSIDs := gsp.GGrids.ExistingSIDs.Clone()
 	sessionNeutrals := gsp.GGrids.Neutrals.Cardinality()
@@ -234,6 +215,27 @@ out:
 	}
 	longs, shorts, neutrals = filteredStrategies.GetLSN()
 	discord.Infof("Filtered 2nd strategies by WL: %d, %d users | L/S/N: %d, %d, %d", len(filteredStrategies), filteredStrategies.Users(), longs, shorts, neutrals)
+
+	if config.TheConfig.MaxUSDTChunks-usdtChunks <= 0 &&
+		config.TheConfig.MaxUSDCChunks-usdcChunks <= 0 && !config.TheConfig.Paper {
+		discord.Infof("Max Chunks reached (%d/%d, %d/%d), No cancel - Skip current run", usdtChunks,
+			config.TheConfig.MaxUSDTChunks, usdcChunks, config.TheConfig.MaxUSDCChunks)
+		return nil
+	}
+	if mapset.NewSetFromMapKeys(gsp.GetPool().SymbolCount).Difference(gsp.GGrids.ExistingSymbols).Cardinality() == 0 && !config.TheConfig.Paper {
+		discord.Infof("All symbols exists in open grids, Skip")
+		return nil
+	}
+	if bl, _ := blacklist.IsTradingBlocked(); bl && !config.TheConfig.Paper {
+		discord.Infof("Trading Block, Skip")
+		return nil
+	}
+	blacklistedInPool := mapset.NewSet[string]()
+	if time.Now().Minute() < 19 {
+		discord.Infof("Only trade after min 19, Skip")
+		return nil
+	}
+
 	var place func(maxChunks, existingChunks int, currency, overwriteQuote string, balance float64) error
 	place = func(maxChunks, existingChunks int, currency, overwriteQuote string, balance float64) error {
 		actualCurrency := currency
