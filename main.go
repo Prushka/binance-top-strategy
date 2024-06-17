@@ -57,6 +57,11 @@ func checkStopLoss(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 			discord.Infof(fmt.Sprintf("**stop loss marked for removal**: %.2f%%", (slAt)*100))
 		}
 	}
+	if !grid.MarketPriceWithinRange() {
+		slAt := 0.0
+		gsp.GridMarkForRemoval(grid.GID, slAt)
+		discord.Infof(fmt.Sprintf("**stop loss (oor) marked for removal**: %.2f%%", (slAt)*100))
+	}
 	maxLoss := gsp.GetMaxLoss(grid.GID)
 	if maxLoss != nil && grid.LastRoi > *maxLoss {
 		reason := fmt.Sprintf("**stop loss reached**: %.2f%%", *maxLoss*100)
