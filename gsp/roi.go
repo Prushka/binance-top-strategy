@@ -52,6 +52,7 @@ type WL struct {
 	WinRatio          float64
 	ShortRunning      float64
 	ShortRunningRatio float64
+	EarliestTime      time.Time
 }
 
 func (wl UserWL) String() string {
@@ -61,8 +62,8 @@ func (wl UserWL) String() string {
 }
 
 func (wl WL) String() string {
-	return fmt.Sprintf("WL: %.1f%% (%.1f/%.1f)|Short: %.1f%% (%.1f/%.1f)",
-		wl.WinRatio*100, wl.Win, wl.TotalWL, wl.ShortRunningRatio*100, wl.ShortRunning, wl.Total)
+	return fmt.Sprintf("WL: %.1f%% (%.1f/%.1f)|Short: %.1f%% (%.1f/%.1f)|%v",
+		wl.WinRatio*100, wl.Win, wl.TotalWL, wl.ShortRunningRatio*100, wl.ShortRunning, wl.Total, wl.EarliestTime)
 }
 
 var UserWLCache = cache.CreateMapCache[UserWL](
@@ -142,9 +143,12 @@ WHERE f.original_input > 349;`, user, user)
 			} else {
 				continue
 			}
+			if w.EarliestTime.IsZero() || s.StartTime.Before(w.EarliestTime) {
+				w.EarliestTime = *s.StartTime
+			}
 			switch s.Direction {
 			case LONG:
-				if end > start {
+				if end > start && s.ROI > 0 {
 					modifier := 1.0
 					if low <= s.LowerLimit {
 						modifier *= 0.4
@@ -157,7 +161,7 @@ WHERE f.original_input > 349;`, user, user)
 					w.Win -= 1
 				}
 			case SHORT:
-				if end < start {
+				if end < start && s.ROI > 0 {
 					modifier := 1.0
 					if high >= s.UpperLimit {
 						modifier *= 0.4
