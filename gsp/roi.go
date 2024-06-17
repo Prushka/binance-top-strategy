@@ -87,9 +87,6 @@ var UserWLCache = cache.CreateMapCache[UserWL](
     FROM
         bts.roi r
             JOIN Pool ON Pool.strategy_id = r.strategy_id
-), NegativeChange AS (
-    SELECT COUNT(*) as negative_changes, l.strategy_id FROM bts.roi l JOIN bts.roi r ON l.strategy_id = r.strategy_id JOIN bts.strategy s on l.strategy_id = s.strategy_id
-    WHERE s.user_id = $2 AND l.roi < r.roi AND l.time = r.time + INTERVAL '1 hour' GROUP BY l.strategy_id
 ),
      FilteredStrategies AS (
          SELECT
@@ -102,7 +99,7 @@ var UserWLCache = cache.CreateMapCache[UserWL](
          WHERE
              l.rn = 1
      )SELECT
-          f.roi as roi, f.pnl as pnl, f.original_input, COALESCE(n.negative_changes, 0) as negative_changes,
+          f.roi as roi, f.pnl as pnl, f.original_input,
           p.start_time, p.end_time, p.start_price, p.end_price,
           p.high_price, p.low_price,
           p.symbol, p.copy_count, p.strategy_id, p.strategy_type, p.direction, p.time_discovered,
@@ -110,7 +107,7 @@ var UserWLCache = cache.CreateMapCache[UserWL](
           p.grid_count, p.trigger_price, p.stop_lower_limit, p.stop_upper_limit, p.base_asset, p.quote_asset,
           p.leverage, p.trailing_down, p.trailing_up, p.trailing_type, p.latest_matched_count, p.matched_count, p.min_investment,
           p.concluded
-FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id LEFT JOIN NegativeChange n ON n.strategy_id = f.strategy_id
+FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id
 WHERE f.original_input > 349;`, user, user)
 		if err != nil {
 			return UserWL{}, err
@@ -194,9 +191,6 @@ WHERE f.original_input > 349;`, user, user)
 						modifier *= 0.4
 					} else {
 						modifier *= 0.2
-					}
-					if s.NegativeChanges > 1 {
-						modifier *= 0.8
 					}
 					w.Win += modifier
 				} else {
