@@ -83,7 +83,7 @@ var UserWLCache = cache.CreateMapCache[UserWL](
         bts.roi r
             JOIN Pool ON Pool.strategy_id = r.strategy_id
 ), NegativeChange AS (
-    SELECT COUNT(*) as negative_changes, l.strategy_id FROM bts.roi l JOIN bts.roi r ON l.strategy_id = r.strategy_id JOIN strategy s on l.strategy_id = s.strategy_id
+    SELECT COUNT(*) as negative_changes, l.strategy_id FROM bts.roi l JOIN bts.roi r ON l.strategy_id = r.strategy_id JOIN bts.strategy s on l.strategy_id = s.strategy_id
     WHERE s.user_id = $2 AND l.roi < r.roi AND l.time = r.time + INTERVAL '1 hour' GROUP BY l.strategy_id
 ),
      FilteredStrategies AS (
