@@ -170,6 +170,9 @@ func tick() error {
 	shortUsers := mapset.NewSet[int]()
 	neutralUsers := mapset.NewSet[int]()
 	for _, s := range gsp.GetPool().Strategies {
+		if s.Roi < 0 {
+			continue
+		}
 		userWl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", s.UserID))
 		if err != nil {
 			return err
@@ -323,6 +326,9 @@ out:
 			err = s.PopulateRois()
 			if err != nil {
 				return err
+			}
+			if s.Roi < 0 || (len(s.Rois) > 0 && s.Rois[0].Roi < 0) {
+				continue
 			}
 
 			marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)
