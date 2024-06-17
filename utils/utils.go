@@ -137,3 +137,13 @@ func GetPublicIP() string {
 func InRange(what, reference, pct float64) bool {
 	return what > reference*(1-pct) && what < reference*(1+pct)
 }
+
+func MinTime(times ...time.Time) time.Time {
+	m := times[0]
+	for _, t := range times {
+		if t.Before(m) {
+			m = t
+		}
+	}
+	return m
+}

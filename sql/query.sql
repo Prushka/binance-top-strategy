@@ -328,10 +328,10 @@ SELECT COUNT(*) as negative_changes,l.strategy_id FROM bts.roi l JOIN bts.roi r 
                                     WHERE l.roi < r.roi AND l.time = r.time + INTERVAL '1 hour' GROUP BY l.strategy_id;
 
 
-
+SELECT * FROM strategy ORDER BY time_discovered LIMIT 10;
 
 WITH Pool AS (
-    SELECT * FROM bts.strategy WHERE user_id = 152424470 AND concluded=true AND high_price IS NOT NULL AND strategy_type = 2
+    SELECT * FROM bts.strategy WHERE user_id = 900416725 AND concluded=true AND high_price IS NOT NULL AND strategy_type = 2
 ), LatestRoi AS (
     SELECT
         r.strategy_id,
@@ -344,7 +344,7 @@ WITH Pool AS (
             JOIN Pool ON Pool.strategy_id = r.strategy_id
 ), NegativeChange AS (
     SELECT COUNT(*) as negative_changes, l.strategy_id FROM bts.roi l JOIN bts.roi r ON l.strategy_id = r.strategy_id JOIN bts.strategy s on l.strategy_id = s.strategy_id
-    WHERE s.user_id = 152424470 AND l.roi < r.roi AND l.time = r.time + INTERVAL '1 hour' GROUP BY l.strategy_id
+    WHERE s.user_id = 900416725 AND l.roi < r.roi AND l.time = r.time + INTERVAL '1 hour' GROUP BY l.strategy_id
 ),
      FilteredStrategies AS (
          SELECT

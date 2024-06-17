@@ -62,8 +62,12 @@ func (wl UserWL) String() string {
 }
 
 func (wl WL) String() string {
-	return fmt.Sprintf("WL: %.1f%% (%.1f/%.1f)|Short: %.1f%% (%.1f/%.1f)|%v",
-		wl.WinRatio*100, wl.Win, wl.TotalWL, wl.ShortRunningRatio*100, wl.ShortRunning, wl.Total, wl.EarliestTime)
+	if wl.Total == 0 {
+		return "NIL"
+	} else {
+		return fmt.Sprintf("WL: %.1f%% (%.1f/%.1f)|Short: %.1f%% (%.1f/%.1f)|%v",
+			wl.WinRatio*100, wl.Win, wl.TotalWL, wl.ShortRunningRatio*100, wl.ShortRunning, wl.Total, wl.EarliestTime)
+	}
 }
 
 var UserWLCache = cache.CreateMapCache[UserWL](
@@ -209,12 +213,15 @@ WHERE f.original_input > 349;`, user, user)
 		directionWL[NEUTRAL].WinRatio = directionWL[NEUTRAL].Win / directionWL[NEUTRAL].TotalWL
 		directionWL[NEUTRAL].ShortRunningRatio = directionWL[NEUTRAL].ShortRunning / directionWL[NEUTRAL].Total
 		directionWL[TOTAL] = &WL{
-			TotalWL:           directionWL[LONG].TotalWL + directionWL[SHORT].TotalWL + directionWL[NEUTRAL].TotalWL,
-			Total:             directionWL[LONG].Total + directionWL[SHORT].Total + directionWL[NEUTRAL].Total,
-			Win:               directionWL[LONG].Win + directionWL[SHORT].Win + directionWL[NEUTRAL].Win,
-			WinRatio:          (directionWL[LONG].Win + directionWL[SHORT].Win + directionWL[NEUTRAL].Win) / (directionWL[LONG].TotalWL + directionWL[SHORT].TotalWL + directionWL[NEUTRAL].TotalWL),
-			ShortRunning:      directionWL[LONG].ShortRunning + directionWL[SHORT].ShortRunning + directionWL[NEUTRAL].ShortRunning,
-			ShortRunningRatio: (directionWL[LONG].ShortRunning + directionWL[SHORT].ShortRunning + directionWL[NEUTRAL].ShortRunning) / (directionWL[LONG].Total + directionWL[SHORT].Total + directionWL[NEUTRAL].Total),
+			TotalWL: directionWL[LONG].TotalWL + directionWL[SHORT].TotalWL + directionWL[NEUTRAL].TotalWL,
+			Total:   directionWL[LONG].Total + directionWL[SHORT].Total + directionWL[NEUTRAL].Total,
+			Win:     directionWL[LONG].Win + directionWL[SHORT].Win + directionWL[NEUTRAL].Win,
+			WinRatio: (directionWL[LONG].Win + directionWL[SHORT].Win + directionWL[NEUTRAL].Win) /
+				(directionWL[LONG].TotalWL + directionWL[SHORT].TotalWL + directionWL[NEUTRAL].TotalWL),
+			ShortRunning: directionWL[LONG].ShortRunning + directionWL[SHORT].ShortRunning + directionWL[NEUTRAL].ShortRunning,
+			ShortRunningRatio: (directionWL[LONG].ShortRunning + directionWL[SHORT].ShortRunning + directionWL[NEUTRAL].ShortRunning) /
+				(directionWL[LONG].Total + directionWL[SHORT].Total + directionWL[NEUTRAL].Total),
+			EarliestTime: utils.MinTime(directionWL[LONG].EarliestTime, directionWL[SHORT].EarliestTime, directionWL[NEUTRAL].EarliestTime),
 		}
 		return wl, nil
 	},

@@ -184,6 +184,10 @@ func tick() error {
 			log.Debugf("Skipped, %v", userWl)
 			continue
 		}
+		if time.Now().Sub(wl.EarliestTime) < 30*24*time.Hour {
+			log.Debugf("Skipped - Less than one month, %v", userWl)
+			continue
+		}
 		if s.Direction == gsp.LONG {
 			longUsers.Add(s.UserID)
 		} else if s.Direction == gsp.SHORT {
