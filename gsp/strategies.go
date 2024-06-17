@@ -133,11 +133,11 @@ type QueryTopStrategy struct {
 type Strategies []*Strategy
 
 func (s *Strategy) GetMatchedRatio() float64 {
-	return float64(s.MatchedCount) / (float64(s.RunningTime) / 3600) / float64(s.StrategyParams.GridCount)
+	return (float64(s.MatchedCount) / (float64(s.RunningTime) / 3600) / float64(s.StrategyParams.GridCount)) * 10
 }
 
 func (g *Grid) GetMatchedRatio() float64 {
-	return float64(g.MatchedCount) / (float64(g.GetRunTime()) / 3600) / float64(g.GridCount)
+	return (float64(g.MatchedCount) / (float64(g.GetRunTime().Seconds()) / 3600) / float64(g.GridCount)) * 10
 }
 
 func (by Strategies) GetLSN() (int, int, int) {
