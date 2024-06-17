@@ -133,11 +133,23 @@ type QueryTopStrategy struct {
 type Strategies []*Strategy
 
 func (s *Strategy) GetMatchedRatio() float64 {
-	return (float64(s.MatchedCount) / (float64(s.RunningTime) / 3600) / float64(s.StrategyParams.GridCount)) * 10
+	assumedRatioPerGrid := (s.StrategyParams.UpperLimit/s.StrategyParams.LowerLimit - 1) / float64(s.StrategyParams.GridCount)
+	return (float64(s.MatchedCount) / (float64(s.RunningTime) / 3600)) * assumedRatioPerGrid * s.GetNormalizedRoi() * 12000
+}
+
+func (s *Strategy) GetNormalizedRoi() float64 {
+	return s.Roi / (float64(s.RunningTime) / 3600)
 }
 
 func (g *Grid) GetMatchedRatio() float64 {
-	return (float64(g.MatchedCount) / (float64(g.GetRunTime().Seconds()) / 3600) / float64(g.GridCount)) * 10
+	upper, _ := strconv.ParseFloat(g.GridUpperLimit, 64)
+	lower, _ := strconv.ParseFloat(g.GridLowerLimit, 64)
+	assumedRatioPerGrid := (upper/lower - 1) / float64(g.GridCount)
+	return (float64(g.MatchedCount) / (float64(g.GetRunTime().Seconds()) / 3600)) * assumedRatioPerGrid * g.GetNormalizedRoi() * 12000
+}
+
+func (g *Grid) GetNormalizedRoi() float64 {
+	return g.LastRoi / (float64(g.GetRunTime().Seconds()) / 3600)
 }
 
 func (by Strategies) GetLSN() (int, int, int) {
