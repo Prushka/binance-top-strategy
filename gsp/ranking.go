@@ -36,8 +36,7 @@ type UserMetricsDB struct {
 }
 
 type UserStrategy struct {
-	StrategyDB
-	UserMetricsDB
+	ChosenStrategyDB
 	UserInput float64 `db:"original_input"`
 }
 

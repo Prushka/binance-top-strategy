@@ -166,7 +166,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 					w.Win -= 1
 				}
 			case NEUTRAL:
-				threshold := 0.055
+				threshold := 0.1
 				lossThreshold := 0.22
 				mid := (s.LowerLimit + s.UpperLimit) / 2
 				if end < s.UpperLimit && end > s.LowerLimit {
@@ -183,7 +183,9 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 					} else {
 						modifier *= 0.2
 					}
-					w.Win += modifier * 1
+					ss := s.ChosenStrategyDB.ToStrategy()
+					log.Infof("%.2f", ss.GetMatchedRatio())
+					w.Win += modifier * 1 * ss.GetMatchedRatio()
 				} else {
 					w.Win -= 4
 				}
