@@ -185,7 +185,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 					}
 					w.Win += modifier
 				} else {
-					w.Win -= 3.2
+					w.Win -= 4
 				}
 			}
 			log.Debugf("Symbol: %s, Direction: %d, Start: %.5f, End: %.5f, %v (%.5f, %.5f)",
