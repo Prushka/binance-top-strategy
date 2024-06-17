@@ -166,7 +166,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 					w.Win -= 1
 				}
 			case NEUTRAL:
-				threshold := 0.09
+				threshold := 0.08
 				lossThreshold := 0.22
 				mid := (s.LowerLimit + s.UpperLimit) / 2
 				if end < s.UpperLimit && end > s.LowerLimit {
@@ -186,14 +186,12 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 					ss := s.ChosenStrategyDB.ToStrategy()
 					log.Infof("%d, Ratio: %.2f, Roi: %.2f, Hours: %d", ss.SID, ss.GetMatchedRatio(), ss.Roi, ss.RunningTime/3600)
 					ratio := ss.GetMatchedRatio()
-					if ratio < 0.3 {
-						ratio = 0.3
-					} else if ratio > 1.5 {
-						ratio = 1.5
+					if ratio < 0.15 {
+						modifier *= 0.4
 					}
-					w.Win += modifier * ratio
+					w.Win += modifier
 				} else {
-					w.Win -= 4
+					w.Win -= 3
 				}
 			}
 			log.Debugf("Symbol: %s, Direction: %d, Start: %.5f, End: %.5f, %v (%.5f, %.5f)",
