@@ -166,6 +166,9 @@ func tick() error {
 	sessionSIDs := gsp.GGrids.ExistingSIDs.Clone()
 	sessionNeutrals := gsp.GGrids.Neutrals.Cardinality()
 	sortedStrategies := make(gsp.Strategies, 0)
+	longUsers := mapset.NewSet[int]()
+	shortUsers := mapset.NewSet[int]()
+	neutralUsers := mapset.NewSet[int]()
 	for _, s := range gsp.GetPool().Strategies {
 		userWl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", s.UserID))
 		if err != nil {
@@ -178,6 +181,13 @@ func tick() error {
 			log.Debugf("Skipped, %v", userWl)
 			continue
 		}
+		if s.Direction == gsp.LONG {
+			longUsers.Add(s.UserID)
+		} else if s.Direction == gsp.SHORT {
+			shortUsers.Add(s.UserID)
+		} else {
+			neutralUsers.Add(s.UserID)
+		}
 		sortedStrategies = append(sortedStrategies, s)
 	}
 	sort.Slice(sortedStrategies, func(i, j int) bool {
@@ -188,7 +198,10 @@ func tick() error {
 		return iWLRatio > jWLRatio
 	})
 	longs, shorts, neutrals := sortedStrategies.GetLSN()
-	discord.Infof("Filtered strategies by WL: %d, %d users | L/S/N: %d, %d, %d", len(sortedStrategies), sortedStrategies.Users(), longs, shorts, neutrals)
+	discord.Infof("Filtered strategies by WL: %d, %d users | L/S/N: %d(%d), %d(%d), %d(%d)",
+		len(sortedStrategies),
+		sortedStrategies.Users(), longs, longUsers.Cardinality(),
+		shorts, shortUsers.Cardinality(), neutrals, neutralUsers.Cardinality())
 	filteredStrategies := make(gsp.Strategies, 0)
 out:
 	for _, s := range sortedStrategies {
