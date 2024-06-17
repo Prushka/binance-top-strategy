@@ -143,6 +143,7 @@ func tick() error {
 	gridsOpen := gsp.GGrids.GridsByGid
 	usdtChunks := gridsOpen.GetChunks("USDT")
 	usdcChunks := gridsOpen.GetChunks("USDC")
+	blacklistedInPool := mapset.NewSet[string]()
 	sessionSymbols := gsp.GGrids.ExistingSymbols.Clone()
 	sessionSIDs := gsp.GGrids.ExistingSIDs.Clone()
 	sessionNeutrals := gsp.GGrids.Neutrals.Cardinality()
@@ -230,7 +231,6 @@ out:
 		discord.Infof("Trading Block, Skip")
 		return nil
 	}
-	blacklistedInPool := mapset.NewSet[string]()
 	if time.Now().Minute() < 19 {
 		discord.Infof("Only trade after min 19, Skip")
 		return nil
