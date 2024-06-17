@@ -167,7 +167,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 				}
 			case NEUTRAL:
 				threshold := 0.06
-				lossThreshold := 0.2
+				lossThreshold := 0.22
 				mid := (s.LowerLimit + s.UpperLimit) / 2
 				if end < s.UpperLimit && end > s.LowerLimit {
 					modifier := 1.0
