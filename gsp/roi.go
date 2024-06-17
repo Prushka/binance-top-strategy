@@ -108,7 +108,7 @@ var UserWLCache = cache.CreateMapCache[UserWL](
           p.leverage, p.trailing_down, p.trailing_up, p.trailing_type, p.latest_matched_count, p.matched_count, p.min_investment,
           p.concluded
 FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id
-WHERE f.original_input > 349;`, user, user)
+WHERE f.original_input > 349;`, user)
 		if err != nil {
 			return UserWL{}, err
 		}
