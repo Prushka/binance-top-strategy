@@ -180,7 +180,7 @@ WHERE f.original_input > 349;`, user, user)
 				if end < s.UpperLimit && end > s.LowerLimit && s.ROI > 0 {
 					modifier := 1.0
 					if low <= s.LowerLimit || high >= s.UpperLimit {
-						modifier *= 0.3
+						modifier *= 0.2
 					}
 					if utils.InRange(end, start, threshold) {
 						modifier *= 1
@@ -191,8 +191,8 @@ WHERE f.original_input > 349;`, user, user)
 					} else {
 						modifier *= 0.2
 					}
-					if s.NegativeChanges > 0 {
-						modifier *= 0
+					if s.NegativeChanges > 1 {
+						modifier *= 0.8
 					}
 					w.Win += modifier
 				} else {

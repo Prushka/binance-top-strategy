@@ -326,3 +326,44 @@ SELECT COUNT(strategy_id), user_id FROM bts.strategy GROUP BY user_id ORDER BY C
 
 SELECT COUNT(*) as negative_changes,l.strategy_id FROM bts.roi l JOIN bts.roi r ON l.strategy_id = r.strategy_id
                                     WHERE l.roi < r.roi AND l.time = r.time + INTERVAL '1 hour' GROUP BY l.strategy_id;
+
+
+
+
+WITH Pool AS (
+    SELECT * FROM bts.strategy WHERE user_id = 152424470 AND concluded=true AND high_price IS NOT NULL AND strategy_type = 2
+), LatestRoi AS (
+    SELECT
+        r.strategy_id,
+        r.roi as roi,
+        r.pnl,
+        r.time,
+        ROW_NUMBER() OVER (PARTITION BY r.strategy_id ORDER BY time DESC) AS rn
+    FROM
+        bts.roi r
+            JOIN Pool ON Pool.strategy_id = r.strategy_id
+), NegativeChange AS (
+    SELECT COUNT(*) as negative_changes, l.strategy_id FROM bts.roi l JOIN bts.roi r ON l.strategy_id = r.strategy_id JOIN bts.strategy s on l.strategy_id = s.strategy_id
+    WHERE s.user_id = 152424470 AND l.roi < r.roi AND l.time = r.time + INTERVAL '1 hour' GROUP BY l.strategy_id
+),
+     FilteredStrategies AS (
+         SELECT
+             l.strategy_id,
+             l.roi,
+             l.pnl,
+             l.pnl / NULLIF(l.roi, 0) as original_input
+         FROM
+             LatestRoi l
+         WHERE
+             l.rn = 1
+     )SELECT
+          f.roi as roi, f.pnl as pnl, f.original_input, COALESCE(n.negative_changes, 0) as negative_changes,
+          p.start_time, p.end_time, p.start_price, p.end_price,
+          p.high_price, p.low_price,
+          p.symbol, p.copy_count, p.strategy_id, p.strategy_type, p.direction, p.time_discovered,
+          p.user_id, p.rois_fetched_at, p.type, p.lower_limit, p.upper_limit,
+          p.grid_count, p.trigger_price, p.stop_lower_limit, p.stop_upper_limit, p.base_asset, p.quote_asset,
+          p.leverage, p.trailing_down, p.trailing_up, p.trailing_type, p.latest_matched_count, p.matched_count, p.min_investment,
+          p.concluded
+FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id LEFT JOIN NegativeChange n ON n.strategy_id = f.strategy_id
+WHERE f.original_input > 349;
