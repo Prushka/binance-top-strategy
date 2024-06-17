@@ -126,7 +126,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 				return UserWL{}, err
 			}
 			priceDiffPct := math.Abs((end - start) / start)
-			smlChange := priceDiffPct < 0.006
+			smlChange := priceDiffPct < 0.0065
 			shortRunning := s.RunningTime <= 3600*2
 			w := directionWL[s.Direction]
 			w.Total++
@@ -166,8 +166,8 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 					w.Win -= 1
 				}
 			case NEUTRAL:
-				threshold := 0.055
-				lossThreshold := 0.22
+				threshold := 0.06
+				lossThreshold := 0.2
 				mid := (s.LowerLimit + s.UpperLimit) / 2
 				if end < s.UpperLimit && end > s.LowerLimit {
 					modifier := 1.0
@@ -185,7 +185,7 @@ FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id WHERE f.o
 					}
 					w.Win += modifier
 				} else {
-					w.Win -= 3
+					w.Win -= 3.2
 				}
 			}
 			log.Debugf("Symbol: %s, Direction: %d, Start: %.5f, End: %.5f, %v (%.5f, %.5f)",
