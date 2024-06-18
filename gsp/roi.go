@@ -194,7 +194,7 @@ WHERE f.original_input > 349;`, user)
 					}
 					w.Win += modifier
 				} else {
-					w.Win -= 4
+					w.Win -= 12
 				}
 			}
 			log.Debugf("Symbol: %s, Direction: %d, Start: %.5f, End: %.5f, %v (%.5f, %.5f)",
