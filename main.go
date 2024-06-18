@@ -419,8 +419,8 @@ out:
 			if overwriteQuote != "" {
 				s.Symbol = utils.OverwriteQuote(s.Symbol, overwriteQuote, len(currency))
 			}
-		place:
 			discord.Infof(gsp.Display(s, nil, "New", c+1, len(filteredStrategies)))
+		place:
 			errr := gsp.PlaceGrid(*s, invChunk, leverage)
 			if !config.TheConfig.Paper {
 				if errr != nil {
