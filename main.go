@@ -374,7 +374,7 @@ out:
 				}
 				minPriceDiff = 0.08
 				minWinRatio = 0.84
-				requiredWlCount = 9.9
+				requiredWlCount = 11.9
 			case gsp.SHORT:
 				if marketPrice < s.StrategyParams.LowerLimit+gap*config.TheConfig.ShortRangeDiff {
 					discord.Infof("Market Price too low for short, Skip")
