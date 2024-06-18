@@ -181,7 +181,7 @@ WHERE f.original_input > 349;`, user)
 				if end < s.UpperLimit && end > s.LowerLimit && s.ROI > 0 {
 					modifier := 1.0
 					if low <= s.LowerLimit || high >= s.UpperLimit {
-						modifier *= 0.2
+						modifier *= 0
 					}
 					if utils.InRange(end, start, threshold) {
 						modifier *= 1
