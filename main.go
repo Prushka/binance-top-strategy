@@ -431,7 +431,7 @@ out:
 					}
 					if (strings.Contains(errr.Error(), "notional") || strings.Contains(errr.Error(), "margin is below minimum")) &&
 						s.Direction != gsp.NEUTRAL && leverage < config.TheConfig.MaxLeverage && leverage < notionalMax {
-						leverage += 3
+						leverage += 4
 						if leverage > config.TheConfig.MaxLeverage {
 							leverage = config.TheConfig.MaxLeverage
 						}
