@@ -141,7 +141,7 @@ func InRange(what, reference, pct float64) bool {
 func MinTime(times ...time.Time) time.Time {
 	m := times[0]
 	for _, t := range times {
-		if t.Before(m) {
+		if !t.IsZero() && t.Before(m) {
 			m = t
 		}
 	}

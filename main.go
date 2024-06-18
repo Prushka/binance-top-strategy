@@ -180,6 +180,10 @@ func tick() error {
 		} else if s.Direction == gsp.SHORT {
 			shortUsers.Add(s.UserID)
 		} else {
+			if s.UserInput < 4000 {
+				log.Debugf("Skipped - Neutral with low input, %v", s)
+				continue
+			}
 			neutralUsers.Add(s.UserID)
 		}
 		sortedStrategies = append(sortedStrategies, s)
