@@ -350,8 +350,8 @@ out:
 			minInvestment, _ := strconv.ParseFloat(s.MinInvestment, 64)
 			notionalLeverage := notional.GetLeverage(s.Symbol, invChunk)
 			preferred := config.TheConfig.PreferredLeverage
-			if preferred < s.StrategyParams.Leverage && s.StrategyParams.Leverage <= config.TheConfig.MaxLeverage {
-				preferred = s.StrategyParams.Leverage
+			if preferred < s.StrategyParams.Leverage {
+				preferred = utils.IntMin(s.StrategyParams.Leverage, config.TheConfig.MaxLeverage)
 			}
 			leverage := utils.IntMin(notionalLeverage, preferred)
 			gap := s.StrategyParams.UpperLimit - s.StrategyParams.LowerLimit
