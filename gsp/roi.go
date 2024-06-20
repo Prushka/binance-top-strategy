@@ -152,7 +152,7 @@ WHERE f.original_input > 349;`, user)
 				if end > start && s.ROI > 0 {
 					modifier := 1.0
 					if low <= s.LowerLimit {
-						modifier *= 0.4
+						modifier *= 0.1
 					}
 					if smlChange {
 						modifier *= 0.5
@@ -165,7 +165,7 @@ WHERE f.original_input > 349;`, user)
 				if end < start && s.ROI > 0 {
 					modifier := 1.0
 					if high >= s.UpperLimit {
-						modifier *= 0.4
+						modifier *= 0.1
 					}
 					if smlChange {
 						modifier *= 0.5
