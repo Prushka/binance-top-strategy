@@ -175,7 +175,7 @@ WHERE f.original_input > 349;`, user)
 					w.Win -= 1
 				}
 			case NEUTRAL:
-				threshold := 0.06
+				threshold := 0.065
 				lossThreshold := 0.22
 				mid := (s.LowerLimit + s.UpperLimit) / 2
 				if end < s.UpperLimit && end > s.LowerLimit && s.ROI > 0 {
