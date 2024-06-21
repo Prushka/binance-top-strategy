@@ -550,7 +550,7 @@ func DiscoverRootStrategy(sid int, symbol string, direction int, roughRuntime ti
 		sym := symbol[:len(symbol)-4] + quote
 		return StrategyQuery{Type: FUTURE, Sort: SortByPnl,
 			RuntimeMin: roughRuntime - 4*time.Hour,
-			RuntimeMax: roughRuntime + time.Duration(config.TheConfig.MaxLookBackBookingMinutes+240)*time.Minute,
+			RuntimeMax: roughRuntime + time.Duration(480)*time.Minute,
 			Symbol:     sym, Direction: utils.IntPointer(direction),
 			Count: 2000}
 	}
