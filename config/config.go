@@ -30,7 +30,7 @@ type Config struct {
 	ShiftMinutesAfterHour             int       `env:"SHIFT_MINUTES_AFTER_HOUR" envDefault:"0"`
 	LastNHoursNoDips                  int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"6"`
 	LastNHoursAllPositive             int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"6"`
-	Reserved                          float64   `env:"RESERVED" envDefault:"0.18"`
+	Reserved                          float64   `env:"RESERVED" envDefault:"0.15"`
 	MaxPerChunk                       float64   `env:"MAX_PER_CHUNK" envDefault:"-1"`
 	CancelNoChangeMinutes             int       `env:"CANCEL_NO_CHANGE_MINUTES" envDefault:"30"`
 	MinOppositeDirectionHigherRanking int       `env:"MIN_OPPOSITE_DIRECTION_HIGHER_RANKING" envDefault:"2"`
@@ -51,7 +51,7 @@ type Config struct {
 	MaxCancelLossStrategyDeleted      float64   `env:"MAX_CANCEL_LOSS_STRATEGY_DELETED" envDefault:"0"`
 	Mode                              string    `env:"MODE" envDefault:"trading"`
 	PreferredLeverage                 int       `env:"PREFERRED_LEVERAGE" envDefault:"20"`
-	MaxLeverage                       int       `env:"MAX_LEVERAGE" envDefault:"50"`
+	MaxLeverage                       int       `env:"MAX_LEVERAGE" envDefault:"60"`
 	KeepTopNStrategiesOfSameSymbol    int       `env:"KEEP_TOP_N_STRATEGIES_OF_SAME_SYMBOL" envDefault:"99"`
 	Last3HrWeight                     float64   `env:"LAST_3_HR_WEIGHT" envDefault:"0"`
 	Last2HrWeight                     float64   `env:"LAST_2_HR_WEIGHT" envDefault:"1"`
