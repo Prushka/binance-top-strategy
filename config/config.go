@@ -38,8 +38,8 @@ type Config struct {
 	SymbolDirectionShrink             []float64 `env:"SYMBOL_DIRECTION_SHRINK" envDefault:"0.82,0.65,0.45"`
 	SymbolDirectionShrinkLoss         []float64 `env:"SYMBOL_DIRECTION_SHRINK_LOSS" envDefault:"0,-0.2,-0.35"`
 	TradingBlockMinutesAfterCancel    int       `env:"TRADING_BLOCK_MINUTES_AFTER_CANCEL" envDefault:"3"`
-	TakeProfits                       []float64 `env:"TAKE_PROFITS" envDefault:"0.6,0.35,0.27,0.2"`
-	TakeProfitsMaxLookbackMinutes     []int     `env:"TAKE_PROFITS_MAX_LOOKBACK_MINUTES" envDefault:"15,20,30,45"`
+	TakeProfits                       []float64 `env:"TAKE_PROFITS" envDefault:"0.6,0.34,0.27,0.2"`
+	TakeProfitsMaxLookbackMinutes     []int     `env:"TAKE_PROFITS_MAX_LOOKBACK_MINUTES" envDefault:"10,15,25,40"`
 	TakeProfitsBlockMinutes           []int     `env:"TAKE_PROFITS_BLOCK_MINUTES" envDefault:"40,-1,-1,-1"`
 	StopLossNotPickedHrs              []int     `env:"STOP_LOSS_NOT_PICKED_HRS" envDefault:"1,2,3,4,5,6"`
 	StopLossNotPicked                 []float64 `env:"STOP_LOSS_NOT_PICKED" envDefault:"0,-0.05,-0.1,-0.15,-0.2,-0.3"`
