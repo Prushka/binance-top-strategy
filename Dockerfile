@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM --platform=$BUILDPLATFORM golang:1.22-bullseye as build
+FROM --platform=$BUILDPLATFORM golang:1.22-bullseye AS build
 
 ARG TARGETOS
 ARG TARGETARCH
