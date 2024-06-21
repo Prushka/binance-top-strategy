@@ -180,10 +180,6 @@ func tick() error {
 		} else if s.Direction == gsp.SHORT {
 			shortUsers.Add(s.UserID)
 		} else {
-			if s.UserInput < 4000 {
-				log.Debugf("Skipped - Neutral with low input, %v", s)
-				continue
-			}
 			neutralUsers.Add(s.UserID)
 		}
 		sortedStrategies = append(sortedStrategies, s)
@@ -203,8 +199,8 @@ func tick() error {
 	filteredStrategies := make(gsp.Strategies, 0)
 out:
 	for _, s := range sortedStrategies {
-		if s.RunningTime > 60*config.TheConfig.MaxLookBackBookingMinutes {
-			log.Debugf("Strategy running for more than %d minutes, Skip", config.TheConfig.MaxLookBackBookingMinutes)
+		if s.RunningTime > 60*220 {
+			log.Debugf("Strategy running for more than %d minutes, Skip", 220)
 			continue
 		}
 
@@ -334,10 +330,6 @@ out:
 				discord.Infof("Strategy candidate %d %s not running", sInPool.SID, sInPool.Symbol)
 				continue
 			}
-			if s.RunningTime > 60*config.TheConfig.MaxLookBackBookingMinutes {
-				discord.Infof("Strategy %d running for more than %d minutes, Skip", s.SID, config.TheConfig.MaxLookBackBookingMinutes)
-				continue
-			}
 			err = s.PopulateRois()
 			if err != nil {
 				return err
@@ -360,6 +352,8 @@ out:
 			minWinRatio := 0.8
 			notionalMax := notional.MaxLeverage(s.Symbol)
 			requiredWlCount := 5.9
+			minInput := 1999.0
+			maxRuntimeMin := 160
 			switch s.Direction {
 			case gsp.LONG:
 				if marketPrice > s.StrategyParams.UpperLimit-gap*config.TheConfig.LongRangeDiff {
@@ -379,6 +373,8 @@ out:
 				minPriceDiff = 0.08
 				minWinRatio = 0.84
 				requiredWlCount = 11.9
+				minInput = 3999.0
+				maxRuntimeMin = 220
 			case gsp.SHORT:
 				if marketPrice < s.StrategyParams.LowerLimit+gap*config.TheConfig.ShortRangeDiff {
 					discord.Infof("Market Price too low for short, Skip")
@@ -397,6 +393,14 @@ out:
 			}
 			if wl.TotalWL < requiredWlCount {
 				log.Debugf("Total WL too low, Skip")
+				continue
+			}
+			if s.UserInput < minInput {
+				log.Debugf("Low input, Skip")
+				continue
+			}
+			if s.RunningTime > maxRuntimeMin*60 {
+				discord.Infof("Strategy %d running for more than %d minutes, Skip", s.SID, maxRuntimeMin)
 				continue
 			}
 
