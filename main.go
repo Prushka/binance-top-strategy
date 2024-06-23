@@ -329,6 +329,7 @@ out:
 				discord.Infof("Strategy candidate %d %s not running", sInPool.SID, sInPool.Symbol)
 				continue
 			}
+			s.UserMetricsDB = sInPool.UserMetricsDB
 			err = s.PopulateRois()
 			if err != nil {
 				return err
@@ -387,15 +388,15 @@ out:
 			}
 			wl := userWl.DirectionWL[s.Direction]
 			if wl.WinRatio < minWinRatio {
-				discord.Infof("Win Ratio too low, Skip")
+				discord.Infof("Win Ratio too low %.2f/%.2f, Skip", wl.WinRatio, minWinRatio)
 				continue
 			}
 			if wl.TotalWL < requiredWlCount {
-				discord.Infof("Total WL too low, Skip")
+				discord.Infof("Total WL too low %.2f/%.2f, Skip", wl.TotalWL, requiredWlCount)
 				continue
 			}
 			if s.UserInput < minInput {
-				discord.Infof("Low input, Skip")
+				discord.Infof("Low input %.2f/%.2f, Skip", s.UserInput, minInput)
 				continue
 			}
 			if s.RunningTime > maxRuntimeMin*60 {
