@@ -1,3 +1,10 @@
+CREATE TABLE grid_strategy
+(
+    strategy_id          BIGINT,
+    grid_id              BIGINT,
+    PRIMARY KEY (strategy_id, grid_id)
+);
+
 CREATE TABLE symbol
 (
     symbol_id   SERIAL PRIMARY KEY,

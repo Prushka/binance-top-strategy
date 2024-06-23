@@ -425,7 +425,7 @@ out:
 			}
 			discord.Infof(gsp.Display(s, nil, "New", c+1, len(filteredStrategies)))
 		place:
-			errr := gsp.PlaceGrid(*s, invChunk, leverage)
+			errr := gsp.PlaceGrid(*s, invChunk, leverage, false)
 			if !config.TheConfig.Paper {
 				if errr != nil {
 					discord.Infof("**Error placing grid: %v**", errr)
@@ -605,14 +605,11 @@ func main() {
 			time.Sleep(60 * time.Second)
 		}
 	case "playground":
-		g := &gsp.Grid{SID: 393703607,
-			Symbol: "ETHUSDT", Direction: "NEUTRAL", BookTime: 1718994736000}
-		log.Infof("%v", g.GetRunTime())
-		isRunning, err := gsp.DiscoverRootStrategy(g.SID, g.Symbol, gsp.NEUTRAL, g.GetRunTime())
+		s := getTestStrategy(393741846)
+		err := gsp.PlaceGrid(*s, 70, 40, false)
 		if err != nil {
 			panic(err)
 		}
-		log.Infof("Is running: %v", isRunning)
 	}
 	scheduler.StartAsync()
 	<-blocking
@@ -659,7 +656,12 @@ func getTestStrategy(id int) *gsp.Strategy {
 		panic(err)
 	}
 	ss := gsp.ToStrategies([]*gsp.ChosenStrategyDB{&s})
-	return ss[0]
+	res := ss[0]
+	err = res.PopulateRois()
+	if err != nil {
+		panic(err)
+	}
+	return res
 }
 
 func panicOnErrorSec(a interface{}, err error) {

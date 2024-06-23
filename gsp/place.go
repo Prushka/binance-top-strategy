@@ -4,9 +4,12 @@ import (
 	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/request"
+	"BinanceTopStrategies/sql"
 	"BinanceTopStrategies/utils"
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/jackc/pgx/v5"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -47,7 +50,7 @@ type placeGridResponse struct {
 	request.BinanceBaseResponse
 }
 
-func PlaceGrid(strategy Strategy, input float64, leverage int) error {
+func PlaceGrid(strategy Strategy, input float64, leverage int, useCopy bool) error {
 	if _, ok := DirectionMap[strategy.Direction]; !ok {
 		return fmt.Errorf("invalid direction: %d", strategy.Direction)
 	}
@@ -67,9 +70,11 @@ func PlaceGrid(strategy Strategy, input float64, leverage int) error {
 		TrailingDown:           strategy.StrategyParams.TrailingDown,
 		OrderCurrency:          "BASE",
 		ClientStrategyID:       "ctrc_web_" + utils.GenerateRandomNumberUUID(),
-		CopiedStrategyID:       strategy.SID,
 		TrailingStopLowerLimit: false, // !!t[E.w2.stopLowerLimit]
 		TrailingStopUpperLimit: false, // !1 in js
+	}
+	if useCopy {
+		payload.CopiedStrategyID = strategy.SID
 	}
 	if payload.TrailingUp || payload.TrailingDown {
 		payload.OrderCurrency = "QUOTE"
@@ -95,6 +100,16 @@ func PlaceGrid(strategy Strategy, input float64, leverage int) error {
 		log.Infof("Paper mode, not placing grid")
 		return nil
 	}
-	_, _, err := request.PrivateRequest("https://www.binance.com/bapi/futures/v2/private/future/grid/place-grid", "POST", payload, &placeGridResponse{})
+	resp, _, err := request.PrivateRequest("https://www.binance.com/bapi/futures/v2/private/future/grid/place-grid", "POST", payload, &placeGridResponse{})
+	if err == nil {
+		err = sql.SimpleTransaction(func(tx pgx.Tx) error {
+			_, err = tx.Exec(context.Background(), `INSERT INTO bts.grid_strategy (strategy_id, grid_id) VALUES ($1, $2)`,
+				strategy.SID, resp.Data.StrategyID)
+			return err
+		})
+		if err != nil {
+			log.Errorf("Error inserting grid_strategy: %v", err)
+		}
+	}
 	return err
 }

@@ -64,15 +64,14 @@ func IsGridOriStrategyRunning(grid *Grid) (*Strategy, error) {
 	var oriUid int
 	err := sql.GetDB().ScanOne(&oriUid, `SELECT user_id FROM bts.strategy WHERE strategy_id = $1`,
 		oriSID)
-	if err != nil {
-		return nil, err
-	}
-	rois, err := RoisCache.Get(fmt.Sprintf("%d-%d", oriSID, oriUid))
-	if err != nil {
-		return nil, err
-	}
-	if !rois.isRunning() {
-		return nil, nil
+	if err == nil {
+		rois, err := RoisCache.Get(fmt.Sprintf("%d-%d", oriSID, oriUid))
+		if err != nil {
+			return nil, err
+		}
+		if !rois.isRunning() {
+			return nil, nil
+		}
 	}
 	discoverStrategy, err := DiscoverRootStrategy(oriSID, grid.Symbol, DirectionSMap[grid.Direction], grid.GetRunTime())
 	if err != nil {

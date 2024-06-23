@@ -5,6 +5,7 @@ import (
 	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/request"
+	"BinanceTopStrategies/sql"
 	mapset "github.com/deckarep/golang-set/v2"
 	"time"
 )
@@ -19,6 +20,15 @@ func getOpenGrids() (*openGridResponse, error) {
 	res, _, err := request.PrivateRequest(url, "POST", nil, &openGridResponse{})
 	if err != nil {
 		return nil, err
+	}
+	for _, grid := range res.Grids {
+		id := 0
+		err = sql.GetDB().ScanOne(&id, "SELECT strategy_id FROM bts.grid_strategy WHERE grid_id=$1", grid.GID)
+		if err != nil {
+			discord.Errorf("Error getting strategy id for grid %d: %v", grid.GID, err)
+			return nil, err
+		}
+		grid.SID = id
 	}
 	return res, nil
 }
