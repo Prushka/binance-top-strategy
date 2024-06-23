@@ -605,12 +605,14 @@ func main() {
 			time.Sleep(60 * time.Second)
 		}
 	case "playground":
-		wl, err := gsp.UserWLCache.Get("10233812")
+		g := &gsp.Grid{SID: 393703607,
+			Symbol: "ETHUSDT", Direction: "NEUTRAL", BookTime: 1718994736000}
+		log.Infof("%v", g.GetRunTime())
+		isRunning, err := gsp.DiscoverRootStrategy(g.SID, g.Symbol, gsp.NEUTRAL, g.GetRunTime())
 		if err != nil {
 			panic(err)
 		}
-		log.Info(wl)
-		wlInspect()
+		log.Infof("Is running: %v", isRunning)
 	}
 	scheduler.StartAsync()
 	<-blocking

@@ -528,7 +528,7 @@ func mergeStrategies(sps ...StrategyQuery) (*TrackedStrategies, error) {
 		sss = append(sss, by...)
 	}
 	sort.Slice(sss, func(i, j int) bool {
-		return sss[i].Roi > sss[j].Roi
+		return sss[i].Pnl > sss[j].Pnl
 	})
 	return sss.toTrackedStrategies(), nil
 }
@@ -549,8 +549,8 @@ func DiscoverRootStrategy(sid int, symbol string, direction int, roughRuntime ti
 	getQuery := func(quote string) StrategyQuery {
 		sym := symbol[:len(symbol)-4] + quote
 		return StrategyQuery{Type: FUTURE, Sort: SortByPnl,
-			RuntimeMin: roughRuntime - 4*time.Hour,
-			RuntimeMax: roughRuntime + time.Duration(480)*time.Minute,
+			RuntimeMin: roughRuntime - 9*time.Hour,
+			RuntimeMax: roughRuntime + 9*time.Hour,
 			Symbol:     sym, Direction: utils.IntPointer(direction),
 			Count: 2000}
 	}

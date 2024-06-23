@@ -252,7 +252,7 @@ WITH LatestRoi AS (SELECT strategy_id,
                                      JOIN strategy s ON l.strategy_id = s.strategy_id
                             WHERE l.rn = 1
                               AND e.rn = 1
-                              AND (l.roi > 0.01 OR l.roi < -0.01)
+                              AND (l.roi >= 0.001 OR l.roi <= -0.001)
                               AND s.strategy_type = 2),
      UserOriginalInputs AS (SELECT f.user_id,
                                    SUM(f.original_input)              AS total_original_input, -- Calculating original input and summing it per user
@@ -273,9 +273,10 @@ WITH LatestRoi AS (SELECT strategy_id,
                             GROUP BY f.user_id)
 SELECT u.*
 FROM UserOriginalInputs u
-WHERE u.user_id = 129661750
+WHERE u.user_id = 796012744
 ORDER BY total_roi DESC;
 
+SELECT * FROM strategy WHERE user_id=796012744;
 
 
 SELECT COUNT(s.strategy_id)
