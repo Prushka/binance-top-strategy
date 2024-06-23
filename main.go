@@ -157,6 +157,10 @@ func tick() error {
 	shortUsers := mapset.NewSet[int]()
 	neutralUsers := mapset.NewSet[int]()
 	for _, s := range gsp.GetPool().Strategies {
+		if s.RunningTime > 60*220 {
+			log.Debugf("Strategy running for more than %d minutes, Skip", 220)
+			continue
+		}
 		if s.Roi < 0 {
 			continue
 		}
@@ -199,11 +203,6 @@ func tick() error {
 	filteredStrategies := make(gsp.Strategies, 0)
 out:
 	for _, s := range sortedStrategies {
-		if s.RunningTime > 60*220 {
-			log.Debugf("Strategy running for more than %d minutes, Skip", 220)
-			continue
-		}
-
 		userStrategies := gsp.GetPool().StrategiesByUserId[s.UserID]
 		for _, us := range userStrategies {
 			if us.Symbol == s.Symbol && us.Direction != s.Direction {
@@ -388,15 +387,15 @@ out:
 			}
 			wl := userWl.DirectionWL[s.Direction]
 			if wl.WinRatio < minWinRatio {
-				log.Debugf("Win Ratio too low, Skip")
+				discord.Infof("Win Ratio too low, Skip")
 				continue
 			}
 			if wl.TotalWL < requiredWlCount {
-				log.Debugf("Total WL too low, Skip")
+				discord.Infof("Total WL too low, Skip")
 				continue
 			}
 			if s.UserInput < minInput {
-				log.Debugf("Low input, Skip")
+				discord.Infof("Low input, Skip")
 				continue
 			}
 			if s.RunningTime > maxRuntimeMin*60 {
