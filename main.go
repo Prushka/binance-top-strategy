@@ -373,7 +373,7 @@ out:
 				minPriceDiff = 0.08
 				minWinRatio = 0.84
 				requiredWlCount = 11.9
-				minInput = 3999.0
+				minInput = 2999.0
 				maxRuntimeMin = 220
 			case gsp.SHORT:
 				if marketPrice < s.StrategyParams.LowerLimit+gap*config.TheConfig.ShortRangeDiff {
