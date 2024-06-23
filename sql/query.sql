@@ -98,7 +98,7 @@ WITH LatestRoi AS (SELECT strategy_id,
 SELECT u.*
 FROM UserOriginalInputs u
 WHERE u.total_original_input >= 8500
-  AND strategy_count >= 20
+  AND strategy_count >= 15
 --   AND min_roi >= 0.001
   AND total_roi >= 0.04
   AND avg_original_input >= 500
@@ -268,12 +268,12 @@ WITH LatestRoi AS (SELECT strategy_id,
                                    COUNT(f.concluded)                 AS concluded_count,
                                    MIN(f.earliest_roi_time)           AS earliest_roi_time
                             FROM FilteredStrategies f
-                            WHERE f.runtime >= 14400
-                              AND f.original_input > 498
+                            WHERE f.runtime >= 10800
+                              AND f.original_input > 198
                             GROUP BY f.user_id)
 SELECT u.*
 FROM UserOriginalInputs u
-WHERE u.user_id = 25699917
+WHERE u.user_id = 129661750
 ORDER BY total_roi DESC;
 
 
