@@ -383,7 +383,7 @@ out:
 				minPriceDiff = 0.02
 			}
 			if currency == "USDC" && overwriteQuote == "" {
-				minInput *= 0.7
+				minInput *= 0.75
 			}
 			if priceDiff < minPriceDiff {
 				discord.Infof("Price difference too low, Skip")
