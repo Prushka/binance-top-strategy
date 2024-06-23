@@ -276,8 +276,6 @@ FROM UserOriginalInputs u
 WHERE u.user_id = 796012744
 ORDER BY total_roi DESC;
 
-SELECT * FROM strategy WHERE user_id=796012744;
-
 
 SELECT COUNT(s.strategy_id)
 FROM bts.strategy s
