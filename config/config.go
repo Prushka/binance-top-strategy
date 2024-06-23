@@ -16,7 +16,6 @@ type Config struct {
 	CookieTime                     string `db:"COOKIE_TIME"`
 	CookieTimeParsed               time.Time
 	MarginType                     string    `env:"MARGIN_TYPE" envDefault:"CROSSED"`
-	StrategiesCount                int       `env:"STRATEGIES_COUNT" envDefault:"3000"`
 	RuntimeMinHours                int       `env:"RUNTIME_MIN_HOURS" envDefault:"3"`
 	RuntimeMaxHours                int       `env:"RUNTIME_MAX_HOURS" envDefault:"168"`
 	Paper                          bool      `env:"PAPER" envDefault:"true"`

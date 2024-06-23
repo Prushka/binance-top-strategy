@@ -513,7 +513,7 @@ func mergeStrategies(sps ...StrategyQuery) (*TrackedStrategies, error) {
 	sss := make(Strategies, 0)
 	for _, sp := range sps {
 		if sp.Count == 0 {
-			sp.Count = config.TheConfig.StrategiesCount
+			sp.Count = 3000
 		}
 		if sp.RuntimeMin == -1 {
 			sp.RuntimeMin = time.Duration(config.TheConfig.RuntimeMinHours) * time.Hour
