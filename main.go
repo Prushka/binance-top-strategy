@@ -352,7 +352,7 @@ out:
 			minWinRatio := 0.8
 			notionalMax := notional.MaxLeverage(s.Symbol)
 			requiredWlCount := 5.9
-			minInput := 999.0
+			minInput := 998.0
 			maxRuntimeMin := 160
 			switch s.Direction {
 			case gsp.LONG:
@@ -373,7 +373,7 @@ out:
 				minPriceDiff = 0.08
 				minWinRatio = 0.84
 				requiredWlCount = 11.9
-				minInput = 2999.0
+				minInput = 2998.0
 				maxRuntimeMin = 220
 			case gsp.SHORT:
 				if marketPrice < s.StrategyParams.LowerLimit+gap*config.TheConfig.ShortRangeDiff {
