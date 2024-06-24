@@ -352,7 +352,7 @@ out:
 			minWinRatio := 0.8
 			notionalMax := notional.MaxLeverage(s.Symbol)
 			requiredWlCount := 5.9
-			minInput := 1999.0
+			minInput := 999.0
 			maxRuntimeMin := 160
 			switch s.Direction {
 			case gsp.LONG:
