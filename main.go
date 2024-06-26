@@ -371,7 +371,7 @@ out:
 					leverage = minLeverage
 				}
 				minPriceDiff = 0.08
-				minWinRatio = 0.837
+				minWinRatio = 0.84
 				requiredWlCount = 11.9
 				minInput = 2998.0
 				maxRuntimeMin = 220
