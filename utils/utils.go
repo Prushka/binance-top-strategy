@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/discord"
 	"encoding/json"
 	"fmt"
@@ -42,10 +41,7 @@ func MapValues[T comparable, U any](m map[T]U) []U {
 
 func TillNextRefresh() time.Duration {
 	minutesTillNextHour := 60 - time.Now().Minute()
-	if minutesTillNextHour >= 30 {
-		return time.Duration(minutesTillNextHour+config.TheConfig.ShiftMinutesAfterHour) * time.Minute
-	}
-	return time.Duration(minutesTillNextHour+config.TheConfig.ShiftMinutesAfterHour+60) * time.Minute
+	return time.Duration(minutesTillNextHour+19) * time.Minute
 }
 
 func IntMin(a, b int) int {
