@@ -29,7 +29,7 @@ type Config struct {
 	ShiftMinutesAfterHour          int       `env:"SHIFT_MINUTES_AFTER_HOUR" envDefault:"0"`
 	LastNHoursNoDips               int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"6"`
 	LastNHoursAllPositive          int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"6"`
-	Reserved                       float64   `env:"RESERVED" envDefault:"0.15"`
+	Reserved                       float64   `env:"RESERVED" envDefault:"0.12"`
 	MaxPerChunk                    float64   `env:"MAX_PER_CHUNK" envDefault:"-1"`
 	TradingBlockMinutesAfterCancel int       `env:"TRADING_BLOCK_MINUTES_AFTER_CANCEL" envDefault:"3"`
 	TakeProfits                    []float64 `env:"TAKE_PROFITS" envDefault:"0.6,0.34,0.27,0.2"`
