@@ -176,7 +176,7 @@ WHERE f.original_input > 349;`, user)
 				}
 			case NEUTRAL:
 				threshold := 0.065
-				lossThreshold := 0.2
+				lossThreshold := 0.18
 				mid := (s.LowerLimit + s.UpperLimit) / 2
 				if end < s.UpperLimit && end > s.LowerLimit && s.ROI > 0 {
 					modifier := 1.0
