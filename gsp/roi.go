@@ -188,9 +188,9 @@ WHERE f.original_input > 349;`, user)
 					} else if utils.InRange(end, mid, threshold) {
 						modifier *= 0.8
 					} else if utils.InRange(end, start, lossThreshold) {
-						modifier *= 0.2
+						modifier *= 0.4
 					} else {
-						modifier *= 0
+						modifier *= 0.1
 					}
 					w.Win += modifier
 				} else {
