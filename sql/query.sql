@@ -100,7 +100,7 @@ FROM UserOriginalInputs u
 WHERE u.total_original_input >= 8500
   AND strategy_count >= 12
 --   AND min_roi >= 0.001
-  AND total_roi >= 0.04
+  AND total_roi >= 0.025
   AND avg_original_input >= 500
 ORDER BY total_roi DESC;
 
@@ -176,7 +176,7 @@ SELECT f.roi     as roi,
        p.concluded
 FROM FilteredStrategies f
          JOIN Pool p ON f.strategy_id = p.strategy_id
-WHERE f.original_input > 798
+WHERE f.original_input > 998
   AND f.original_input >= p.avg_original_input * 0.7
 ORDER BY p.total_roi DESC, f.original_input DESC;
 
@@ -273,7 +273,7 @@ WITH LatestRoi AS (SELECT strategy_id,
                             GROUP BY f.user_id)
 SELECT u.*
 FROM UserOriginalInputs u
-WHERE u.user_id = 796012744
+WHERE u.user_id = 507526257
 ORDER BY total_roi DESC;
 
 
@@ -366,3 +366,6 @@ WITH Pool AS (
           p.concluded
 FROM FilteredStrategies f JOIN Pool p ON f.strategy_id = p.strategy_id LEFT JOIN NegativeChange n ON n.strategy_id = f.strategy_id
 WHERE f.original_input > 349;
+
+
+SELECT * FROM strategy WHERE user_id=507526257;
