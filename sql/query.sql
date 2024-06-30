@@ -227,3 +227,6 @@ WHERE f.original_input > 349;
 
 
 SELECT * FROM strategy WHERE user_id=507526257;
+
+
+SELECT * FROM bts.strategy WHERE user_id=10152152 and concluded is null;
