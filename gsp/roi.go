@@ -2,7 +2,6 @@ package gsp
 
 import (
 	"BinanceTopStrategies/cache"
-	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/request"
 	"BinanceTopStrategies/sql"
 	"BinanceTopStrategies/utils"
@@ -32,7 +31,7 @@ var RoisCache = cache.CreateMapCache[StrategyRoi](
 			return true
 		}
 		latestTime := time.Unix(rois[0].Time, 0)
-		if time.Now().Sub(latestTime) > time.Duration(60+config.TheConfig.ShiftMinutesAfterHour)*time.Minute {
+		if time.Now().Sub(latestTime) > 60*time.Minute {
 			return true
 		}
 		return false

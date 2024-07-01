@@ -30,7 +30,7 @@ func checkTakeProfits(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 	for c, gpMax := range config.TheConfig.TakeProfits {
 		gpMax = config.GetNormalized(gpMax, grid.InitialLeverage)
 		if grid.LastRoi >= gpMax {
-			gpLookBack := time.Duration(config.TheConfig.TakeProfitsMaxLookbackMinutes[c]) * time.Minute
+			gpLookBack := time.Duration(config.TheConfig.TakeProfitsMaxLookBackMinutes[c]) * time.Minute
 			gpBlock := time.Duration(config.TheConfig.TakeProfitsBlockMinutes[c]) * time.Minute
 			gridTracking := grid.GetTracking()
 			lowerBound, _ := gridTracking.GetLocalWithin(gpLookBack)
