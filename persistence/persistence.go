@@ -1,7 +1,6 @@
 package persistence
 
 import (
-	"BinanceTopStrategies/blacklist"
 	"BinanceTopStrategies/cleanup"
 	"BinanceTopStrategies/config"
 	"BinanceTopStrategies/discord"
@@ -11,9 +10,7 @@ import (
 )
 
 const (
-	GridStatesFileName     = "grid_states.json"
-	BlacklistFileName      = "blacklist.json"
-	MarkForRemovalFileName = "mark_for_removal.json"
+	GridStatesFileName = "grid_states.json"
 )
 
 type Registry struct {
@@ -46,8 +43,6 @@ func load(dataPointer any, fileName string) error {
 
 var registries = []Registry{
 	{FileName: GridStatesFileName, DataPtr: &gsp.TheGridEnv},
-	{FileName: BlacklistFileName, DataPtr: &blacklist.TheBlacklist},
-	{FileName: MarkForRemovalFileName, DataPtr: &gsp.ForRemoval},
 }
 
 func Init() {

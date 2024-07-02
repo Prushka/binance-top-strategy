@@ -15,6 +15,7 @@ import (
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/go-co-op/gocron"
 	log "github.com/sirupsen/logrus"
+	"log/slog"
 	"math"
 	"os"
 	"reflect"
@@ -53,14 +54,16 @@ func checkStopLoss(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 	for c, sl := range config.TheConfig.StopLossMarkForRemoval {
 		slAt := config.TheConfig.StopLossMarkForRemovalSLAt[c]
 		if grid.LastRoi < config.GetNormalized(sl, grid.InitialLeverage) {
-			gsp.GridMarkForRemoval(grid.GID, slAt)
-			discord.Infof(fmt.Sprintf("**stop loss marked for removal**: %.2f%%", (slAt)*100))
+			reason := fmt.Sprintf("**stop loss marked for removal**: %.2f%%", (slAt)*100)
+			gsp.GridMarkForRemoval(grid.GID, slAt, reason)
+			discord.Infof(reason)
 		}
 	}
 	if !grid.MarketPriceWithinRange() && grid.LastRoi < config.GetNormalized(-0.12, grid.InitialLeverage) {
 		slAt := 0.0
-		gsp.GridMarkForRemoval(grid.GID, slAt)
-		discord.Infof(fmt.Sprintf("**stop loss (oor) marked for removal**: %.2f%%", (slAt)*100))
+		reason := fmt.Sprintf("**stop loss (oor) marked for removal**: %.2f%%", (slAt)*100)
+		gsp.GridMarkForRemoval(grid.GID, slAt, reason)
+		discord.Infof(reason)
 	}
 	maxLoss := gsp.GetMaxLoss(grid.GID)
 	if maxLoss != nil && grid.LastRoi > *maxLoss {
@@ -187,10 +190,6 @@ func tick() error {
 		discord.Infof("All symbols exists in open grids, Skip")
 		return nil
 	}
-	if bl, _ := blacklist.IsTradingBlocked(); bl && !config.TheConfig.Paper {
-		discord.Infof("Trading Block, Skip")
-		return nil
-	}
 	if time.Now().Minute() < 19 {
 		discord.Infof("Only trade after min 19, Skip")
 		return nil
@@ -247,17 +246,7 @@ func tick() error {
 				continue
 			}
 
-			if bl, till := blacklist.SIDBlacklisted(s.SID); bl {
-				blacklistedInPool.Add(fmt.Sprintf("%d", s.SID))
-				log.Infof("Strategy blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
-				continue
-			}
-			if bl, till := blacklist.SymbolDirectionBlacklisted(s.Symbol, gsp.DirectionMap[s.Direction]); bl {
-				blacklistedInPool.Add(s.SD())
-				log.Infof("Symbol Direction blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
-				continue
-			}
-			if bl, till := blacklist.SymbolBlacklisted(s.Symbol); bl {
+			if bl, till := blacklist.IsTradingBlocked(s.Symbol, gsp.DirectionMap[s.Direction]); bl {
 				blacklistedInPool.Add(s.Symbol)
 				log.Infof("Symbol blacklisted till %s, Skip", till.Format("2006-01-02 15:04:05"))
 				continue
@@ -564,11 +553,9 @@ func main() {
 			time.Sleep(60 * time.Second)
 		}
 	case "playground":
-		wl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", 10152152))
-		if err != nil {
-			panic(err)
-		}
-		log.Info(wl)
+		blacklist.BlockTrading(5*time.Minute, "TEST")
+		bl, till := blacklist.IsTradingBlocked("TESTSYMBOL5", "SHORT")
+		slog.Info("blacklist", slog.Any("bl", bl), "till", till)
 	}
 	scheduler.StartAsync()
 	<-blocking

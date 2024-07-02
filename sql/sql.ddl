@@ -97,6 +97,22 @@ CREATE TABLE config
     VALUE TEXT
 );
 
+CREATE TABLE blacklist
+(
+    KEY TEXT primary key not null,
+    TILL TIMESTAMP WITH TIME ZONE,
+    REASON TEXT
+);
+
+CREATE TABLE for_removal
+(
+    gid BIGINT primary key not null,
+    max_loss NUMERIC,
+    max_gain NUMERIC,
+    reason_loss TEXT,
+    reason_gain TEXT
+);
+
 SELECT public.create_hypertable('bts.roi', 'time', if_not_exists => TRUE);
 CREATE INDEX IF NOT EXISTS roi_pnl_idx ON bts.roi (time, strategy_id);
 
