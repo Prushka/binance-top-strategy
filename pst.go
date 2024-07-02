@@ -35,7 +35,7 @@ func testStrategy(s *gsp.Strategy) (bool, error, string) {
 		}
 		userStrategiesCount++
 	}
-	if userStrategiesCount > 10 {
+	if userStrategiesCount > 7 {
 		return false, nil, fmt.Sprintf("User %d already has %d strategies, Skip", s.UserID, userStrategiesCount)
 	}
 	discord.Infof(userWl.String())
