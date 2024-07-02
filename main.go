@@ -15,7 +15,6 @@ import (
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/go-co-op/gocron"
 	log "github.com/sirupsen/logrus"
-	"log/slog"
 	"math"
 	"os"
 	"reflect"
@@ -553,9 +552,9 @@ func main() {
 			time.Sleep(60 * time.Second)
 		}
 	case "playground":
-		blacklist.BlockTrading(5*time.Minute, "TEST")
-		bl, till := blacklist.IsTradingBlocked("TESTSYMBOL5", "SHORT")
-		slog.Info("blacklist", slog.Any("bl", bl), "till", till)
+		gsp.GridMarkForRemoval(1, -0.6, "test4")
+		loss := gsp.GetMaxLoss(1)
+		log.Infof("Max Loss: %v", utils.AsJson(loss))
 	}
 	scheduler.StartAsync()
 	<-blocking

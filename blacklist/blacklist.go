@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v5"
-	log "github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -23,7 +22,7 @@ WHERE bts.blacklist.till < EXCLUDED.till;`,
 		return err
 	})
 	if err != nil {
-		log.Errorf("Error inserting blacklist: %v", err)
+		discord.Errorf("Error inserting blacklist: %v", err)
 	}
 }
 
