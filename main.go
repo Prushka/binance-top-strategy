@@ -153,40 +153,18 @@ func tick() error {
 	sessionSIDs := gsp.GGrids.ExistingSIDs.Clone()
 	sessionNeutrals := gsp.GGrids.Neutrals.Cardinality()
 	sortedStrategies := make(gsp.Strategies, 0)
-	longUsers := mapset.NewSet[int]()
-	shortUsers := mapset.NewSet[int]()
-	neutralUsers := mapset.NewSet[int]()
 	for _, s := range gsp.GetPool().Strategies {
-		if s.RunningTime > 60*220 {
-			log.Debugf("Strategy running for more than %d minutes, Skip", 220)
-			continue
-		}
-		if s.Roi < 0 {
-			continue
-		}
-		userWl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", s.UserID))
+		p, err, reason := testStrategy(s)
 		if err != nil {
 			return err
 		}
-		wl := userWl.DirectionWL[s.Direction]
-		if wl.WinRatio < 0.8 ||
-			(wl.ShortRunningRatio > 0.24 && wl.WinRatio < 0.979) ||
-			wl.TotalWL < 5 {
-			log.Debugf("Skipped, %v", userWl)
-			continue
-		}
-		if time.Now().Sub(wl.EarliestTime) < 30*24*time.Hour {
-			log.Debugf("Skipped - Less than one month, %v", userWl)
-			continue
-		}
-		if s.Direction == gsp.LONG {
-			longUsers.Add(s.UserID)
-		} else if s.Direction == gsp.SHORT {
-			shortUsers.Add(s.UserID)
+		if !p {
+			if !strings.Contains(reason, "for more than 220") {
+				log.Infof("Strategy %d - %s not passing: %s", s.SID, s.Symbol, reason)
+			}
 		} else {
-			neutralUsers.Add(s.UserID)
+			sortedStrategies = append(sortedStrategies, s)
 		}
-		sortedStrategies = append(sortedStrategies, s)
 	}
 	sort.Slice(sortedStrategies, func(i, j int) bool {
 		iWL, _ := gsp.UserWLCache.Get(fmt.Sprintf("%d", sortedStrategies[i].UserID))
@@ -196,30 +174,8 @@ func tick() error {
 		return iWLRatio > jWLRatio
 	})
 	longs, shorts, neutrals := sortedStrategies.GetLSN()
-	discord.Infof("Filtered strategies by WL: %d, %d users | L/S/N: %d(%d), %d(%d), %d(%d)",
-		len(sortedStrategies),
-		sortedStrategies.Users(), longs, longUsers.Cardinality(),
-		shorts, shortUsers.Cardinality(), neutrals, neutralUsers.Cardinality())
-	filteredStrategies := make(gsp.Strategies, 0)
-out:
-	for _, s := range sortedStrategies {
-		userStrategies := gsp.GetPool().StrategiesByUserId[s.UserID]
-		for _, us := range userStrategies {
-			if us.Symbol == s.Symbol && us.Direction != s.Direction {
-				discord.Infof("Same symbol hedging, Skip")
-				continue out
-			}
-		}
-		userWl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", s.UserID))
-		if err != nil {
-			return err
-		}
-		discord.Infof(userWl.String())
-		discord.Infof(gsp.Display(s, nil, "Candidate", 0, 0))
-		filteredStrategies = append(filteredStrategies, s)
-	}
-	longs, shorts, neutrals = filteredStrategies.GetLSN()
-	discord.Infof("Filtered 2nd strategies by WL: %d, %d users | L/S/N: %d, %d, %d", len(filteredStrategies), filteredStrategies.Users(), longs, shorts, neutrals)
+	discord.Infof("Filtered strategies: %d, %d users | L/S/N: %d, %d, %d", len(sortedStrategies),
+		sortedStrategies.Users(), longs, shorts, neutrals)
 
 	if config.TheConfig.MaxUSDTChunks-usdtChunks <= 0 &&
 		config.TheConfig.MaxUSDCChunks-usdcChunks <= 0 && !config.TheConfig.Paper {
@@ -268,7 +224,7 @@ out:
 			return place(adjusted, existingChunks, currency, overwriteQuote, balance)
 		}
 		invChunk = float64(int(invChunk))
-		for c, s := range filteredStrategies {
+		for c, s := range sortedStrategies {
 			strategyQuote := s.Symbol[len(s.Symbol)-4:]
 			if strategyQuote != currency && strategyQuote != overwriteQuote {
 				log.Debugf("wrong quote (%s, %s), Skip", currency, strategyQuote)
@@ -307,13 +263,13 @@ out:
 				continue
 			}
 			userStrategies := 0
-			for _, s := range filteredStrategies {
-				if s.UserID == userStrategies {
+			for _, ss := range sortedStrategies {
+				if s.UserID == ss.UserID {
 					userStrategies++
 				}
 			}
 			if userStrategies > 5 {
-				discord.Infof("User %d already has %d strategies, Skip", s.UserID, userStrategies)
+				discord.Infof("User %d already has %d strategies in sorted, Skip", s.UserID, userStrategies)
 				continue
 			}
 			userWl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", s.UserID))
@@ -426,7 +382,7 @@ out:
 			if overwriteQuote != "" {
 				s.Symbol = utils.OverwriteQuote(s.Symbol, overwriteQuote, len(currency))
 			}
-			discord.Infof(gsp.Display(s, nil, "New", c+1, len(filteredStrategies)))
+			discord.Infof(gsp.Display(s, nil, "New", c+1, len(sortedStrategies)))
 		place:
 			errr := gsp.PlaceGrid(*s, invChunk, leverage, false)
 			if !config.TheConfig.Paper {
@@ -446,7 +402,7 @@ out:
 						goto place
 					}
 				} else {
-					discord.Actionf(gsp.Display(s, nil, "**Opened Grid**", c+1, len(filteredStrategies)))
+					discord.Actionf(gsp.Display(s, nil, "**Opened Grid**", c+1, len(sortedStrategies)))
 					chunksInt -= 1
 					sessionSymbols.Add(s.Symbol)
 					sessionSIDs.Add(s.SID)
@@ -608,11 +564,11 @@ func main() {
 			time.Sleep(60 * time.Second)
 		}
 	case "playground":
-		s := getTestStrategy(393741846)
-		err := gsp.PlaceGrid(*s, 70, 40, false)
+		wl, err := gsp.UserWLCache.Get(fmt.Sprintf("%d", 10152152))
 		if err != nil {
 			panic(err)
 		}
+		log.Info(wl)
 	}
 	scheduler.StartAsync()
 	<-blocking

@@ -229,4 +229,6 @@ WHERE f.original_input > 349;
 SELECT * FROM strategy WHERE user_id=507526257;
 
 
-SELECT * FROM bts.strategy WHERE user_id=10152152 and concluded is null;
+SELECT * FROM bts.strategy WHERE user_id=26053825 and concluded is null;
+
+SELECT * FROM thepool WHERE user_id=26053825 and concluded is null ORDER BY time_discovered DESC;
