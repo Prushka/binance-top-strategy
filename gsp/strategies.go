@@ -400,6 +400,7 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 	grids := ""
 	marketPrice := 0.0
 	wl := ""
+	userPoolStrategies := ""
 	formatPriceRange := func(lower, upper, symbol, direction string) string {
 		mp, _ := sdk.GetSessionSymbolPrice(symbol)
 		l, _ := strconv.ParseFloat(lower, 64)
@@ -441,6 +442,13 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		grids = fmt.Sprintf("%d", grid.GridCount)
 		matchedRatio = fmt.Sprintf("%.2f", grid.GetMatchedRatio())
 		if s != nil {
+			userPoolStrategiesCount := 0
+			for _, ss := range GetPool().Strategies {
+				if ss.UserID == s.UserID {
+					userPoolStrategiesCount++
+				}
+			}
+			userPoolStrategies = fmt.Sprintf("Pool: %d", userPoolStrategiesCount)
 			matchedRatio = fmt.Sprintf("S/G: %.2f/%.2f", s.GetMatchedRatio(), grid.GetMatchedRatio())
 			if DirectionMap[s.Direction] != grid.Direction {
 				direction = fmt.Sprintf("S/G: %s/%s", DirectionMap[s.Direction], grid.Direction)
@@ -476,9 +484,9 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		seq = fmt.Sprintf("%d/%d - ", index, length)
 	}
 
-	return fmt.Sprintf("* [%s%s%s, %s, %s, %f/%s, %s Grids, %s %s, %s] %s: %s%s",
+	return fmt.Sprintf("* [%s%s%s, %s, %s, %f/%s, %s Grids, %s %s, %s, %s] %s: %s%s",
 		seq, utils.FormatPair(symbol), direction, leverage, runTime,
-		marketPrice, priceRange, grids, strategyId, wl, matchedRatio, action, ss, gg)
+		marketPrice, priceRange, grids, strategyId, wl, matchedRatio, userPoolStrategies, action, ss, gg)
 }
 
 const (
