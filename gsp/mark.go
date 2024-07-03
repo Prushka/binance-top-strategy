@@ -1,10 +1,10 @@
 package gsp
 
 import (
+	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/sql"
 	"context"
 	"github.com/jackc/pgx/v5"
-	log "github.com/sirupsen/logrus"
 )
 
 func GridMarkForRemoval(gid int, maxLoss float64, reason string) {
@@ -19,7 +19,7 @@ func GridMarkForRemoval(gid int, maxLoss float64, reason string) {
 		return err
 	})
 	if err != nil {
-		log.Errorf("Error inserting for removal: %v", err)
+		discord.Errorf("Error inserting for removal: %v", err)
 	}
 }
 

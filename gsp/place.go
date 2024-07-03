@@ -108,7 +108,7 @@ func PlaceGrid(strategy Strategy, input float64, leverage int, useCopy bool) err
 			return err
 		})
 		if err != nil {
-			log.Errorf("Error inserting grid_strategy: %v", err)
+			discord.Errorf("Error inserting grid_strategy: %v", err)
 		}
 	}
 	return err

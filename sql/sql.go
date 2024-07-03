@@ -3,9 +3,9 @@ package sql
 import (
 	"BinanceTopStrategies/cleanup"
 	"BinanceTopStrategies/config"
+	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/multierr"
 	"context"
-	"errors"
 	"fmt"
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5"
@@ -16,13 +16,6 @@ import (
 	"os"
 	"time"
 )
-
-type PgxWithPanic interface {
-	QueryWithPanic(ctx context.Context, sql string, args ...any) pgx.Rows
-	ExecWithPanic(ctx context.Context, sql string, args ...any) pgconn.CommandTag
-	ScanOneWithPanic(dst interface{}, query string, args ...interface{})
-	ScanWithPanic(dst interface{}, query string, args ...interface{})
-}
 
 type PgxDB interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
@@ -38,7 +31,6 @@ type DBScan interface {
 type Pgx interface {
 	PgxDB
 	DBScan
-	PgxWithPanic
 }
 
 type pgxDBImpl struct {
@@ -114,26 +106,8 @@ func (w *pgxDBImpl) Query(ctx context.Context, sql string, args ...any) (pgx.Row
 	return w.db.Query(ctx, sql, args...)
 }
 
-func (w *pgxDBImpl) QueryWithPanic(ctx context.Context, sql string, args ...any) pgx.Rows {
-	rows, err := w.db.Query(ctx, sql, args...)
-	if err != nil {
-		log.Errorf("Error querying: %v", err)
-		panic("querying failed")
-	}
-	return rows
-}
-
 func (w *pgxDBImpl) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
 	return w.db.Exec(ctx, sql, args...)
-}
-
-func (w *pgxDBImpl) ExecWithPanic(ctx context.Context, sql string, args ...any) pgconn.CommandTag {
-	tag, err := w.db.Exec(ctx, sql, args...)
-	if err != nil {
-		log.Errorf("Error executing: %v", err)
-		panic("exec failed")
-	}
-	return tag
 }
 
 func (w *pgxDBImpl) Scan(dst interface{}, query string, args ...interface{}) error {
@@ -144,35 +118,12 @@ func (w *pgxDBImpl) ScanOne(dst interface{}, query string, args ...interface{}) 
 	return ScanOne(w.db, dst, query, args...)
 }
 
-func (w *pgxDBImpl) ScanWithPanic(dst interface{}, query string, args ...interface{}) {
-	err := Scan(w.db, dst, query, args...)
-	if err != nil {
-		log.Errorf("Error scanning: %v", err)
-		panic("scan failed")
-	}
-}
-
-func (w *pgxDBImpl) ScanOneWithPanic(dst interface{}, query string, args ...interface{}) {
-	err := ScanOne(w.db, dst, query, args...)
-	if err != nil {
-		log.Errorf("Error scanning: %v", err)
-		if errors.As(err, &pgx.ErrNoRows) {
-			panic("no record or scan failed due to validation")
-		}
-		panic("scan failed")
-	}
-}
-
 func Scan(tx pgxscan.Querier, dst interface{}, query string, args ...interface{}) error {
 	return pgxscan.Select(context.Background(), tx, dst, query, args...)
 }
 
 func ScanOne(tx pgxscan.Querier, dst interface{}, query string, args ...interface{}) error {
 	return pgxscan.Get(context.Background(), tx, dst, query, args...)
-}
-
-func ExecWithPanic(ctx context.Context, sql string, args ...any) pgconn.CommandTag {
-	return wrappedPgx.ExecWithPanic(ctx, sql, args...)
 }
 
 func SimpleTransaction(f func(tx pgx.Tx) error) error {
@@ -190,7 +141,7 @@ func _simpleTransaction(f func(tx pgx.Tx) error) (mErr *multierr.MultiErr, fErr 
 	tx, txErr := dbPool.BeginTx(context.Background(), pgx.TxOptions{})
 	if txErr != nil {
 		mErr.Add(txErr)
-		log.Errorf("Error starting transaction: %v", txErr)
+		discord.Errorf("Error starting transaction: %v", txErr)
 		return
 	}
 
@@ -198,10 +149,10 @@ func _simpleTransaction(f func(tx pgx.Tx) error) (mErr *multierr.MultiErr, fErr 
 		if tx != nil {
 			r := recover()
 			if fErr != nil || r != nil {
-				log.Errorf("%v | %v", r, fErr)
+				discord.Errorf("%v | %v", r, fErr)
 				err := tx.Rollback(context.TODO())
 				if err != nil {
-					log.Errorf("Error rolling back transaction: %v", err)
+					discord.Errorf("Error rolling back transaction: %v", err)
 					mErr.Add(err)
 				} else {
 					log.Infof("Rolled back transaction")
@@ -212,7 +163,7 @@ func _simpleTransaction(f func(tx pgx.Tx) error) (mErr *multierr.MultiErr, fErr 
 			} else {
 				err := tx.Commit(context.TODO())
 				if err != nil {
-					log.Errorf("Error committing transaction: %v", err)
+					discord.Errorf("Error committing transaction: %v", err)
 					mErr.Add(err)
 				} else {
 					log.Debugf("Committed transaction")
