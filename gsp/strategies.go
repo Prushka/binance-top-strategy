@@ -175,7 +175,6 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 	if grid == nil && s == nil {
 		return "Strategy and Grid are both nil"
 	}
-	matchedRatio := ""
 	ss := ""
 	gg := ""
 	seq := ""
@@ -218,7 +217,6 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		runTime = formatRunTime(int64(s.RunningTime))
 		priceRange = formatPriceRange(s.StrategyParams.LowerLimitStr, s.StrategyParams.UpperLimitStr, s.Symbol, DirectionMap[s.Direction])
 		grids = fmt.Sprintf("%d", s.StrategyParams.GridCount)
-		matchedRatio = fmt.Sprintf("%.2f", s.GetMatchedRatio())
 	} else {
 		marketPrice, _ = sdk.GetSessionSymbolPrice(grid.Symbol)
 		direction = grid.Direction
@@ -228,11 +226,9 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		runTime = formatRunTime(time.Now().Unix() - grid.BookTime/1000)
 		priceRange = formatPriceRange(grid.GridLowerLimit, grid.GridUpperLimit, grid.Symbol, grid.Direction)
 		grids = fmt.Sprintf("%d", grid.GridCount)
-		matchedRatio = fmt.Sprintf("%.2f", grid.GetMatchedRatio())
 		if s != nil {
 			userPoolStrategies = fmt.Sprintf("Pool: %d",
 				len(GetPool().ByUID()[s.UserID]))
-			matchedRatio = fmt.Sprintf("S/G: %.2f/%.2f", s.GetMatchedRatio(), grid.GetMatchedRatio())
 			if DirectionMap[s.Direction] != grid.Direction {
 				direction = fmt.Sprintf("S/G: %s/%s", DirectionMap[s.Direction], grid.Direction)
 			}
@@ -267,9 +263,9 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		seq = fmt.Sprintf("%d/%d - ", index, length)
 	}
 
-	return fmt.Sprintf("* [%s%s%s, %s, %s, %f/%s, %s Grids, %s %s, %s, %s] %s: %s%s",
+	return fmt.Sprintf("* [%s%s%s, %s, %s, %f/%s, %s Grids, %s, %s, %s] %s: %s%s",
 		seq, utils.FormatPair(symbol), direction, leverage, runTime,
-		marketPrice, priceRange, grids, strategyId, wl, matchedRatio, userPoolStrategies, action, ss, gg)
+		marketPrice, priceRange, grids, strategyId, wl, userPoolStrategies, action, ss, gg)
 }
 
 const (
