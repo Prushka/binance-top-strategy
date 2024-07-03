@@ -141,15 +141,15 @@ func (s *Strategy) GetNormalizedRoi() float64 {
 	return s.Roi / (float64(s.RunningTime) / 3600)
 }
 
-func (g *Grid) GetMatchedRatio() float64 {
-	upper, _ := strconv.ParseFloat(g.GridUpperLimit, 64)
-	lower, _ := strconv.ParseFloat(g.GridLowerLimit, 64)
-	assumedRatioPerGrid := (upper/lower - 1) / float64(g.GridCount)
-	return (float64(g.MatchedCount) / (float64(g.GetRunTime().Seconds()) / 3600)) * assumedRatioPerGrid * g.GetNormalizedRoi() * 12000
+func (grid *Grid) GetMatchedRatio() float64 {
+	upper, _ := strconv.ParseFloat(grid.GridUpperLimit, 64)
+	lower, _ := strconv.ParseFloat(grid.GridLowerLimit, 64)
+	assumedRatioPerGrid := (upper/lower - 1) / float64(grid.GridCount)
+	return (float64(grid.MatchedCount) / (float64(grid.GetRunTime().Seconds()) / 3600)) * assumedRatioPerGrid * grid.GetNormalizedRoi() * 12000
 }
 
-func (g *Grid) GetNormalizedRoi() float64 {
-	return g.LastRoi / (float64(g.GetRunTime().Seconds()) / 3600)
+func (grid *Grid) GetNormalizedRoi() float64 {
+	return grid.LastRoi / (float64(grid.GetRunTime().Seconds()) / 3600)
 }
 
 func (by Strategies) GetLSN() (int, int, int) {

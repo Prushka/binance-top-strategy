@@ -23,9 +23,3 @@ type StrategiesBundle struct {
 func GetPool() *TrackedStrategies {
 	return Bundle.Raw
 }
-
-const (
-	SDRaw          = "SDRaw"
-	SDFiltered     = "SDFiltered"
-	SDPairSpecific = "SDPairSpecific"
-)

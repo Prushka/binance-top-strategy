@@ -7,7 +7,6 @@ import (
 	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/gsp"
 	"BinanceTopStrategies/notional"
-	"BinanceTopStrategies/persistence"
 	"BinanceTopStrategies/sdk"
 	"BinanceTopStrategies/sql"
 	"BinanceTopStrategies/utils"
@@ -32,12 +31,11 @@ func checkTakeProfits(grid *gsp.Grid, toCancel gsp.GridsToCancel) {
 		if grid.LastRoi >= gpMax {
 			gpLookBack := time.Duration(config.TheConfig.TakeProfitsMaxLookBackMinutes[c]) * time.Minute
 			gpBlock := time.Duration(config.TheConfig.TakeProfitsBlockMinutes[c]) * time.Minute
-			gridTracking := grid.GetTracking()
-			lowerBound, _ := gridTracking.GetLocalWithin(gpLookBack)
-			if time.Since(gridTracking.TimeHighestRoi) > gpLookBack && lowerBound >= gpMax {
+			localLow, _ := grid.GetLocalWithin(gpLookBack)
+			if time.Since(grid.Highest.Time) > gpLookBack && localLow.Roi >= gpMax {
 				reason := fmt.Sprintf("max gain %.2f%%/%.2f%% (cutoff: %.2f%%), reached %s ago",
-					grid.LastRoi*100, gridTracking.HighestRoi*100, gpMax,
-					time.Since(gridTracking.TimeHighestRoi).Round(time.Second))
+					grid.LastRoi*100, grid.Highest.Roi*100, gpMax,
+					time.Since(grid.Highest.Time).Round(time.Second))
 				toCancel.AddGridToCancel(grid, gpMax, reason)
 				if gpBlock < 0 {
 					blacklist.AddSymbol(grid.Symbol, utils.TillNextRefresh(), reason)
@@ -102,7 +100,7 @@ func tick() error {
 
 	discord.Infof("### Current Grids:")
 	sdk.ClearSessionSymbolPrice()
-	err = gsp.UpdateOpenGrids(true)
+	err = gsp.UpdateOpenGrids()
 	if err != nil {
 		return err
 	}
@@ -423,7 +421,7 @@ func tick() error {
 		discord.Infof("Blacklisted in pool: %s", blacklistedInPool)
 	}
 	utils.Time("Place/Cancel done")
-	err = gsp.UpdateOpenGrids(false)
+	err = gsp.UpdateOpenGrids()
 	if err != nil {
 		return err
 	}
@@ -491,12 +489,12 @@ func main() {
 	sdk.Init()
 	switch config.TheConfig.Mode {
 	case "trading":
+		time.Sleep(5 * time.Second)
 		if config.TheConfig.Paper {
 			discord.Errorf("Paper Trading")
 		} else {
 			discord.Errorf("Real Trading")
 		}
-		persistence.Init()
 		panicOnErrorSec(scheduler.SingletonMode().Every(config.TheConfig.TickEverySeconds).Seconds().Do(
 			func() {
 				utils.ResetTime()
@@ -509,6 +507,7 @@ func main() {
 			},
 		))
 	case "SQL":
+		time.Sleep(5 * time.Second)
 		panicOnErrorSec(scheduler.SingletonMode().Every(3).Minutes().Do(func() {
 			t := time.Now()
 			discord.Infof("### Prices: %v", time.Now().Format("2006-01-02 15:04:05"))

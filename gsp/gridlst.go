@@ -33,14 +33,14 @@ func getOpenGrids() (*openGridResponse, error) {
 	return res, nil
 }
 
-func UpdateOpenGrids(trackContinuous bool) error {
+func UpdateOpenGrids() error {
 	res, err := getOpenGrids()
 	if err != nil {
 		return err
 	}
 	currentIds := mapset.NewSet[int]()
 	for _, grid := range res.Grids {
-		GGrids.add(grid, trackContinuous)
+		GGrids.add(grid)
 		currentIds.Add(grid.GID)
 	}
 	for _, g := range GGrids.GridsByGid {
@@ -52,11 +52,6 @@ func UpdateOpenGrids(trackContinuous bool) error {
 			}
 			blacklist.BlockTrading(time.Duration(config.TheConfig.TradingBlockMinutesAfterCancel)*time.Minute, "Grid Gone")
 			GGrids.remove(g.GID)
-		}
-	}
-	for gid := range TheGridEnv {
-		if !currentIds.Contains(gid) {
-			delete(TheGridEnv, gid)
 		}
 	}
 	discord.Infof("Open Pairs: %v, USDT[Input: %.2f, PnL: %.2f], USDC[Input: %.2f, PnL: %.2f], L/S/N: %d/%d/%d",

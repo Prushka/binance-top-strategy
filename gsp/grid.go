@@ -1,49 +1,42 @@
 package gsp
 
 import (
+	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/sdk"
+	"BinanceTopStrategies/sql"
+	"context"
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
-	"math"
+	"github.com/jackc/pgx/v5"
 	"strconv"
 	"time"
 )
 
-var TheGridEnv = make(map[int]*GridEnv)
-
-type Profit struct {
-	Profit float64
-	Time   time.Time
-}
-
-type Profits []Profit
-
-type GridEnv struct {
-	Tracking *GridTracking
-}
-
-type GridTracking struct {
-	LowestRoi             float64
-	HighestRoi            float64
-	TimeHighestRoi        time.Time
-	TimeLowestRoi         time.Time
-	TimeLastChange        time.Time
-	LocalProfits          Profits
-	ContinuousRoiGrowth   int
-	ContinuousRoiLoss     int
-	ContinuousRoiNoChange int
-}
-
-func (tracking *GridTracking) GetLocalWithin(duration time.Duration) (float64, float64) {
+func (grid *Grid) GetLocalWithin(duration time.Duration) (*GridDB, *GridDB) {
 	earliest := time.Now().Add(-duration)
-	lowest := 10000000.0
-	highest := -10000000.0
-	for i := len(tracking.LocalProfits) - 1; i >= 0; i-- {
-		if tracking.LocalProfits[i].Time.Before(earliest) {
-			break
-		}
-		lowest = math.Min(lowest, tracking.LocalProfits[i].Profit)
-		highest = math.Max(highest, tracking.LocalProfits[i].Profit)
+	lowest := &GridDB{}
+	highest := &GridDB{}
+	err := sql.GetDB().ScanOne(lowest, `SELECT * FROM bts.grid WHERE gid = $1 AND time >= $2 ORDER BY roi LIMIT 1`, grid.GID, earliest)
+	if err != nil {
+		discord.Errorf("Error getting lowest roi: %v", err)
+	}
+	err = sql.GetDB().ScanOne(highest, `SELECT * FROM bts.grid WHERE gid = $1 AND time >= $2 ORDER BY roi DESC LIMIT 1`, grid.GID, earliest)
+	if err != nil {
+		discord.Errorf("Error getting highest roi: %v", err)
+	}
+	return lowest, highest
+}
+
+func (grid *Grid) GetLH() (*GridDB, *GridDB) {
+	highest := &GridDB{}
+	lowest := &GridDB{}
+	err := sql.GetDB().ScanOne(highest, `SELECT * FROM bts.grid WHERE gid = $1 ORDER BY roi DESC LIMIT 1`, grid.GID)
+	if err != nil {
+		discord.Errorf("Error getting highest roi: %v", err)
+	}
+	err = sql.GetDB().ScanOne(lowest, `SELECT * FROM bts.grid WHERE gid = $1 ORDER BY roi LIMIT 1`, grid.GID)
+	if err != nil {
+		discord.Errorf("Error getting lowest roi: %v", err)
 	}
 	return lowest, highest
 }
@@ -77,11 +70,15 @@ func (gm GridsMap) GetChunks(quote string) int {
 }
 
 type Grid struct {
-	TotalPnl               float64
 	InitialValue           float64
+	LastPnl                float64
 	LastRoi                float64
+	LastRealizedRoi        float64
+	LastRealizedPnl        float64
 	BelowLowerLimit        bool
 	AboveUpperLimit        bool
+	Lowest                 *GridDB
+	Highest                *GridDB
 	GID                    int    `json:"strategyId"`
 	RootUserID             int    `json:"rootUserId"`
 	StrategyUserID         int    `json:"strategyUserId"`
@@ -122,18 +119,6 @@ type Grid struct {
 	MarginType             string `json:"marginType"`
 }
 
-func (grid *Grid) GetEnv() *GridEnv {
-	return TheGridEnv[grid.GID]
-}
-
-func (grid *Grid) SetEnv(env *GridEnv) {
-	TheGridEnv[grid.GID] = env
-}
-
-func (grid *Grid) GetTracking() *GridTracking {
-	return grid.GetEnv().Tracking
-}
-
 func (tracked *TrackedGrids) GetGridBySID(sid int) *Grid {
 	for _, g := range tracked.GridsByGid {
 		if g.SID == sid {
@@ -146,10 +131,10 @@ func (tracked *TrackedGrids) GetGridBySID(sid int) *Grid {
 func (tracked *TrackedGrids) calcPnl(g *Grid, multiplier float64) {
 	if g.IsQuote("USDT") {
 		tracked.TotalGridInitial["USDT"] += multiplier * g.InitialValue
-		tracked.TotalGridPnl["USDT"] += multiplier * g.TotalPnl
+		tracked.TotalGridPnl["USDT"] += multiplier * g.LastPnl
 	} else if g.IsQuote("USDC") {
 		tracked.TotalGridInitial["USDC"] += multiplier * g.InitialValue
-		tracked.TotalGridPnl["USDC"] += multiplier * g.TotalPnl
+		tracked.TotalGridPnl["USDC"] += multiplier * g.LastPnl
 	}
 }
 
@@ -169,10 +154,9 @@ func (tracked *TrackedGrids) remove(id int) {
 	}
 	tracked.calcPnl(g, -1)
 	delete(tracked.GridsByGid, g.GID)
-	delete(TheGridEnv, g.GID)
 }
 
-func (tracked *TrackedGrids) add(g *Grid, trackContinuous bool) {
+func (tracked *TrackedGrids) add(g *Grid) {
 	tracked.ExistingSymbols.Add(g.Symbol)
 	tracked.ExistingSIDs.Add(g.SID)
 
@@ -184,7 +168,7 @@ func (tracked *TrackedGrids) add(g *Grid, trackContinuous bool) {
 		tracked.Neutrals.Add(g.GID)
 	}
 	initial, _ := strconv.ParseFloat(g.GridInitialValue, 64)
-	profit, _ := strconv.ParseFloat(g.GridProfit, 64)
+	g.LastRealizedPnl, _ = strconv.ParseFloat(g.GridProfit, 64)
 	fundingFee, _ := strconv.ParseFloat(g.FundingFee, 64)
 	position, _ := strconv.ParseFloat(g.GridPosition, 64)
 	entryPrice, _ := strconv.ParseFloat(g.GridEntryPrice, 64)
@@ -194,58 +178,32 @@ func (tracked *TrackedGrids) add(g *Grid, trackContinuous bool) {
 	g.BelowLowerLimit = marketPrice < lowerLimit
 	g.AboveUpperLimit = marketPrice > upperLimit
 	g.InitialValue = initial / float64(g.InitialLeverage)
-	g.TotalPnl = profit + fundingFee + position*(marketPrice-entryPrice) // position is negative for short
-	g.LastRoi = g.TotalPnl / g.InitialValue
-	updateTime := time.Now()
+	g.LastPnl = g.LastRealizedPnl + fundingFee + position*(marketPrice-entryPrice) // position is negative for short
+	g.LastRoi = g.LastPnl / g.InitialValue
+	g.LastRealizedRoi = g.LastRealizedPnl / g.InitialValue
 	prevG, ok := tracked.GridsByGid[g.GID]
 	tracked.calcPnl(g, 1)
 	if ok {
 		tracked.calcPnl(prevG, -1)
 	}
-
-	if g.GetEnv() == nil {
-		g.SetEnv(&GridEnv{Tracking: &GridTracking{
-			LowestRoi:      g.LastRoi,
-			HighestRoi:     g.LastRoi,
-			TimeHighestRoi: updateTime,
-			TimeLowestRoi:  updateTime,
-			TimeLastChange: updateTime,
-		}})
-	} else {
-		tracking := g.GetTracking()
-		if g.LastRoi < tracking.LowestRoi {
-			tracking.TimeLowestRoi = updateTime
-		}
-		if g.LastRoi > tracking.HighestRoi {
-			tracking.TimeHighestRoi = updateTime
-		}
-		tracking.LowestRoi = math.Min(g.LastRoi, tracking.LowestRoi)
-		tracking.HighestRoi = math.Max(g.LastRoi, tracking.HighestRoi)
-
-		if prevG != nil {
-			if g.LastRoi != prevG.LastRoi {
-				tracking.TimeLastChange = updateTime
-			}
-			if trackContinuous {
-				if g.LastRoi > prevG.LastRoi {
-					tracking.ContinuousRoiGrowth += 1
-					tracking.ContinuousRoiLoss = 0
-					tracking.ContinuousRoiNoChange = 0
-				} else if g.LastRoi < prevG.LastRoi {
-					tracking.ContinuousRoiLoss += 1
-					tracking.ContinuousRoiGrowth = 0
-					tracking.ContinuousRoiNoChange = 0
-				} else {
-					tracking.ContinuousRoiNoChange += 1
-					tracking.ContinuousRoiGrowth = 0
-					tracking.ContinuousRoiLoss = 0
-				}
-			}
-		}
-	}
-	tracking := g.GetTracking()
-	tracking.LocalProfits = append(tracking.LocalProfits, Profit{Profit: g.LastRoi, Time: updateTime})
 	tracked.GridsByGid[g.GID] = g
+	err := sql.SimpleTransaction(func(tx pgx.Tx) error {
+		_, err := tx.Exec(context.Background(),
+			`INSERT INTO bts.grid (gid, roi, realized_roi, time) VALUES ($1, $2, $3, $4)`,
+			g.GID, g.LastRoi, g.LastRealizedRoi, time.Now())
+		return err
+	})
+	if err != nil {
+		discord.Errorf("Error inserting grid: %v", err)
+	}
+	g.Lowest, g.Highest = g.GetLH()
+}
+
+type GridDB struct {
+	GID         int       `db:"gid"`
+	Roi         float64   `db:"roi"`
+	RealizedRoi float64   `db:"realized_roi"`
+	Time        time.Time `db:"time"`
 }
 
 func (grid *Grid) GetRunTime() time.Duration {
@@ -260,22 +218,17 @@ func (grid *Grid) MarketPriceWithinRange() bool {
 }
 
 func (grid *Grid) String() string {
-	tracking := grid.GetTracking()
-	extendedProfit := ""
-	extendedProfit = fmt.Sprintf(" [%.2f%% (%s), %.2f%% (%s)][+%d, -%d, %d (%s)]",
-		tracking.LowestRoi*100,
-		time.Since(tracking.TimeLowestRoi).Round(time.Second),
-		tracking.HighestRoi*100,
-		time.Since(tracking.TimeHighestRoi).Round(time.Second),
-		tracking.ContinuousRoiGrowth, tracking.ContinuousRoiLoss, tracking.ContinuousRoiNoChange,
-		time.Since(tracking.TimeLastChange).Round(time.Second),
-	)
-	realized, _ := strconv.ParseFloat(grid.GridProfit, 64)
+	extendedProfit := fmt.Sprintf("[%.2f%% (%s), %.2f%% (%s)]",
+		grid.Highest.Roi*100,
+		time.Since(grid.Highest.Time).Round(time.Minute),
+		grid.Lowest.Roi*100,
+		time.Since(grid.Lowest.Time).Round(time.Minute))
+
 	outOfRange := ""
 	if !grid.MarketPriceWithinRange() {
 		outOfRange = "**[OOR]** "
 	}
 	return fmt.Sprintf("*%d*, Realized: %.2f, **%.2f%%**, Total: %.2f, %s**%.2f%%**%s",
 		grid.GID,
-		realized, realized/grid.InitialValue*100, grid.TotalPnl, outOfRange, grid.LastRoi*100, extendedProfit)
+		grid.LastRealizedPnl, grid.LastRealizedRoi*100, grid.LastPnl, outOfRange, grid.LastRoi*100, extendedProfit)
 }

@@ -1,7 +1,7 @@
 CREATE TABLE grid_strategy
 (
-    strategy_id          BIGINT,
-    grid_id              BIGINT,
+    strategy_id BIGINT,
+    grid_id     BIGINT,
     PRIMARY KEY (strategy_id, grid_id)
 );
 
@@ -24,8 +24,8 @@ CREATE TABLE price
     trade_number           NUMERIC     NOT NULL,
     taker_buy_base_volume  NUMERIC     NOT NULL,
     taker_buy_quote_volume NUMERIC     NOT NULL,
-    open_time                   TIMESTAMPTZ NOT NULL,
-    close_time                  TIMESTAMPTZ NOT NULL,
+    open_time              TIMESTAMPTZ NOT NULL,
+    close_time             TIMESTAMPTZ NOT NULL,
     PRIMARY KEY (symbol_id, open_time, close_time),
     FOREIGN KEY (symbol_id) REFERENCES symbol (symbol_id)
 );
@@ -91,6 +91,15 @@ CREATE TABLE roi
             ON UPDATE CASCADE
 );
 
+CREATE TABLE grid
+(
+    gid  BIGINT,
+    roi  NUMERIC,
+    realized_roi NUMERIC,
+    time TIMESTAMP WITH TIME ZONE,
+    PRIMARY KEY (gid, time)
+);
+
 CREATE TABLE config
 (
     KEY   TEXT primary key not null,
@@ -99,16 +108,16 @@ CREATE TABLE config
 
 CREATE TABLE blacklist
 (
-    KEY TEXT primary key not null,
-    TILL TIMESTAMP WITH TIME ZONE,
+    KEY    TEXT primary key not null,
+    TILL   TIMESTAMP WITH TIME ZONE,
     REASON TEXT
 );
 
 CREATE TABLE for_removal
 (
-    gid BIGINT primary key not null,
-    max_loss NUMERIC,
-    max_gain NUMERIC,
+    gid         BIGINT primary key not null,
+    max_loss    NUMERIC,
+    max_gain    NUMERIC,
     reason_loss TEXT,
     reason_gain TEXT
 );
