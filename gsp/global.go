@@ -14,12 +14,40 @@ var GGrids = &TrackedGrids{
 	TotalGridInitial: map[string]float64{},
 	TotalGridPnl:     map[string]float64{},
 }
-var Bundle *StrategiesBundle
+var pool Strategies
 
-type StrategiesBundle struct {
-	Raw *TrackedStrategies
+func GetPool() Strategies {
+	return pool
 }
 
-func GetPool() *TrackedStrategies {
-	return Bundle.Raw
+func SetPool(strategies Strategies) {
+	pool = strategies
+}
+
+func (by Strategies) ByUID() map[int]Strategies {
+	byUID := make(map[int]Strategies)
+	for _, s := range by {
+		if _, ok := byUID[s.UserID]; !ok {
+			byUID[s.UserID] = make(Strategies, 0)
+		}
+		byUID[s.UserID] = append(byUID[s.UserID], s)
+	}
+	return byUID
+}
+
+func (by Strategies) FindSID(sid int) *Strategy {
+	for _, s := range by {
+		if s.SID == sid {
+			return s
+		}
+	}
+	return nil
+}
+
+func (by Strategies) AllSymbols() mapset.Set[string] {
+	symbols := mapset.NewSet[string]()
+	for _, s := range by {
+		symbols.Add(s.Symbol)
+	}
+	return symbols
 }

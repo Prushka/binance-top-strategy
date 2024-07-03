@@ -49,8 +49,8 @@ func Scrape(sType int, sString string) error {
 		discord.Errorf("Strategies %s: %v", sString, err)
 		return err
 	}
-	discord.Infof("Fetched strategies: %d", len(strategies.Strategies))
-	err = addToRankingStore(strategies.Strategies)
+	discord.Infof("Fetched strategies: %d", len(strategies))
+	err = addToRankingStore(strategies)
 	if err != nil {
 		discord.Errorf("Strategies %s: %v", sString, err)
 		return err
@@ -82,8 +82,4 @@ func IsGridOriStrategyRunning(grid *Grid) (*Strategy, error) {
 		return discoverStrategy, nil
 	}
 	return nil, nil
-}
-
-func AddToPool(strategies Strategies) {
-	Bundle = &StrategiesBundle{Raw: strategies.toTrackedStrategies()}
 }

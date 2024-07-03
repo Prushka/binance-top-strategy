@@ -96,7 +96,7 @@ func tick() error {
 	}
 	discord.Infof("Found %d strategies and %d users", len(poolDB), users.Cardinality())
 
-	gsp.AddToPool(gsp.ToStrategies(poolDB))
+	gsp.SetPool(gsp.ToStrategies(poolDB))
 
 	discord.Infof("### Current Grids:")
 	sdk.ClearSessionSymbolPrice()
@@ -119,7 +119,7 @@ func tick() error {
 			return err
 		}
 		count++
-		oriStrategy := gsp.GetPool().StrategiesBySID[grid.SID]
+		oriStrategy := gsp.GetPool().FindSID(grid.SID)
 		if isRunning != nil {
 			if oriStrategy != nil {
 				isRunning.UserMetricsDB = oriStrategy.UserMetricsDB
@@ -153,7 +153,7 @@ func tick() error {
 	sessionSIDs := gsp.GGrids.ExistingSIDs.Clone()
 	sessionNeutrals := gsp.GGrids.Neutrals.Cardinality()
 	sortedStrategies := make(gsp.Strategies, 0)
-	for _, s := range gsp.GetPool().Strategies {
+	for _, s := range gsp.GetPool() {
 		p, err, reason := testStrategy(s)
 		if err != nil {
 			return err
@@ -183,7 +183,8 @@ func tick() error {
 			config.TheConfig.MaxUSDTChunks, usdcChunks, config.TheConfig.MaxUSDCChunks)
 		return nil
 	}
-	if mapset.NewSetFromMapKeys(gsp.GetPool().SymbolCount).Difference(gsp.GGrids.ExistingSymbols).Cardinality() == 0 && !config.TheConfig.Paper {
+	if gsp.GetPool().AllSymbols().Difference(gsp.GGrids.ExistingSymbols).Cardinality() == 0 &&
+		!config.TheConfig.Paper {
 		discord.Infof("All symbols exists in open grids, Skip")
 		return nil
 	}

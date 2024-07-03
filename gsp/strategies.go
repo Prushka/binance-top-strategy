@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	mapset "github.com/deckarep/golang-set/v2"
-	"github.com/syohex/go-texttable"
 	"sort"
 	"strconv"
 	"time"
@@ -102,22 +101,6 @@ type UserPair struct {
 	Count int
 }
 
-type TrackedStrategies struct {
-	StrategiesBySID            map[int]*Strategy
-	StrategiesByUserId         map[int]Strategies
-	Strategies                 Strategies
-	UserRankings               map[int]int
-	UsersWithMoreThan1Strategy []UserPair
-	SymbolCount                map[string]int
-	SymbolDirectionCount       SDCount
-	Longs                      mapset.Set[int]
-	Shorts                     mapset.Set[int]
-	Neutrals                   mapset.Set[int]
-	Highest                    StrategyMetrics
-	Lowest                     StrategyMetrics
-	Ids                        mapset.Set[int]
-}
-
 type QueryTopStrategy struct {
 	Page           int    `json:"page"`
 	Rows           int    `json:"rows"`
@@ -177,155 +160,20 @@ func (by Strategies) Users() int {
 	return users.Cardinality()
 }
 
-func (by Strategies) toTrackedStrategies() *TrackedStrategies {
-	sss := &TrackedStrategies{
-		StrategiesBySID:      make(map[int]*Strategy),
-		StrategiesByUserId:   make(map[int]Strategies),
-		UserRankings:         make(map[int]int),
-		SymbolCount:          make(map[string]int),
-		SymbolDirectionCount: make(SDCount),
-		Longs:                mapset.NewSet[int](),
-		Shorts:               mapset.NewSet[int](),
-		Neutrals:             mapset.NewSet[int](),
-	}
-	for _, s := range by {
-		_, ok := sss.StrategiesBySID[s.SID]
-		if ok {
-			continue
-		}
-		sss.StrategiesBySID[s.SID] = s
-		if _, ok := sss.StrategiesByUserId[s.UserID]; !ok {
-			sss.StrategiesByUserId[s.UserID] = make(Strategies, 0)
-		}
-		sss.StrategiesByUserId[s.UserID] = append(sss.StrategiesByUserId[s.UserID], s)
-		sss.UserRankings[s.UserID] += 1
-		sss.SymbolCount[s.Symbol] += 1
-		if _, ok := sss.SymbolDirectionCount[s.Symbol]; !ok {
-			sss.SymbolDirectionCount[s.Symbol] = make(map[string]int)
-		}
-		sss.SymbolDirectionCount[s.Symbol][DirectionMap[s.Direction]] += 1
-		if s.Direction == LONG {
-			sss.Longs.Add(s.SID)
-		} else if s.Direction == SHORT {
-			sss.Shorts.Add(s.SID)
-		} else {
-			sss.Neutrals.Add(s.SID)
-		}
-		if sss.Highest.CopyCount == nil || s.CopyCount > *sss.Highest.CopyCount {
-			sss.Highest.CopyCount = &s.CopyCount
-		}
-		if sss.Lowest.CopyCount == nil || s.CopyCount < *sss.Lowest.CopyCount {
-			sss.Lowest.CopyCount = &s.CopyCount
-		}
-		if sss.Highest.Roi == nil || s.Roi > *sss.Highest.Roi {
-			sss.Highest.Roi = &s.Roi
-		}
-		if sss.Lowest.Roi == nil || s.Roi < *sss.Lowest.Roi {
-			sss.Lowest.Roi = &s.Roi
-		}
-		if sss.Highest.Pnl == nil || s.Pnl > *sss.Highest.Pnl {
-			sss.Highest.Pnl = &s.Pnl
-		}
-		if sss.Lowest.Pnl == nil || s.Pnl < *sss.Lowest.Pnl {
-			sss.Lowest.Pnl = &s.Pnl
-		}
-		if sss.Highest.runningTime == nil || s.RunningTime > *sss.Highest.runningTime {
-			sss.Highest.runningTime = &s.RunningTime
-		}
-		if sss.Lowest.runningTime == nil || s.RunningTime < *sss.Lowest.runningTime {
-			sss.Lowest.runningTime = &s.RunningTime
-		}
-		if sss.Highest.MatchedCount == nil || s.MatchedCount > *sss.Highest.MatchedCount {
-			sss.Highest.MatchedCount = &s.MatchedCount
-		}
-		if sss.Lowest.MatchedCount == nil || s.MatchedCount < *sss.Lowest.MatchedCount {
-			sss.Lowest.MatchedCount = &s.MatchedCount
-		}
-		if sss.Highest.LatestMatchedCount == nil || s.LatestMatchedCount > *sss.Highest.LatestMatchedCount {
-			sss.Highest.LatestMatchedCount = &s.LatestMatchedCount
-		}
-		if sss.Lowest.LatestMatchedCount == nil || s.LatestMatchedCount < *sss.Lowest.LatestMatchedCount {
-			sss.Lowest.LatestMatchedCount = &s.LatestMatchedCount
-		}
-		sss.Strategies = append(sss.Strategies, s)
-	}
-	if sss.Highest.runningTime != nil {
-		sss.Highest.RunningTime = utils.StringPointer(fmt.Sprintf("%s", time.Duration(*sss.Highest.runningTime)*time.Second))
-	}
-	if sss.Lowest.runningTime != nil {
-		sss.Lowest.RunningTime = utils.StringPointer(fmt.Sprintf("%s", time.Duration(*sss.Lowest.runningTime)*time.Second))
-	}
-	for userId, count := range sss.UserRankings {
-		if count > 1 {
-			sss.UsersWithMoreThan1Strategy = append(sss.UsersWithMoreThan1Strategy, UserPair{Id: userId, Count: count})
-		}
-	}
-	sort.Slice(sss.UsersWithMoreThan1Strategy, func(i, j int) bool {
-		return sss.UsersWithMoreThan1Strategy[i].Count > sss.UsersWithMoreThan1Strategy[j].Count
-	})
-	sss.Ids = mapset.NewSetFromMapKeys(sss.StrategiesBySID)
-	return sss
-}
-
-func (t *TrackedStrategies) findStrategyRanking(s Strategy) int {
-	symbolDirection := mapset.NewSet[string]()
-	counter := 0
-	sd := s.SD()
-	for _, s := range t.Strategies {
-		sdd := s.Symbol + DirectionMap[s.Direction]
-		if sdd == sd {
-			return counter
-		}
-		if symbolDirection.Contains(sdd) {
-			continue
-		}
-		symbolDirection.Add(sdd)
-		counter++
-	}
-	return -1
-}
-
-func (t *TrackedStrategies) String() string {
-	tbl := &texttable.TextTable{}
-	tbl.SetHeader(fmt.Sprintf("Symbol %d", len(t.SymbolCount)),
-		fmt.Sprintf("L %d", t.Longs.Cardinality()),
-		fmt.Sprintf("S %d", t.Shorts.Cardinality()),
-		fmt.Sprintf("N %d", t.Neutrals.Cardinality()))
-	symbols := mapset.NewSetFromMapKeys(t.SymbolCount).ToSlice()
-	sort.Strings(symbols)
-	for _, symbol := range symbols {
-		directionMap := t.SymbolDirectionCount[symbol]
-		tbl.AddRow(utils.FormatPair(symbol), fmt.Sprintf("%d", directionMap["LONG"]),
-			fmt.Sprintf("%d", directionMap["SHORT"]), fmt.Sprintf("%d", directionMap["NEUTRAL"]))
-	}
-	return fmt.Sprintf("%d, H: %v, L: %v\n```\n%s```\n%v",
-		len(t.StrategiesBySID), utils.AsJson(t.Highest), utils.AsJson(t.Lowest),
-		tbl.Draw(), t.UsersWithMoreThan1Strategy)
-}
-
-func (t *TrackedStrategies) Exists(id int) bool {
-	return t.Ids.Contains(id)
-}
-
 func (s *Strategy) MarketPriceWithinRange() bool {
 	marketPrice, _ := sdk.GetSessionSymbolPrice(s.Symbol)
 	return marketPrice > s.StrategyParams.LowerLimit && marketPrice < s.StrategyParams.UpperLimit
 }
 
 func (s *Strategy) String() string {
-	ranking := ""
 	ended := ""
-	if Bundle != nil {
-		ranking = fmt.Sprintf(", Raw: %d, FilterdSD: %d", Bundle.Raw.findStrategyRanking(*s),
-			GetPool().findStrategyRanking(*s))
-	}
 	if !s.Rois.isRunning() {
 		ended = "Ended: " + time.Unix(s.Rois[0].Time, 0).Format("2006-01-02 15:04:05") + " ,"
 	}
-	return fmt.Sprintf("%sPnL: %.2f, Rois: %s, [A/D/3/2/1H: %.1f%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s%s, User: $%.1f/$%.1f",
+	return fmt.Sprintf("%sPnL: %.2f, Rois: %s, [A/D/3/2/1H: %.1f%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s, User: $%.1f/$%.1f",
 		ended, s.Pnl, s.Rois.lastNRecords(config.TheConfig.LastNHoursNoDips),
 		s.Rois[0].Roi,
-		s.LastDayRoiChange*100, s.Last3HrRoiChange*100, s.Last2HrRoiChange*100, s.LastHrRoiChange*100, s.MinInvestment, ranking, s.UserInput, s.UserTotalInput)
+		s.LastDayRoiChange*100, s.Last3HrRoiChange*100, s.Last2HrRoiChange*100, s.LastHrRoiChange*100, s.MinInvestment, s.UserInput, s.UserTotalInput)
 }
 
 func (s *Strategy) GetMetric() float64 {
@@ -443,7 +291,7 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		matchedRatio = fmt.Sprintf("%.2f", grid.GetMatchedRatio())
 		if s != nil {
 			userPoolStrategies = fmt.Sprintf("Pool: %d",
-				len(GetPool().StrategiesByUserId[s.UserID]))
+				len(GetPool().ByUID()[s.UserID]))
 			matchedRatio = fmt.Sprintf("S/G: %.2f/%.2f", s.GetMatchedRatio(), grid.GetMatchedRatio())
 			if DirectionMap[s.Direction] != grid.Direction {
 				direction = fmt.Sprintf("S/G: %s/%s", DirectionMap[s.Direction], grid.Direction)
@@ -512,7 +360,7 @@ var DirectionSMap = map[string]int{
 	"SHORT":   SHORT,
 }
 
-func mergeStrategies(sps ...StrategyQuery) (*TrackedStrategies, error) {
+func mergeStrategies(sps ...StrategyQuery) (Strategies, error) {
 	sss := make(Strategies, 0)
 	for _, sp := range sps {
 		if sp.Count == 0 {
@@ -533,10 +381,10 @@ func mergeStrategies(sps ...StrategyQuery) (*TrackedStrategies, error) {
 	sort.Slice(sss, func(i, j int) bool {
 		return sss[i].Pnl > sss[j].Pnl
 	})
-	return sss.toTrackedStrategies(), nil
+	return sss, nil
 }
 
-func getTopStrategies(sType int) (*TrackedStrategies, error) {
+func getTopStrategies(sType int) (Strategies, error) {
 	var queries []StrategyQuery
 	for i := 0; i < 48; i += 2 {
 		queries = append(queries, StrategyQuery{Type: sType, Sort: SortByPnl, RuntimeMin: time.Duration(i) * time.Hour, RuntimeMax: time.Duration(i+2) * time.Hour})
@@ -561,7 +409,7 @@ func DiscoverRootStrategy(sid int, symbol string, direction int, roughRuntime ti
 	if err != nil {
 		return nil, err
 	}
-	for _, s := range merged.Strategies {
+	for _, s := range merged {
 		if s.SID == sid {
 			return s, nil
 		}

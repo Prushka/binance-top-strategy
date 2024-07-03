@@ -27,7 +27,7 @@ func testStrategy(s *gsp.Strategy) (bool, error, string) {
 	if time.Now().Sub(wl.EarliestTime) < 30*24*time.Hour {
 		return false, nil, "User has not been active for more than 30 days"
 	}
-	userStrategies := gsp.GetPool().StrategiesByUserId[s.UserID]
+	userStrategies := gsp.GetPool().ByUID()[s.UserID]
 	for _, us := range userStrategies {
 		if us.Symbol == s.Symbol && us.Direction != s.Direction {
 			return false, nil, "Same symbol hedging"
