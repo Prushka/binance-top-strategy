@@ -52,20 +52,22 @@ type WL struct {
 	ShortRunning      float64
 	ShortRunningRatio float64
 	EarliestTime      time.Time
+	Id                string
 }
 
 func (wl UserWL) String() string {
-	return fmt.Sprintf("User %d - Total: [%s], Neutral: [%s], Long: [%s], Short: [%s]",
+	return fmt.Sprintf("User %d - %s %s %s %s",
 		wl.UserId, wl.DirectionWL[TOTAL],
 		wl.DirectionWL[NEUTRAL], wl.DirectionWL[LONG], wl.DirectionWL[SHORT])
 }
 
 func (wl WL) String() string {
 	if wl.Total == 0 {
-		return "NIL"
+		return ""
 	} else {
-		return fmt.Sprintf("WL: %.1f%% (%.1f/%.1f)|Short: %.1f%% (%.1f/%.1f)|%v",
-			wl.WinRatio*100, wl.Win, wl.TotalWL, wl.ShortRunningRatio*100, wl.ShortRunning, wl.Total, wl.EarliestTime)
+		return fmt.Sprintf("%s: [%.1f%% (%.1f/%.1f)|Short: %.1f%% (%.1f/%.1f)|%v]",
+			wl.Id, wl.WinRatio*100, wl.Win, wl.TotalWL,
+			wl.ShortRunningRatio*100, wl.ShortRunning, wl.Total, wl.EarliestTime)
 	}
 }
 
@@ -112,10 +114,10 @@ WHERE f.original_input > 349;`, user)
 			return UserWL{}, err
 		}
 		directionWL := map[int]*WL{
-			TOTAL:   {},
-			LONG:    {},
-			SHORT:   {},
-			NEUTRAL: {},
+			TOTAL:   {Id: "Total"},
+			LONG:    {Id: "Long"},
+			SHORT:   {Id: "Short"},
+			NEUTRAL: {Id: "Neutral"},
 		}
 		wl := UserWL{
 			UpdatedAt:   time.Now(),
