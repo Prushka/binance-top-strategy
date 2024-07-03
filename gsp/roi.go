@@ -208,6 +208,7 @@ WHERE f.original_input > 349;`, user)
 		directionWL[NEUTRAL].WinRatio = directionWL[NEUTRAL].Win / directionWL[NEUTRAL].TotalWL
 		directionWL[NEUTRAL].ShortRunningRatio = directionWL[NEUTRAL].ShortRunning / directionWL[NEUTRAL].Total
 		directionWL[TOTAL] = &WL{
+			Id:      "Total",
 			TotalWL: directionWL[LONG].TotalWL + directionWL[SHORT].TotalWL + directionWL[NEUTRAL].TotalWL,
 			Total:   directionWL[LONG].Total + directionWL[SHORT].Total + directionWL[NEUTRAL].Total,
 			Win:     directionWL[LONG].Win + directionWL[SHORT].Win + directionWL[NEUTRAL].Win,
