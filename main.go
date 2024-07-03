@@ -156,7 +156,7 @@ func tick() error {
 		}
 		if !p {
 			if !strings.Contains(reason, "for more than 220") {
-				log.Infof("Strategy %d - %s not passing: %s", s.SID, s.Symbol, reason)
+				log.Infof("Strategy %s - not passing: %s", s, reason)
 			}
 		} else {
 			sortedStrategies = append(sortedStrategies, s)

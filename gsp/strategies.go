@@ -125,11 +125,15 @@ func (s *Strategy) MarketPriceWithinRange() bool {
 
 func (s *Strategy) String() string {
 	ended := ""
-	if !s.Rois.isRunning() {
-		ended = "Ended: " + time.Unix(s.Rois[0].Time, 0).Format("2006-01-02 15:04:05") + " ,"
+	rois := ""
+	if len(s.Rois) > 0 {
+		if !s.Rois.isRunning() {
+			ended = "Ended: " + time.Unix(s.Rois[0].Time, 0).Format("2006-01-02 15:04:05") + " ,"
+		}
+		rois = fmt.Sprintf("Rois: %s, ", s.Rois.lastNRecords(6))
 	}
-	return fmt.Sprintf("%sPnL: %.2f, Rois: %s, MinInv: %s, User: $%.1f/$%.1f",
-		ended, s.Pnl, s.Rois.lastNRecords(6),
+	return fmt.Sprintf("%sPnL: %.2f, %sMinInv: %s, User: $%.1f/$%.1f",
+		ended, s.Pnl, rois,
 		s.MinInvestment, s.UserInput, s.UserTotalInput)
 }
 
