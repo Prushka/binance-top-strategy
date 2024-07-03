@@ -8,7 +8,6 @@ import (
 	"BinanceTopStrategies/utils"
 	"encoding/json"
 	"fmt"
-	mapset "github.com/deckarep/golang-set/v2"
 	"sort"
 	"strconv"
 	"time"
@@ -113,8 +112,6 @@ type QueryTopStrategy struct {
 	Sort           string `json:"sort"`
 }
 
-type Strategies []*Strategy
-
 func (s *Strategy) GetMatchedRatio() float64 {
 	assumedRatioPerGrid := (s.StrategyParams.UpperLimit/s.StrategyParams.LowerLimit - 1) / float64(s.StrategyParams.GridCount)
 	return (float64(s.MatchedCount) / (float64(s.RunningTime) / 3600)) * assumedRatioPerGrid * s.GetNormalizedRoi() * 12000
@@ -133,31 +130,6 @@ func (grid *Grid) GetMatchedRatio() float64 {
 
 func (grid *Grid) GetNormalizedRoi() float64 {
 	return grid.LastRoi / (float64(grid.GetRunTime().Seconds()) / 3600)
-}
-
-func (by Strategies) GetLSN() (int, int, int) {
-	longs := 0
-	shorts := 0
-	neutrals := 0
-	for _, s := range by {
-		switch s.Direction {
-		case LONG:
-			longs++
-		case SHORT:
-			shorts++
-		case NEUTRAL:
-			neutrals++
-		}
-	}
-	return longs, shorts, neutrals
-}
-
-func (by Strategies) Users() int {
-	users := mapset.NewSet[int]()
-	for _, s := range by {
-		users.Add(s.UserID)
-	}
-	return users.Cardinality()
 }
 
 func (s *Strategy) MarketPriceWithinRange() bool {

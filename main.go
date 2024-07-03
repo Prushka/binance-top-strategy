@@ -109,10 +109,7 @@ func tick() error {
 
 	utils.Time("Fetch grids")
 	count := 0
-	grids := utils.MapValues(gsp.GGrids.GridsByGid)
-	sort.Slice(grids, func(i, j int) bool {
-		return grids[i].GID < grids[j].GID
-	})
+	grids := gsp.GetOpenGrids()
 	for _, grid := range grids {
 		isRunning, err := gsp.IsGridOriStrategyRunning(grid)
 		if err != nil {
@@ -126,7 +123,8 @@ func tick() error {
 			}
 			oriStrategy = isRunning
 		}
-		discord.Infof(gsp.Display(oriStrategy, grid, "", count, len(gsp.GGrids.GridsByGid)))
+		discord.Infof(gsp.Display(oriStrategy, grid, "", count,
+			len(gsp.GetOpenGrids())))
 		if isRunning == nil {
 			toCancel.AddGridToCancel(grid, -999, "strategy not running")
 			blacklist.AddSymbolDirection(grid.Symbol, grid.Direction, utils.TillNextRefresh(), "strategy sd not running")
@@ -144,14 +142,12 @@ func tick() error {
 		gsp.SessionCancelledGIDs = toCancel.CancelledGIDs()
 		return nil
 	}
-
-	gridsOpen := gsp.GGrids.GridsByGid
-	usdtChunks := gridsOpen.GetChunks("USDT")
-	usdcChunks := gridsOpen.GetChunks("USDC")
+	usdtChunks := grids.GetChunks("USDT")
+	usdcChunks := grids.GetChunks("USDC")
 	blacklistedInPool := mapset.NewSet[string]()
-	sessionSymbols := gsp.GGrids.ExistingSymbols.Clone()
-	sessionSIDs := gsp.GGrids.ExistingSIDs.Clone()
-	sessionNeutrals := gsp.GGrids.Neutrals.Cardinality()
+	sessionSymbols := grids.AllSymbols()
+	sessionSIDs := grids.AllSIDs()
+	_, _, sessionNeutrals := grids.GetLSN()
 	sortedStrategies := make(gsp.Strategies, 0)
 	for _, s := range gsp.GetPool() {
 		p, err, reason := testStrategy(s)
@@ -183,7 +179,7 @@ func tick() error {
 			config.TheConfig.MaxUSDTChunks, usdcChunks, config.TheConfig.MaxUSDCChunks)
 		return nil
 	}
-	if gsp.GetPool().AllSymbols().Difference(gsp.GGrids.ExistingSymbols).Cardinality() == 0 &&
+	if gsp.GetPool().AllSymbols().Difference(sessionSymbols).Cardinality() == 0 &&
 		!config.TheConfig.Paper {
 		discord.Infof("All symbols exists in open grids, Skip")
 		return nil
@@ -199,8 +195,9 @@ func tick() error {
 		if overwriteQuote != "" {
 			actualCurrency = overwriteQuote
 		}
-		pnl := math.Min(gsp.GGrids.TotalGridPnl[actualCurrency], 0)
-		total := balance + pnl + gsp.GGrids.TotalGridInitial[actualCurrency]
+		gridTotal := grids.TotalProfitByQuote(actualCurrency)
+		pnl := math.Min(gridTotal.Pnl, 0)
+		total := balance + pnl + gridTotal.Input
 		total *= 1 - config.TheConfig.Reserved
 		chunksInt := maxChunks - existingChunks
 		chunks := float64(chunksInt)

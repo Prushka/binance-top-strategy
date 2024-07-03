@@ -6,12 +6,12 @@ import (
 	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/request"
 	"BinanceTopStrategies/sql"
-	mapset "github.com/deckarep/golang-set/v2"
+	"sort"
 	"time"
 )
 
 type openGridResponse struct {
-	Grids []*Grid `json:"data"`
+	Grids Grids `json:"data"`
 	request.BinanceBaseResponse
 }
 
@@ -38,24 +38,26 @@ func UpdateOpenGrids() error {
 	if err != nil {
 		return err
 	}
-	currentIds := mapset.NewSet[int]()
 	for _, grid := range res.Grids {
-		GGrids.add(grid)
-		currentIds.Add(grid.GID)
+		grid.sanitize()
 	}
-	for _, g := range GGrids.GridsByGid {
-		if !currentIds.Contains(g.GID) {
+	for _, g := range openGrids { // previous grids
+		if res.Grids.FindGID(g.GID) == nil {
 			if !SessionCancelledGIDs.Contains(g.GID) {
 				discord.Actionf(Display(nil, g,
 					"**Gone**",
 					0, 0))
 			}
 			blacklist.BlockTrading(time.Duration(config.TheConfig.TradingBlockMinutesAfterCancel)*time.Minute, "Grid Gone")
-			GGrids.remove(g.GID)
 		}
 	}
-	discord.Infof("Open Pairs: %v, USDT[Input: %.2f, PnL: %.2f], USDC[Input: %.2f, PnL: %.2f], L/S/N: %d/%d/%d",
-		GGrids.ExistingSymbols, GGrids.TotalGridInitial["USDT"], GGrids.TotalGridPnl["USDT"], GGrids.TotalGridInitial["USDC"], GGrids.TotalGridPnl["USDC"],
-		GGrids.Longs.Cardinality(), GGrids.Shorts.Cardinality(), GGrids.Neutrals.Cardinality())
+	openGrids = res.Grids
+	sort.Slice(openGrids, func(i, j int) bool {
+		return openGrids[i].GID < openGrids[j].GID
+	})
+	USDT, USDC := openGrids.TotalProfits()
+	long, short, neutral := openGrids.GetLSN()
+	discord.Infof("USDT[Input: %.2f, PnL: %.2f], USDC[Input: %.2f, PnL: %.2f], L/S/N: %d/%d/%d",
+		USDT.Input, USDT.Pnl, USDC.Input, USDC.Pnl, long, short, neutral)
 	return nil
 }
