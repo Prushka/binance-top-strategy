@@ -489,7 +489,6 @@ func main() {
 	sdk.Init()
 	switch config.TheConfig.Mode {
 	case "trading":
-		time.Sleep(5 * time.Second)
 		if config.TheConfig.Paper {
 			discord.Errorf("Paper Trading")
 		} else {
@@ -507,7 +506,6 @@ func main() {
 			},
 		))
 	case "SQL":
-		time.Sleep(5 * time.Second)
 		panicOnErrorSec(scheduler.SingletonMode().Every(3).Minutes().Do(func() {
 			t := time.Now()
 			discord.Infof("### Prices: %v", time.Now().Format("2006-01-02 15:04:05"))
