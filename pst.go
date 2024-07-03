@@ -22,7 +22,7 @@ func testStrategy(s *gsp.Strategy) (bool, error, string) {
 	if wl.WinRatio < 0.8 ||
 		(wl.ShortRunningRatio > 0.24 && wl.WinRatio < 0.979) ||
 		wl.TotalWL < 5 {
-		return false, nil, "WL conditions not met"
+		return false, nil, fmt.Sprintf("User %d has low win ratio %.2f or low total WL %.2f", s.UserID, wl.WinRatio, wl.TotalWL)
 	}
 	if time.Now().Sub(wl.EarliestTime) < 30*24*time.Hour {
 		return false, nil, "User has not been active for more than 30 days"
