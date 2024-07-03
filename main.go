@@ -254,7 +254,7 @@ func tick() error {
 					userStrategies++
 				}
 			}
-			if userStrategies > 5 {
+			if userStrategies > 4 {
 				discord.Infof("User %d already has %d strategies in sorted, Skip", s.UserID, userStrategies)
 				continue
 			}

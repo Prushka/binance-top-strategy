@@ -28,15 +28,13 @@ func testStrategy(s *gsp.Strategy) (bool, error, string) {
 		return false, nil, "User has not been active for more than 30 days"
 	}
 	userStrategies := gsp.GetPool().StrategiesByUserId[s.UserID]
-	userStrategiesCount := 0
 	for _, us := range userStrategies {
 		if us.Symbol == s.Symbol && us.Direction != s.Direction {
 			return false, nil, "Same symbol hedging"
 		}
-		userStrategiesCount++
 	}
-	if userStrategiesCount > 7 {
-		return false, nil, fmt.Sprintf("User %d already has %d strategies, Skip", s.UserID, userStrategiesCount)
+	if len(userStrategies) > 7 {
+		return false, nil, fmt.Sprintf("User %d already has %d strategies, Skip", s.UserID, len(userStrategies))
 	}
 	discord.Infof(userWl.String())
 	discord.Infof(gsp.Display(s, nil, "Candidate", 0, 0))

@@ -442,13 +442,8 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		grids = fmt.Sprintf("%d", grid.GridCount)
 		matchedRatio = fmt.Sprintf("%.2f", grid.GetMatchedRatio())
 		if s != nil {
-			userPoolStrategiesCount := 0
-			for _, ss := range GetPool().Strategies {
-				if ss.UserID == s.UserID {
-					userPoolStrategiesCount++
-				}
-			}
-			userPoolStrategies = fmt.Sprintf("Pool: %d", userPoolStrategiesCount)
+			userPoolStrategies = fmt.Sprintf("Pool: %d",
+				len(GetPool().StrategiesByUserId[s.UserID]))
 			matchedRatio = fmt.Sprintf("S/G: %.2f/%.2f", s.GetMatchedRatio(), grid.GetMatchedRatio())
 			if DirectionMap[s.Direction] != grid.Direction {
 				direction = fmt.Sprintf("S/G: %s/%s", DirectionMap[s.Direction], grid.Direction)
