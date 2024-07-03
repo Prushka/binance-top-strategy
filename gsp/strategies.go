@@ -52,20 +52,6 @@ type Strategy struct {
 	UserID             int    `json:"userId"`
 	Roi                float64
 	Pnl                float64
-	LastDayRoiChange   float64
-	Last3HrRoiChange   float64
-	Last2HrRoiChange   float64
-	LastHrRoiChange    float64
-	LastDayRoiPerHr    float64
-	Last15HrRoiPerHr   float64
-	Last12HrRoiPerHr   float64
-	Last9HrRoiPerHr    float64
-	Last6HrRoiPerHr    float64
-	Last3HrRoiPerHr    float64
-	LastNHrNoDip       bool
-	LastNHrAllPositive bool
-	RoiPerHour         float64
-	ReasonNotPicked    []string
 	TimeDiscovered     time.Time
 	TimeNotFound       time.Time
 	RoisFetchedAt      time.Time
@@ -142,14 +128,9 @@ func (s *Strategy) String() string {
 	if !s.Rois.isRunning() {
 		ended = "Ended: " + time.Unix(s.Rois[0].Time, 0).Format("2006-01-02 15:04:05") + " ,"
 	}
-	return fmt.Sprintf("%sPnL: %.2f, Rois: %s, [A/D/3/2/1H: %.1f%%/%.1f%%/%.1f%%/%.1f%%/%.1f%%], MinInv: %s, User: $%.1f/$%.1f",
-		ended, s.Pnl, s.Rois.lastNRecords(config.TheConfig.LastNHoursNoDips),
-		s.Rois[0].Roi,
-		s.LastDayRoiChange*100, s.Last3HrRoiChange*100, s.Last2HrRoiChange*100, s.LastHrRoiChange*100, s.MinInvestment, s.UserInput, s.UserTotalInput)
-}
-
-func (s *Strategy) GetMetric() float64 {
-	return s.Last3HrRoiPerHr
+	return fmt.Sprintf("%sPnL: %.2f, Rois: %s, MinInv: %s, User: $%.1f/$%.1f",
+		ended, s.Pnl, s.Rois.lastNRecords(6),
+		s.MinInvestment, s.UserInput, s.UserTotalInput)
 }
 
 func (s *Strategy) SD() string {
@@ -165,19 +146,6 @@ func (s *Strategy) PopulateRois() error {
 	s.Rois = rois
 	if len(s.Rois) > 1 {
 		s.Roi = s.Rois[0].Roi
-		s.LastDayRoiChange = s.Rois.GetRoiChange(24 * time.Hour)
-		s.Last3HrRoiChange = s.Rois.GetRoiChange(3 * time.Hour)
-		s.Last2HrRoiChange = s.Rois.GetRoiChange(2 * time.Hour)
-		s.LastHrRoiChange = s.Rois.GetRoiChange(1 * time.Hour)
-		s.LastDayRoiPerHr = s.Rois.GetRoiPerHr(24 * time.Hour)
-		s.Last15HrRoiPerHr = s.Rois.GetRoiPerHr(15 * time.Hour)
-		s.Last12HrRoiPerHr = s.Rois.GetRoiPerHr(12 * time.Hour)
-		s.Last9HrRoiPerHr = s.Rois.GetRoiPerHr(9 * time.Hour)
-		s.Last6HrRoiPerHr = s.Rois.GetRoiPerHr(6 * time.Hour)
-		s.Last3HrRoiPerHr = s.Rois.GetRoiPerHr(3 * time.Hour)
-		s.LastNHrNoDip = s.Rois.AllPositive(time.Duration(config.TheConfig.LastNHoursNoDips)*time.Hour, 0)
-		s.LastNHrAllPositive = s.Rois.AllPositive(time.Duration(config.TheConfig.LastNHoursAllPositive)*time.Hour, 0.005)
-		s.RoiPerHour = (s.Roi - s.Rois[len(s.Rois)-1].Roi) / float64(s.RunningTime/3600)
 	}
 	return nil
 }

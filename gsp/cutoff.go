@@ -5,41 +5,8 @@ import (
 	"BinanceTopStrategies/sql"
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"sort"
 	"time"
 )
-
-type sdCountPair struct {
-	SymbolDirection string
-	Count           int
-	MaxMetric       float64
-}
-
-func sortBySDCount(filtered Strategies) Strategies {
-	filteredBySymbolDirection := make(map[string]Strategies)
-	for _, s := range filtered {
-		sd := s.SD()
-		if _, ok := filteredBySymbolDirection[sd]; !ok {
-			filteredBySymbolDirection[sd] = make(Strategies, 0)
-		}
-		filteredBySymbolDirection[sd] = append(filteredBySymbolDirection[sd], s)
-	}
-	sdLengths := make([]sdCountPair, 0)
-	for sd, s := range filteredBySymbolDirection {
-		sdLengths = append(sdLengths, sdCountPair{SymbolDirection: sd, Count: len(s), MaxMetric: s[0].GetMetric()})
-	}
-	sort.Slice(sdLengths, func(i, j int) bool {
-		if sdLengths[i].Count == sdLengths[j].Count {
-			return sdLengths[i].MaxMetric > sdLengths[j].MaxMetric
-		}
-		return sdLengths[i].Count > sdLengths[j].Count
-	})
-	sortedBySDCount := make(Strategies, 0)
-	for _, sd := range sdLengths {
-		sortedBySDCount = append(sortedBySDCount, filteredBySymbolDirection[sd.SymbolDirection]...)
-	}
-	return sortedBySDCount
-}
 
 func Scrape(sType int, sString string) error {
 	t := time.Now()

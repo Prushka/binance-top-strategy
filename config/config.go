@@ -23,8 +23,6 @@ type Config struct {
 	DiscordWebhookError            string    `env:"DISCORD_WEBHOOK_ERROR"`
 	DiscordWebhookBlacklist        string    `env:"DISCORD_WEBHOOK_BLACKLIST"`
 	DiscordName                    string    `env:"DISCORD_NAME" envDefault:"BTS"`
-	LastNHoursNoDips               int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"6"`
-	LastNHoursAllPositive          int       `env:"LAST_N_HOURS_NO_DIPS" envDefault:"6"`
 	Reserved                       float64   `env:"RESERVED" envDefault:"0.10"`
 	MaxPerChunk                    float64   `env:"MAX_PER_CHUNK" envDefault:"-1"`
 	TradingBlockMinutesAfterCancel int       `env:"TRADING_BLOCK_MINUTES_AFTER_CANCEL" envDefault:"3"`
