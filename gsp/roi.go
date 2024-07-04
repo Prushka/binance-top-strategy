@@ -80,7 +80,16 @@ func (wl UserWL) insert() {
 func (wl WL) insert(userId int, updatedAt time.Time, tx pgx.Tx) error {
 	_, err := tx.Exec(context.Background(),
 		`INSERT INTO bts.wl (user_id, direction, total, total_wl, win, win_ratio, short_running, short_running_ratio, earliest, time_updated, version) 
-    			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+    			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) ON CONFLICT (user_id, direction) DO UPDATE
+    			SET total = EXCLUDED.total,
+    			    total_wl = EXCLUDED.total_wl,
+    			    win = EXCLUDED.win,
+    			    win_ratio = EXCLUDED.win_ratio,
+    			    short_running = EXCLUDED.short_running,
+    			    short_running_ratio = EXCLUDED.short_running_ratio,
+    			    earliest = EXCLUDED.earliest,
+    			    time_updated = EXCLUDED.time_updated,
+    			    version = EXCLUDED.version;`,
 		userId, wl.Id, wl.Total, wl.TotalWL, wl.Win, wl.WinRatio, wl.ShortRunning, wl.ShortRunningRatio, wl.EarliestTime, updatedAt, WlVersion)
 	if err != nil {
 		discord.Errorf("Error inserting WL: %v", err)
