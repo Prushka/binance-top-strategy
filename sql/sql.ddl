@@ -93,11 +93,27 @@ CREATE TABLE roi
 
 CREATE TABLE grid
 (
-    gid  BIGINT,
-    roi  NUMERIC,
+    gid          BIGINT,
+    roi          NUMERIC,
     realized_roi NUMERIC,
-    time TIMESTAMP WITH TIME ZONE,
+    time         TIMESTAMP WITH TIME ZONE,
     PRIMARY KEY (gid, time)
+);
+
+CREATE TABLE wl
+(
+    user_id             BIGINT,
+    direction           VARCHAR(10),
+    total               NUMERIC,
+    total_wl            NUMERIC,
+    win                 NUMERIC,
+    win_ratio           NUMERIC,
+    short_running       NUMERIC,
+    short_running_ratio NUMERIC,
+    earliest            TIMESTAMP WITH TIME ZONE,
+    time_updated        TIMESTAMP WITH TIME ZONE,
+    version             BIGINT,
+    PRIMARY KEY (user_id, direction)
 );
 
 CREATE TABLE config

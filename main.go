@@ -429,10 +429,6 @@ func tick() error {
 // percentage of direction in same symbol group in filtered
 // use it to cancel
 
-// strict stop gain then block
-
-// Detect move out of range
-
 // strict stop loss or other conditions then block
 
 // Use filtered SD ratio to cancel

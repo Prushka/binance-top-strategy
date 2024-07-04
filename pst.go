@@ -36,7 +36,6 @@ func testStrategy(s *gsp.Strategy) (bool, error, string) {
 	if len(userStrategies) > 7 {
 		return false, nil, fmt.Sprintf("User %d already has %d strategies, Skip", s.UserID, len(userStrategies))
 	}
-	discord.Infof(userWl.String())
-	discord.Infof(gsp.Display(s, nil, "Candidate", 0, 0))
+	discord.Infof("%s | %s", gsp.Display(s, nil, "Candidate", 0, 0), wl)
 	return true, nil, ""
 }

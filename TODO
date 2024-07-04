@@ -1,8 +1,3 @@
-CHeck if price out of opposite bounds during strategy run time
-
-
-put the previous user back to selected
-
 Stoploss is not reliable, the user may not cancel and we have positive >>>>>> all the way
 Volatility limit?
 
