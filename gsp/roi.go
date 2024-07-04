@@ -2,10 +2,13 @@ package gsp
 
 import (
 	"BinanceTopStrategies/cache"
+	"BinanceTopStrategies/discord"
 	"BinanceTopStrategies/request"
 	"BinanceTopStrategies/sql"
 	"BinanceTopStrategies/utils"
+	"context"
 	"fmt"
+	"github.com/jackc/pgx/v5"
 	log "github.com/sirupsen/logrus"
 	"math"
 	"slices"
@@ -53,6 +56,36 @@ type WL struct {
 	ShortRunningRatio float64
 	EarliestTime      time.Time
 	Id                string
+}
+
+const (
+	WlVersion = 1
+)
+
+func (wl UserWL) insert() {
+	err := sql.SimpleTransaction(func(tx pgx.Tx) error {
+		for _, w := range wl.DirectionWL {
+			err := w.insert(wl.UserId, tx)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		discord.Errorf("Error inserting WL: %v", err)
+	}
+}
+
+func (wl WL) insert(userId int, tx pgx.Tx) error {
+	_, err := tx.Exec(context.Background(),
+		`INSERT INTO bts.wl (user_id, direction, total, total_wl, win, win_ratio, short_running, short_running_ratio, earliest, time_updated, version) 
+    			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+		userId, wl.Id, wl.Total, wl.TotalWL, wl.Win, wl.WinRatio, wl.ShortRunning, wl.ShortRunningRatio, wl.EarliestTime, time.Now(), WlVersion)
+	if err != nil {
+		discord.Errorf("Error inserting WL: %v", err)
+	}
+	return err
 }
 
 func (wl UserWL) String() string {
@@ -114,10 +147,10 @@ WHERE f.original_input > 349;`, user)
 			return UserWL{}, err
 		}
 		directionWL := map[int]*WL{
-			TOTAL:   {Id: "Total"},
-			LONG:    {Id: "Long"},
-			SHORT:   {Id: "Short"},
-			NEUTRAL: {Id: "Neutral"},
+			TOTAL:   {Id: "TOTAL"},
+			LONG:    {Id: "LONG"},
+			SHORT:   {Id: "SHORT"},
+			NEUTRAL: {Id: "NEUTRAL"},
 		}
 		wl := UserWL{
 			UpdatedAt:   time.Now(),
@@ -208,7 +241,7 @@ WHERE f.original_input > 349;`, user)
 		directionWL[NEUTRAL].WinRatio = directionWL[NEUTRAL].Win / directionWL[NEUTRAL].TotalWL
 		directionWL[NEUTRAL].ShortRunningRatio = directionWL[NEUTRAL].ShortRunning / directionWL[NEUTRAL].Total
 		directionWL[TOTAL] = &WL{
-			Id:      "Total",
+			Id:      "TOTAL",
 			TotalWL: directionWL[LONG].TotalWL + directionWL[SHORT].TotalWL + directionWL[NEUTRAL].TotalWL,
 			Total:   directionWL[LONG].Total + directionWL[SHORT].Total + directionWL[NEUTRAL].Total,
 			Win:     directionWL[LONG].Win + directionWL[SHORT].Win + directionWL[NEUTRAL].Win,
@@ -219,6 +252,7 @@ WHERE f.original_input > 349;`, user)
 				(directionWL[LONG].Total + directionWL[SHORT].Total + directionWL[NEUTRAL].Total),
 			EarliestTime: utils.MinTime(directionWL[LONG].EarliestTime, directionWL[SHORT].EarliestTime, directionWL[NEUTRAL].EarliestTime),
 		}
+		wl.insert()
 		return wl, nil
 	},
 	func(wl UserWL) bool {
