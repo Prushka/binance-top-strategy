@@ -78,6 +78,9 @@ func (wl UserWL) insert() {
 }
 
 func (wl WL) insert(userId int, updatedAt time.Time, tx pgx.Tx) error {
+	if wl.Total == 0 {
+		return nil
+	}
 	_, err := tx.Exec(context.Background(),
 		`INSERT INTO bts.wl (user_id, direction, total, total_wl, win, win_ratio, short_running, short_running_ratio, earliest, time_updated, version) 
     			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) ON CONFLICT (user_id, direction) DO UPDATE
