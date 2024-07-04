@@ -231,8 +231,6 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 		priceRange = formatPriceRange(grid.GridLowerLimit, grid.GridUpperLimit, grid.Symbol, grid.Direction)
 		grids = fmt.Sprintf("%d", grid.GridCount)
 		if s != nil {
-			userPoolStrategies = fmt.Sprintf("Pool: %d",
-				len(GetPool().ByUID()[s.UserID]))
 			if DirectionMap[s.Direction] != grid.Direction {
 				direction = fmt.Sprintf("S/G: %s/%s", DirectionMap[s.Direction], grid.Direction)
 			}
@@ -259,6 +257,8 @@ func Display(s *Strategy, grid *Grid, action string, index int, length int) stri
 	}
 	if s != nil {
 		ss = s.String()
+		userPoolStrategies = fmt.Sprintf("Pool: %d",
+			len(GetPool().ByUID()[s.UserID]))
 	}
 	if grid != nil {
 		gg = ", " + grid.String()
