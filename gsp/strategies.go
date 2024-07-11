@@ -321,6 +321,19 @@ func mergeStrategies(sps ...StrategyQuery) (Strategies, error) {
 	sort.Slice(sss, func(i, j int) bool {
 		return sss[i].Pnl > sss[j].Pnl
 	})
+	sssMap := make(map[int]*Strategy)
+	for _, s := range sss {
+		if _, ok := sssMap[s.SID]; ok {
+			if s.RunningTime < sssMap[s.SID].RunningTime {
+				continue
+			}
+		}
+		sssMap[s.SID] = s
+	}
+	sss = make(Strategies, 0)
+	for _, s := range sssMap {
+		sss = append(sss, s)
+	}
 	return sss, nil
 }
 
