@@ -142,6 +142,7 @@ func tick() error {
 		gsp.SessionCancelledGIDs = toCancel.CancelledGIDs()
 		return nil
 	}
+	log.Infof("Cancel checked")
 	usdtChunks := grids.GetChunks("USDT")
 	usdcChunks := grids.GetChunks("USDC")
 	blacklistedInPool := mapset.NewSet[string]()
@@ -149,6 +150,7 @@ func tick() error {
 	sessionSIDs := grids.AllSIDs()
 	_, _, sessionNeutrals := grids.GetLSN()
 	sortedStrategies := make(gsp.Strategies, 0)
+	log.Infof("Start to test strategies in pool")
 	for _, s := range gsp.GetPool() {
 		p, err, reason := testStrategy(s)
 		if err != nil {

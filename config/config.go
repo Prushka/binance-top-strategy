@@ -28,7 +28,7 @@ type Config struct {
 	TradingBlockMinutesAfterCancel int       `env:"TRADING_BLOCK_MINUTES_AFTER_CANCEL" envDefault:"3"`
 	TakeProfits                    []float64 `env:"TAKE_PROFITS" envDefault:"0.52,0.295,0.235,0.175,0.15,0.1"`
 	TakeProfitsMaxLookBackMinutes  []int     `env:"TAKE_PROFITS_MAX_LOOKBACK_MINUTES" envDefault:"10,15,25,40,50,90"`
-	TakeProfitsBlockMinutes        []int     `env:"TAKE_PROFITS_BLOCK_MINUTES" envDefault:"40,-1,-1,-1"`
+	TakeProfitsBlockMinutes        []int     `env:"TAKE_PROFITS_BLOCK_MINUTES" envDefault:"40,-1,-1,-1,-1,-1"`
 	TickEverySeconds               int       `env:"TICK_EVERY_SECONDS" envDefault:"30"`
 	MaxUSDTChunks                  int       `env:"MAX_USDT_CHUNKS" envDefault:"5"`
 	MaxUSDCChunks                  int       `env:"MAX_USDC_CHUNKS" envDefault:"2"`
