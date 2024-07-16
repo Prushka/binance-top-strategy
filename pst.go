@@ -33,7 +33,7 @@ func testStrategy(s *gsp.Strategy) (bool, error, string) {
 			return false, nil, "Same symbol hedging"
 		}
 	}
-	if len(userStrategies) > 7 {
+	if len(userStrategies) > 6 {
 		return false, nil, fmt.Sprintf("User %d already has %d strategies, Skip", s.UserID, len(userStrategies))
 	}
 	discord.Infof("%s | %s", gsp.Display(s, nil, "Candidate", 0, 0), wl)
