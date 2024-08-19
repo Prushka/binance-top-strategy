@@ -38,7 +38,7 @@ type Config struct {
 	PreferredLeverage              int       `env:"PREFERRED_LEVERAGE" envDefault:"20"`
 	MaxLeverage                    int       `env:"MAX_LEVERAGE" envDefault:"60"`
 	StopLossMarkForRemoval         []float64 `env:"STOP_LOSS_MARK_FOR_REMOVAL" envDefault:"-0.4,-0.7"`
-	StopLossMarkForRemovalSLAt     []float64 `env:"STOP_LOSS_MARK_FOR_REMOVAL_SL_AT" envDefault:"0,-0.1"`
+	StopLossMarkForRemovalSLAt     []float64 `env:"STOP_LOSS_MARK_FOR_REMOVAL_SL_AT" envDefault:"0,0"`
 	NeutralRangeDiff               float64   `env:"NEUTRAL_RANGE_DIFF" envDefault:"0.25"`
 	ShortRangeDiff                 float64   `env:"SHORT_RANGE_DIFF" envDefault:"0.2"`
 	LongRangeDiff                  float64   `env:"LONG_RANGE_DIFF" envDefault:"0.2"`
